@@ -1,4 +1,4 @@
-import { useTasks } from '@/context/TaskContext';
+import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -16,7 +16,17 @@ export default function AddTaskScreen() {
       Alert.alert('Missing fields', 'Please fill in all fields before saving.');
       return;
     }
-    addTask({ assignmentName: assignmentName.trim(), className: className.trim(), dueDate: dueDate.trim() });
+    const parsed = new Date(dueDate.trim());
+    const dueDateRaw = isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+    const estimatedHours = 1;
+    addTask({
+      assignmentName: assignmentName.trim(),
+      className: className.trim(),
+      dueDate: dueDate.trim(),
+      dueDateRaw,
+      estimatedHours,
+      hoursPerDay: computeHoursPerDay(estimatedHours, dueDateRaw),
+    });
     router.back();
   };
 

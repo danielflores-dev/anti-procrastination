@@ -1,4 +1,4 @@
-import { useTasks } from '@/context/TaskContext';
+import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Calendar from 'expo-calendar';
 import * as FileSystem from 'expo-file-system';
@@ -37,7 +37,6 @@ export default function AutoAddScreen() {
   const [adjustedHours, setAdjustedHours] = useState(1);
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [calendarAdded, setCalendarAdded] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
   const readAsBase64 = async (uri: string): Promise<string> => {
@@ -102,80 +101,18 @@ export default function AutoAddScreen() {
     }
   };
 
-  const analyzeImage = async (base64: string) => {
-    console.log('[analyzeImage] starting, base64 length:', base64.length);
+  const analyzeImage = async (_base64: string) => {
     setStep('analyzing');
-    try {
-      const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-      console.log('[analyzeImage] API key present:', !!apiKey, '| first 10 chars:', apiKey?.slice(0, 10));
-      if (!apiKey) {
-        throw new Error('EXPO_PUBLIC_ANTHROPIC_API_KEY is not set in .env.local');
-      }
-
-      console.log('[analyzeImage] sending request directly to Anthropic...');
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 512,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: { type: 'base64', media_type: 'image/jpeg', data: base64 },
-                },
-                {
-                  type: 'text',
-                  text: `Analyze this assignment or homework image. Reply with ONLY a JSON object (no markdown, no explanation) with these exact keys:
-{
-  "assignmentName": "name of the assignment",
-  "className": "subject or class name, or 'Unknown' if not visible",
-  "estimatedHours": <number like 1.5>,
-  "reasoning": "one sentence explaining the estimate"
-}`,
-                },
-              ],
-            },
-          ],
-        }),
-      });
-
-      console.log('[analyzeImage] response status:', response.status, response.statusText);
-      if (!response.ok) {
-        const err = await response.json();
-        console.error('[analyzeImage] API error body:', JSON.stringify(err));
-        throw new Error(err?.error?.message ?? `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('[analyzeImage] raw response:', JSON.stringify(data));
-      const text = data.content[0].text.trim();
-      console.log('[analyzeImage] extracted text:', text);
-
-      let parsed: AIResult;
-      try {
-        parsed = JSON.parse(text);
-      } catch (parseErr) {
-        console.error('[analyzeImage] JSON parse failed on text:', text);
-        throw new Error('AI returned unexpected format. Raw: ' + text.slice(0, 100));
-      }
-
-      console.log('[analyzeImage] parsed result:', JSON.stringify(parsed));
-      setResult(parsed);
-      setAdjustedHours(parsed.estimatedHours);
-      setStep('review');
-    } catch (e: any) {
-      console.error('[analyzeImage] caught error:', e?.message, e);
-      Alert.alert('Analysis failed', e.message ?? 'Something went wrong.');
-      setStep('pick');
-    }
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const mock: AIResult = {
+      assignmentName: 'Chapter 5 Reading',
+      className: 'Biology 101',
+      estimatedHours: 2.5,
+      reasoning: 'Mock response — real API call disabled.',
+    };
+    setResult(mock);
+    setAdjustedHours(mock.estimatedHours);
+    setStep('review');
   };
 
   const addToCalendar = async () => {
@@ -206,13 +143,17 @@ export default function AutoAddScreen() {
         alarms: [{ relativeOffset: -60 }],
       });
 
+      const dueDateRaw = dueDate.toISOString();
       addTask({
         assignmentName: result.assignmentName,
         className: result.className,
         dueDate: dueDate.toLocaleDateString(),
+        dueDateRaw,
+        estimatedHours: adjustedHours,
+        hoursPerDay: computeHoursPerDay(adjustedHours, dueDateRaw),
       });
 
-      setCalendarAdded(true);
+      router.replace('/(tabs)/calendar');
     } catch (e: any) {
       Alert.alert('Calendar error', e.message ?? 'Could not add event.');
     }
@@ -255,19 +196,6 @@ export default function AutoAddScreen() {
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#6C63FF" />
         <Text style={styles.analyzingText}>Analyzing assignment...</Text>
-      </View>
-    );
-  }
-
-  if (calendarAdded) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.successIcon}>✓</Text>
-        <Text style={styles.successText}>Added to Calendar!</Text>
-        <Text style={styles.successSub}>Task saved to your home screen too.</Text>
-        <TouchableOpacity style={styles.doneButton} onPress={() => router.replace('/')}>
-          <Text style={styles.doneButtonText}>Back to Home</Text>
-        </TouchableOpacity>
       </View>
     );
   }
@@ -535,32 +463,5 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#888',
     fontSize: 16,
-  },
-  successIcon: {
-    fontSize: 64,
-    color: '#6C63FF',
-    marginBottom: 16,
-  },
-  successText: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  successSub: {
-    color: '#888',
-    fontSize: 15,
-    marginBottom: 40,
-  },
-  doneButton: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 12,
-    paddingHorizontal: 40,
-    paddingVertical: 14,
-  },
-  doneButtonText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
   },
 });
