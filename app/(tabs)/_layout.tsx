@@ -1,7 +1,10 @@
+import { useCoins } from '@/context/CoinContext';
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
 
 export default function TabsLayout() {
+  const { coins } = useCoins();
+
   return (
     <Tabs
       screenOptions={{
@@ -30,6 +33,15 @@ export default function TabsLayout() {
         options={{
           title: 'Schedule',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📅</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="shop"
+        options={{
+          title: `Shop`,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🪙</Text>,
+          tabBarBadge: coins > 0 ? coins : undefined,
+          tabBarBadgeStyle: { backgroundColor: '#F59E0B', color: '#000', fontSize: 10, fontWeight: '700' },
         }}
       />
     </Tabs>

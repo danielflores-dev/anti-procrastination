@@ -147,6 +147,7 @@ export default function AutoAddScreen() {
       addTask({
         assignmentName: result.assignmentName,
         className: result.className,
+        description: result.reasoning,
         dueDate: dueDate.toLocaleDateString(),
         dueDateRaw,
         estimatedHours: adjustedHours,

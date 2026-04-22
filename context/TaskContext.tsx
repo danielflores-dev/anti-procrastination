@@ -4,6 +4,7 @@ export type Task = {
   id: string;
   assignmentName: string;
   className: string;
+  description: string;
   dueDate: string;
   dueDateRaw: string;       // ISO date string for calculations
   estimatedHours: number;

@@ -72,6 +72,10 @@ function TaskCard({
         </View>
       </View>
 
+      {!!task.description && (
+        <Text style={styles.cardDescription}>{task.description}</Text>
+      )}
+
       <View style={styles.dueRow}>
         <Text style={styles.dueText}>Due: {task.dueDate}</Text>
         <Text style={[styles.daysLeft, { color: days <= 1 ? '#EF4444' : days <= 3 ? '#F59E0B' : '#888' }]}>
@@ -81,21 +85,7 @@ function TaskCard({
 
       <View style={styles.divider} />
 
-      <Text style={styles.sectionLabel}>Total Estimated Time</Text>
-      <View style={styles.adjusterRow}>
-        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjustTotal(-0.5)}>
-          <Text style={styles.adjBtnText}>−</Text>
-        </TouchableOpacity>
-        <View style={styles.hoursCenter}>
-          <Text style={[styles.hoursNumber, { color }]}>{task.estimatedHours}h</Text>
-          <Text style={styles.hoursSubtext}>total</Text>
-        </View>
-        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjustTotal(0.5)}>
-          <Text style={styles.adjBtnText}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.sectionLabel}>Daily Study Time</Text>
+      <Text style={styles.sectionLabel}>⏳ Daily Study Time</Text>
       <View style={styles.adjusterRow}>
         <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjust(-0.5)}>
           <Text style={styles.adjBtnText}>−</Text>
@@ -105,6 +95,20 @@ function TaskCard({
           <Text style={styles.hoursSubtext}>per day</Text>
         </View>
         <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjust(0.5)}>
+          <Text style={styles.adjBtnText}>+</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.sectionLabel}>✅ Total Estimated Time</Text>
+      <View style={styles.adjusterRow}>
+        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjustTotal(-0.5)}>
+          <Text style={styles.adjBtnText}>−</Text>
+        </TouchableOpacity>
+        <View style={styles.hoursCenter}>
+          <Text style={[styles.hoursNumber, { color }]}>{task.estimatedHours}h</Text>
+          <Text style={styles.hoursSubtext}>total</Text>
+        </View>
+        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjustTotal(0.5)}>
           <Text style={styles.adjBtnText}>+</Text>
         </TouchableOpacity>
       </View>
@@ -405,6 +409,7 @@ const styles = StyleSheet.create({
   cardTitles: { flex: 1, marginRight: 12 },
   cardAssignment: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 2 },
   cardClass: { color: '#888', fontSize: 13 },
+  cardDescription: { color: '#999', fontSize: 13, lineHeight: 19, marginBottom: 10 },
   workloadBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
   workloadLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   workloadHours: { fontSize: 13, fontWeight: '600', marginTop: 1 },
