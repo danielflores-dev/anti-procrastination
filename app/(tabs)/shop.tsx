@@ -183,8 +183,8 @@ export default function ShopScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#121212' },
-  container: { paddingHorizontal: 20, paddingTop: 72, paddingBottom: 60 },
+  scroll: { flex: 1, backgroundColor: '#0f0f0f' },
+  container: { paddingHorizontal: 20, paddingTop: 64, paddingBottom: 60 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   heading: { fontSize: 26, fontWeight: 'bold', color: '#fff' },

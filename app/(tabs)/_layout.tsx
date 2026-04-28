@@ -10,36 +10,42 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1a1a1a',
-          borderTopColor: '#2a2a2a',
+          backgroundColor: '#141414',
+          borderTopColor: '#222',
           borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 10,
+          height: 70,
+          paddingBottom: 12,
+          paddingTop: 6,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.4,
+          shadowRadius: 12,
+          elevation: 16,
         },
         tabBarActiveTintColor: '#6C63FF',
-        tabBarInactiveTintColor: '#666',
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarInactiveTintColor: '#444',
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🏠</Text>,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Schedule',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📅</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📅</Text>,
         }}
       />
       <Tabs.Screen
         name="shop"
         options={{
-          title: `Shop`,
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🪙</Text>,
+          title: 'Shop',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🪙</Text>,
           tabBarBadge: coins > 0 ? coins : undefined,
           tabBarBadgeStyle: { backgroundColor: '#F59E0B', color: '#000', fontSize: 10, fontWeight: '700' },
         }}

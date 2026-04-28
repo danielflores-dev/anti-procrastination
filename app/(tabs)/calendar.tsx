@@ -1,7 +1,18 @@
 import { Task, useTasks } from '@/context/TaskContext';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+function useButtonPulse() {
+  const scale = useRef(new Animated.Value(1)).current;
+  const press = () => {
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.94, duration: 100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 1, duration: 200, easing: Easing.out(Easing.back(3)), useNativeDriver: true }),
+    ]).start();
+  };
+  return { scale, press };
+}
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
@@ -54,13 +65,15 @@ function TaskCard({
   const days = daysUntil(task.dueDateRaw);
   const totalDaysNeeded = Math.ceil(task.estimatedHours / task.hoursPerDay);
   const onTrack = totalDaysNeeded <= days;
+  const { scale, press } = useButtonPulse();
+
+  const handleStartSession = () => {
+    press();
+    setTimeout(onFocus, 120);
+  };
 
   return (
-    <TouchableOpacity
-      style={[styles.card, { borderTopColor: color, borderTopWidth: 3 }]}
-      onPress={onFocus}
-      activeOpacity={0.85}
-    >
+    <View style={[styles.card, { borderTopColor: color, borderTopWidth: 3 }]}>
       <View style={styles.cardHeader}>
         <View style={styles.cardTitles}>
           <Text style={styles.cardAssignment}>{task.assignmentName}</Text>
@@ -135,10 +148,18 @@ function TaskCard({
         </View>
       )}
 
-      <View style={styles.focusHint}>
-        <Text style={styles.focusHintText}>Tap to start focus session →</Text>
-      </View>
-    </TouchableOpacity>
+      {/* Start Homework Session button */}
+      <Animated.View style={[styles.sessionBtnWrap, { transform: [{ scale }] }]}>
+        <TouchableOpacity
+          style={[styles.sessionBtn, { borderColor: color, shadowColor: color }]}
+          onPress={handleStartSession}
+          activeOpacity={1}
+        >
+          <Text style={styles.sessionBtnIcon}>▶</Text>
+          <Text style={[styles.sessionBtnText, { color }]}>Start Homework Session</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -211,6 +232,7 @@ export default function CalendarScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Schedule</Text>
+      <Text style={styles.headingSub}>Tap a day to see tasks</Text>
 
       {/* Month navigator */}
       <View style={styles.monthNav}>
@@ -351,9 +373,11 @@ export default function CalendarScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#121212' },
-  container: { paddingHorizontal: 16, paddingTop: 72, paddingBottom: 60 },
-  heading: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginBottom: 16 },
+  scroll: { flex: 1, backgroundColor: '#0f0f0f' },
+  container: { paddingHorizontal: 16, paddingTop: 64, paddingBottom: 60 },
+  heading: { fontSize: 26, fontWeight: '700', color: '#fff', marginBottom: 4, letterSpacing: -0.3 },
+
+  headingSub: { color: '#555', fontSize: 13, fontWeight: '500', marginBottom: 20 },
 
   // Month nav
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
@@ -430,6 +454,21 @@ const styles = StyleSheet.create({
   progressBg: { flex: 1, height: 6, backgroundColor: '#2e2e2e', borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: 6, borderRadius: 3 },
   progressLabel: { color: '#555', fontSize: 11, minWidth: 50, textAlign: 'right' },
-  focusHint: { alignItems: 'flex-end', marginTop: 12 },
-  focusHintText: { color: '#444', fontSize: 12, fontWeight: '500' },
+  sessionBtnWrap: { marginTop: 16 },
+  sessionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingVertical: 14,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+    backgroundColor: '#0f0f0f',
+  },
+  sessionBtnIcon: { fontSize: 15, color: '#fff' },
+  sessionBtnText: { fontSize: 16, fontWeight: '700', letterSpacing: 0.2 },
 });

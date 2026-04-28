@@ -197,17 +197,24 @@ export default function AutoAddScreen() {
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#6C63FF" />
         <Text style={styles.analyzingText}>Analyzing assignment...</Text>
+        <Text style={styles.analyzingSub}>This only takes a moment</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>Automatically Add Assignment</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Text style={styles.backArrow}>‹</Text>
+        </TouchableOpacity>
+        <Text style={styles.heading}>Auto-add Assignment</Text>
+      </View>
 
       {step === 'pick' && (
         <>
-          <Text style={styles.sub}>Take a photo, upload a screenshot, or drag one in.</Text>
+          <Text style={styles.sub}>Snap or upload a photo of your assignment sheet — AI will fill in the details for you.</Text>
 
           {Platform.OS === 'web' && (
             <View
@@ -217,21 +224,24 @@ export default function AutoAddScreen() {
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
             >
-              <Text style={styles.dropIcon}>⬆</Text>
-              <Text style={styles.dropText}>
-                {isDragOver ? 'Drop it!' : 'Drag & drop an image here'}
-              </Text>
+              <Text style={styles.dropIcon}>☁️</Text>
+              <Text style={styles.dropTitle}>{isDragOver ? 'Drop it!' : 'Drag & drop here'}</Text>
+              <Text style={styles.dropSub}>PNG, JPG supported</Text>
             </View>
           )}
 
           {Platform.OS !== 'web' && (
             <TouchableOpacity style={styles.primaryButton} onPress={() => pickImage(true)}>
-              <Text style={styles.primaryButtonText}>Take Photo</Text>
+              <Text style={styles.primaryButtonIcon}>📷</Text>
+              <Text style={styles.primaryButtonText}>Take a Photo</Text>
             </TouchableOpacity>
           )}
+
           <TouchableOpacity style={styles.secondaryButton} onPress={() => pickImage(false)}>
+            <Text style={styles.secondaryButtonIcon}>🖼️</Text>
             <Text style={styles.secondaryButtonText}>Choose from Library</Text>
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
@@ -303,50 +313,73 @@ export default function AutoAddScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#121212' },
+  scroll: { flex: 1, backgroundColor: '#0f0f0f' },
   container: {
     paddingHorizontal: 24,
-    paddingTop: 80,
+    paddingTop: 64,
     paddingBottom: 60,
   },
   centered: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#0f0f0f',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backBtn: {
+    marginRight: 10,
+  },
+  backArrow: {
+    color: '#6C63FF',
+    fontSize: 34,
+    fontWeight: '300',
+    lineHeight: 36,
+    marginTop: -4,
+  },
   heading: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 12,
+    letterSpacing: -0.3,
   },
   sub: {
-    color: '#aaaaaa',
+    color: '#666',
     fontSize: 15,
     marginBottom: 32,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   analyzingText: {
     color: '#aaaaaa',
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 20,
+    fontWeight: '600',
+  },
+  analyzingSub: {
+    color: '#555',
+    fontSize: 14,
+    marginTop: 8,
   },
   preview: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 20,
   },
   card: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 10,
-    padding: 14,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#252525',
   },
   cardLabel: {
-    color: '#888',
+    color: '#666',
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -359,13 +392,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cardReasoning: {
-    color: '#cccccc',
+    color: '#aaa',
     fontSize: 14,
     lineHeight: 20,
   },
   sectionTitle: {
-    color: '#aaaaaa',
-    fontSize: 13,
+    color: '#777',
+    fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -375,13 +408,15 @@ const styles = StyleSheet.create({
   timeAdjuster: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e1e1e',
-    borderRadius: 12,
-    padding: 8,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 14,
+    padding: 10,
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#252525',
   },
   adjBtn: {
-    backgroundColor: '#2e2e2e',
+    backgroundColor: '#252525',
     width: 48,
     height: 48,
     borderRadius: 10,
@@ -397,12 +432,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 28,
     fontWeight: 'bold',
+    letterSpacing: -1,
   },
   dateButton: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 10,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
     padding: 14,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#252525',
   },
   dateButtonText: {
     color: '#6C63FF',
@@ -411,46 +449,72 @@ const styles = StyleSheet.create({
   },
   dropZone: {
     borderWidth: 2,
-    borderColor: '#3a3a3a',
+    borderColor: '#2a2a2a',
     borderStyle: 'dashed',
-    borderRadius: 14,
-    paddingVertical: 40,
+    borderRadius: 16,
+    paddingVertical: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    backgroundColor: '#1a1a1a',
+    marginBottom: 20,
+    backgroundColor: '#141414',
   },
   dropZoneActive: {
     borderColor: '#6C63FF',
     backgroundColor: '#1e1a2e',
   },
   dropIcon: {
-    fontSize: 32,
-    marginBottom: 10,
-    color: '#555',
+    fontSize: 40,
+    marginBottom: 12,
   },
-  dropText: {
-    color: '#888',
-    fontSize: 15,
+  dropTitle: {
+    color: '#ccc',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  dropSub: {
+    color: '#555',
+    fontSize: 13,
   },
   primaryButton: {
     backgroundColor: '#6C63FF',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
     marginBottom: 12,
+    shadowColor: '#6C63FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  primaryButtonIcon: {
+    fontSize: 20,
   },
   primaryButtonText: {
     color: '#ffffff',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   secondaryButton: {
-    backgroundColor: '#1e1e1e',
-    borderRadius: 12,
-    paddingVertical: 14,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  secondaryButtonIcon: {
+    fontSize: 20,
   },
   secondaryButtonText: {
     color: '#6C63FF',
@@ -459,10 +523,10 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   cancelButtonText: {
-    color: '#888',
+    color: '#555',
     fontSize: 16,
   },
 });
