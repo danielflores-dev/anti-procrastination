@@ -1,6 +1,10 @@
 import { useCoins } from '@/context/CoinContext';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { Alert } from 'react-native';
+
+const MULTIPLAYER_HELP =
+  'This mode will let you search you univeristy and you can create or find a study group for people in your major or related field';
 
 export default function TabsLayout() {
   const { coins } = useCoins();
@@ -31,21 +35,33 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🏠</Text>,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="home" size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="multi-player"
+        listeners={{
+          tabPress: () => {
+            Alert.alert('Multi-player', MULTIPLAYER_HELP);
+          },
+        }}
+        options={{
+          title: 'Multi-player',
+          tabBarIcon: ({ color }) => <FontAwesome5 name="user-friends" size={20} color={color} />,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Schedule',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>📅</Text>,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={20} color={color} />,
         }}
       />
       <Tabs.Screen
         name="shop"
         options={{
           title: 'Shop',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🪙</Text>,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="coins" size={20} color={color} />,
           tabBarBadge: coins > 0 ? coins : undefined,
           tabBarBadgeStyle: { backgroundColor: '#F59E0B', color: '#000', fontSize: 10, fontWeight: '700' },
         }}
