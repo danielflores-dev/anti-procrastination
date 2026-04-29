@@ -1,6 +1,6 @@
-import * as ImagePicker from 'expo-image-picker';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { FontAwesome5 } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -384,15 +384,15 @@ export default function MultiPlayerScreen() {
         </View>
       </TouchableOpacity>
 
-      <TextInput value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor="#666" style={styles.input} />
-      <TextInput value={major} onChangeText={setMajor} placeholder="Major or field" placeholderTextColor="#666" style={styles.input} />
+      <TextInput value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={theme.muted} style={styles.input} />
+      <TextInput value={major} onChangeText={setMajor} placeholder="Major or field" placeholderTextColor={theme.muted} style={styles.input} />
       <View style={styles.twoColumn}>
-        <TextInput value={age} onChangeText={setAge} placeholder="Age" placeholderTextColor="#666" style={[styles.input, styles.halfInput]} keyboardType="number-pad" />
-        <TextInput value={year} onChangeText={setYear} placeholder="Year" placeholderTextColor="#666" style={[styles.input, styles.halfInput]} />
+        <TextInput value={age} onChangeText={setAge} placeholder="Age" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} keyboardType="number-pad" />
+        <TextInput value={year} onChangeText={setYear} placeholder="Year" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} />
       </View>
-      <TextInput value={coolFact} onChangeText={setCoolFact} placeholder="Cool fact about you" placeholderTextColor="#666" style={[styles.input, styles.multiInput]} multiline />
-      <TextInput value={studyGoal} onChangeText={setStudyGoal} placeholder="What do you want help studying?" placeholderTextColor="#666" style={styles.input} />
-      <TextInput value={availability} onChangeText={setAvailability} placeholder="When are you usually free?" placeholderTextColor="#666" style={styles.input} />
+      <TextInput value={coolFact} onChangeText={setCoolFact} placeholder="Cool fact about you" placeholderTextColor={theme.muted} style={[styles.input, styles.multiInput]} multiline />
+      <TextInput value={studyGoal} onChangeText={setStudyGoal} placeholder="What do you want help studying?" placeholderTextColor={theme.muted} style={styles.input} />
+      <TextInput value={availability} onChangeText={setAvailability} placeholder="When are you usually free?" placeholderTextColor={theme.muted} style={styles.input} />
 
       <Text style={styles.sectionLabel}>Preferred meeting style</Text>
       <View style={styles.choiceRow}>
@@ -527,8 +527,8 @@ export default function MultiPlayerScreen() {
       <View style={styles.roomForm}>
         <Text style={styles.profileTitle}>Post to the feed</Text>
         <Text style={styles.profileSub}>Ask for help, share a study tip, or suggest something useful for classmates.</Text>
-        <TextInput value={helpTopic} onChangeText={setHelpTopic} placeholder="What do you need help with?" placeholderTextColor="#666" style={styles.input} />
-        <TextInput value={helpDetails} onChangeText={setHelpDetails} placeholder="Add details or a suggestion" placeholderTextColor="#666" style={[styles.input, styles.multiInput]} multiline />
+        <TextInput value={helpTopic} onChangeText={setHelpTopic} placeholder="What do you need help with?" placeholderTextColor={theme.muted} style={styles.input} />
+        <TextInput value={helpDetails} onChangeText={setHelpDetails} placeholder="Add details or a suggestion" placeholderTextColor={theme.muted} style={[styles.input, styles.multiInput]} multiline />
         <TouchableOpacity style={styles.saveButton} onPress={handleCreateHelpPost} activeOpacity={0.85}>
           <Text style={styles.saveButtonText}>Post to feed</Text>
         </TouchableOpacity>
@@ -557,7 +557,7 @@ export default function MultiPlayerScreen() {
               value={commentDrafts[post.id] ?? ''}
               onChangeText={text => setCommentDrafts(current => ({ ...current, [post.id]: text }))}
               placeholder="Comment or offer help"
-              placeholderTextColor="#666"
+              placeholderTextColor={theme.muted}
               style={[styles.input, styles.commentInput]}
             />
             <TouchableOpacity style={styles.smallButton} onPress={() => handleAddComment(post.id)}>
@@ -647,14 +647,14 @@ export default function MultiPlayerScreen() {
         <View style={styles.roomForm}>
           <Text style={styles.profileTitle}>Create a study room</Text>
           <Text style={styles.profileSub}>Set the basics, then choose who can find and join it.</Text>
-          <TextInput value={roomName} onChangeText={setRoomName} placeholder="Room name" placeholderTextColor="#666" style={styles.input} />
-          <TextInput value={roomSubject} onChangeText={setRoomSubject} placeholder="Subject or class" placeholderTextColor="#666" style={styles.input} />
-          <TextInput value={roomLocation} onChangeText={setRoomLocation} placeholder="Library room or location" placeholderTextColor="#666" style={styles.input} />
-          <TextInput value={roomTime} onChangeText={setRoomTime} placeholder="Meeting time" placeholderTextColor="#666" style={styles.input} />
-          <TextInput value={roomDuration} onChangeText={setRoomDuration} placeholder="How long will you be there?" placeholderTextColor="#666" style={styles.input} />
+          <TextInput value={roomName} onChangeText={setRoomName} placeholder="Room name" placeholderTextColor={theme.muted} style={styles.input} />
+          <TextInput value={roomSubject} onChangeText={setRoomSubject} placeholder="Subject or class" placeholderTextColor={theme.muted} style={styles.input} />
+          <TextInput value={roomLocation} onChangeText={setRoomLocation} placeholder="Library room or location" placeholderTextColor={theme.muted} style={styles.input} />
+          <TextInput value={roomTime} onChangeText={setRoomTime} placeholder="Meeting time" placeholderTextColor={theme.muted} style={styles.input} />
+          <TextInput value={roomDuration} onChangeText={setRoomDuration} placeholder="How long will you be there?" placeholderTextColor={theme.muted} style={styles.input} />
           <View style={styles.twoColumn}>
-            <TextInput value={roomCapacity} onChangeText={setRoomCapacity} placeholder="Capacity" placeholderTextColor="#666" style={[styles.input, styles.halfInput]} keyboardType="number-pad" />
-            <TextInput value={roomVibe} onChangeText={setRoomVibe} placeholder="Vibe" placeholderTextColor="#666" style={[styles.input, styles.halfInput]} />
+            <TextInput value={roomCapacity} onChangeText={setRoomCapacity} placeholder="Capacity" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} keyboardType="number-pad" />
+            <TextInput value={roomVibe} onChangeText={setRoomVibe} placeholder="Vibe" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} />
           </View>
 
           <Text style={styles.sectionLabel}>Privacy settings</Text>
@@ -760,7 +760,7 @@ export default function MultiPlayerScreen() {
             </Text>
           </View>
           <View style={styles.heroIcon}>
-            <FontAwesome5 name="user-graduate" size={24} color="#F8FAFC" />
+            <FontAwesome5 name="user-graduate" size={24} color={theme.onPrimary} />
           </View>
         </View>
 
@@ -797,7 +797,7 @@ export default function MultiPlayerScreen() {
               setSelectedSchool('');
             }}
             placeholder="Type your school name"
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.muted}
             style={styles.input}
             autoCapitalize="words"
             autoCorrect={false}
@@ -850,8 +850,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   kicker: { color: theme.secondary, fontSize: 12, fontWeight: '900', letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
   heroIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.secondary },
   heroStats: { flexDirection: 'row', gap: 8, marginTop: 18 },
-  heroStat: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 16, paddingVertical: 10, alignItems: 'center' },
-  heroStatValue: { color: theme.primary, fontSize: 18, fontWeight: '900' },
+  heroStat: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 16, paddingVertical: 10, alignItems: 'center' },
+  heroStatValue: { color: theme.text, fontSize: 18, fontWeight: '900' },
   heroStatLabel: { color: theme.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
   heading: { color: '#ffffff', fontSize: 32, fontWeight: '900', marginBottom: 8 },
   description: { color: theme.onPrimary, fontSize: 15, lineHeight: 22 },
@@ -871,13 +871,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     elevation: 6,
   },
   beginButtonText: { color: theme.text, fontSize: 16, fontWeight: '900', textAlign: 'center' },
-  panel: { backgroundColor: theme.surface, borderRadius: 22, borderWidth: 1, borderColor: theme.border, padding: 16 },
+  panel: { backgroundColor: theme.school ? theme.surface : '#17151F', borderRadius: 22, borderWidth: 1, borderColor: theme.school ? theme.border : '#6C63FF66', padding: 16 },
   panelTitle: { color: theme.text, fontSize: 20, fontWeight: '900', marginBottom: 12 },
   input: {
-    backgroundColor: theme.surfaceAlt,
+    backgroundColor: theme.school ? theme.surfaceAlt : '#0f0f0f',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: theme.school ? theme.border : '#6C63FF66',
     color: theme.text,
     fontSize: 15,
     paddingHorizontal: 14,
@@ -888,7 +888,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   twoColumn: { flexDirection: 'row', gap: 10 },
   halfInput: { flex: 1 },
   sectionLabel: {
-    color: '#8C6A2F',
+    color: theme.school ? theme.secondary : '#B8B5FF',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -897,96 +897,96 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     textTransform: 'uppercase',
   },
   schoolList: { gap: 8 },
-  schoolOption: { backgroundColor: '#FFF8E8', borderRadius: 14, borderWidth: 1, borderColor: '#F1D99E', paddingHorizontal: 14, paddingVertical: 12 },
-  schoolOptionText: { color: '#173E36', fontSize: 14, fontWeight: '800' },
+  schoolOption: { backgroundColor: theme.school ? theme.surfaceAlt : '#231F35', borderRadius: 14, borderWidth: 1.5, borderColor: theme.school ? theme.border : '#6C63FF', paddingHorizontal: 14, paddingVertical: 13 },
+  schoolOptionText: { color: theme.school ? theme.text : '#FFFFFF', fontSize: 15, fontWeight: '900' },
   profileSection: { marginTop: 4 },
-  selectedSchool: { backgroundColor: '#E8F7F1', borderRadius: 16, borderWidth: 1, borderColor: '#A7F3D0', padding: 12, marginBottom: 18 },
-  selectedSchoolLabel: { color: '#2C7A68', fontSize: 11, fontWeight: '900', marginBottom: 3, textTransform: 'uppercase' },
-  selectedSchoolText: { color: '#173E36', fontSize: 15, fontWeight: '900' },
-  profileTitle: { color: '#173E36', fontSize: 20, fontWeight: '900', marginBottom: 5 },
+  selectedSchool: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 18 },
+  selectedSchoolLabel: { color: theme.secondary, fontSize: 11, fontWeight: '900', marginBottom: 3, textTransform: 'uppercase' },
+  selectedSchoolText: { color: theme.text, fontSize: 15, fontWeight: '900' },
+  profileTitle: { color: theme.text, fontSize: 20, fontWeight: '900', marginBottom: 5 },
   profileSub: { color: '#667085', fontSize: 13, lineHeight: 19, marginBottom: 16 },
-  photoButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 18, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, marginBottom: 14 },
-  photoPlaceholder: { width: 62, height: 62, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8F7F1', borderWidth: 1, borderColor: '#2C7A68' },
-  photoInitials: { color: '#173E36', fontSize: 28, fontWeight: '600' },
+  photoButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 14 },
+  photoPlaceholder: { width: 62, height: 62, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primary, borderWidth: 1, borderColor: theme.secondary },
+  photoInitials: { color: theme.text, fontSize: 28, fontWeight: '600' },
   profileImage: { width: 62, height: 62, borderRadius: 31 },
   photoTextWrap: { flex: 1, marginLeft: 12 },
-  photoTitle: { color: '#173E36', fontSize: 15, fontWeight: '900', marginBottom: 3 },
+  photoTitle: { color: theme.text, fontSize: 15, fontWeight: '900', marginBottom: 3 },
   photoSub: { color: '#667085', fontSize: 13 },
   choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  choiceChip: { backgroundColor: '#FFFFFF', borderRadius: 999, borderWidth: 1, borderColor: '#D9CDBB', paddingHorizontal: 12, paddingVertical: 8 },
-  choiceChipSelected: { backgroundColor: '#173E36', borderColor: '#173E36' },
+  choiceChip: { backgroundColor: theme.surfaceAlt, borderRadius: 999, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
+  choiceChipSelected: { backgroundColor: theme.secondary, borderColor: theme.secondary },
   choiceText: { color: '#667085', fontSize: 13, fontWeight: '800' },
-  choiceTextSelected: { color: '#ffffff' },
-  saveButton: { backgroundColor: '#173E36', borderRadius: 16, marginTop: 8, paddingHorizontal: 16, paddingVertical: 14 },
+  choiceTextSelected: { color: theme.school ? theme.background : theme.onPrimary },
+  saveButton: { backgroundColor: theme.secondary, borderRadius: 16, marginTop: 8, paddingHorizontal: 16, paddingVertical: 14 },
   createRoomButton: { marginTop: 0 },
-  saveButtonText: { color: '#ffffff', fontSize: 15, fontWeight: '800', textAlign: 'center' },
-  myProfileCard: { backgroundColor: '#FFFFFF', borderRadius: 22, borderWidth: 1, borderColor: '#E6DDCE', padding: 16, marginBottom: 14 },
-  myProfileName: { color: '#173E36', fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  saveButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 15, fontWeight: '800', textAlign: 'center' },
+  myProfileCard: { backgroundColor: theme.surface, borderRadius: 22, borderWidth: 1, borderColor: theme.border, padding: 16, marginBottom: 14 },
+  myProfileName: { color: theme.text, fontSize: 22, fontWeight: '900', marginBottom: 4 },
   myProfileDetails: { color: '#667085', fontSize: 14, lineHeight: 20 },
   privacyMiniButton: { alignSelf: 'flex-start', backgroundColor: '#FFF8E8', borderRadius: 12, borderWidth: 1, borderColor: '#F1D99E', marginTop: 12, paddingHorizontal: 12, paddingVertical: 8 },
   privacyMiniButtonText: { color: '#8C6A2F', fontSize: 12, fontWeight: '900' },
-  tabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, backgroundColor: '#FFFFFF', borderRadius: 18, borderWidth: 1, borderColor: '#E6DDCE', padding: 8, marginBottom: 16 },
-  browseTab: { flexGrow: 1, flexBasis: '47%', borderRadius: 13, paddingVertical: 11, alignItems: 'center', backgroundColor: '#F8FAFC' },
-  browseTabActive: { backgroundColor: '#173E36' },
+  tabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 8, marginBottom: 16 },
+  browseTab: { flexGrow: 1, flexBasis: '47%', borderRadius: 13, paddingVertical: 11, alignItems: 'center', backgroundColor: theme.surfaceAlt },
+  browseTabActive: { backgroundColor: theme.secondary },
   browseTabText: { color: '#667085', fontSize: 12, fontWeight: '900', textAlign: 'center' },
-  browseTabTextActive: { color: '#ffffff' },
+  browseTabTextActive: { color: theme.school ? theme.background : theme.onPrimary },
   cardList: { gap: 12 },
-  profileCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
-  friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
-  avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2C7A68' },
+  profileCard: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
+  friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
+  avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
   avatarText: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   profileTitleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   profileHeadingText: { flex: 1 },
   profileActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardName: { color: '#173E36', fontSize: 16, fontWeight: '900' },
+  cardName: { color: theme.text, fontSize: 16, fontWeight: '900' },
   cardMeta: { color: '#8C6A2F', fontSize: 12, fontWeight: '800' },
-  cardMajor: { color: '#2C7A68', fontSize: 13, fontWeight: '900', marginTop: 3 },
+  cardMajor: { color: theme.secondary, fontSize: 13, fontWeight: '900', marginTop: 3 },
   cardFact: { color: '#475467', fontSize: 13, lineHeight: 19, marginTop: 12 },
   cardSubtle: { color: '#667085', fontSize: 12, lineHeight: 18, marginTop: 3 },
   iconButton: { minWidth: 36, height: 36, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF8E8', borderWidth: 1, borderColor: '#F1D99E', paddingHorizontal: 8 },
-  iconButtonActive: { backgroundColor: '#E8F7F1', borderColor: '#2C7A68' },
-  iconButtonText: { color: '#173E36', fontSize: 18, fontWeight: '900', lineHeight: 22 },
-  messageButton: { backgroundColor: '#E8F7F1', borderRadius: 12, borderWidth: 1, borderColor: '#A7F3D0', paddingHorizontal: 12, paddingVertical: 8 },
-  messageButtonText: { color: '#173E36', fontSize: 12, fontWeight: '900' },
+  iconButtonActive: { backgroundColor: theme.secondary, borderColor: theme.secondary },
+  iconButtonText: { color: theme.text, fontSize: 18, fontWeight: '900', lineHeight: 22 },
+  messageButton: { backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
+  messageButtonText: { color: theme.text, fontSize: 12, fontWeight: '900' },
   blockButton: { alignSelf: 'flex-start', marginTop: 10, paddingVertical: 4 },
   blockButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '800' },
-  tag: { color: '#173E36', backgroundColor: '#E8F7F1', borderRadius: 999, borderWidth: 1, borderColor: '#A7F3D0', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '900' },
-  emptyPanel: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 18, gap: 10 },
-  emptyTitle: { color: '#173E36', fontSize: 16, fontWeight: '900', marginBottom: 2 },
+  tag: { color: theme.school ? theme.background : theme.text, backgroundColor: theme.secondary, borderRadius: 999, borderWidth: 1, borderColor: theme.secondary, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '900' },
+  emptyPanel: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 18, gap: 10 },
+  emptyTitle: { color: theme.text, fontSize: 16, fontWeight: '900', marginBottom: 2 },
   emptyText: { color: '#667085', fontSize: 14, lineHeight: 20 },
   requestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  feedCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
-  feedKind: { alignSelf: 'flex-start', color: '#173E36', backgroundColor: '#FBCB62', borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 4, fontSize: 11, fontWeight: '900', marginBottom: 8 },
+  feedCard: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
+  feedKind: { alignSelf: 'flex-start', color: theme.school ? theme.background : theme.text, backgroundColor: theme.secondary, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 4, fontSize: 11, fontWeight: '900', marginBottom: 8 },
   commentList: { gap: 6, marginTop: 12 },
-  commentText: { color: '#475467', backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', padding: 10, fontSize: 13, lineHeight: 18 },
+  commentText: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 10, fontSize: 13, lineHeight: 18 },
   commentRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   commentInput: { flex: 1, marginBottom: 0 },
-  roomForm: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
-  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, marginBottom: 10 },
-  privacyRowActive: { backgroundColor: '#E8F7F1', borderColor: '#2C7A68' },
+  roomForm: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
+  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 10 },
+  privacyRowActive: { backgroundColor: theme.secondary, borderColor: theme.secondary },
   toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#94A3B8' },
-  toggleDotActive: { backgroundColor: '#2C7A68', borderColor: '#173E36' },
+  toggleDotActive: { backgroundColor: theme.secondary, borderColor: theme.border },
   privacyTextWrap: { flex: 1 },
-  privacyTitle: { color: '#173E36', fontSize: 14, fontWeight: '900', marginBottom: 3 },
+  privacyTitle: { color: theme.text, fontSize: 14, fontWeight: '900', marginBottom: 3 },
   privacySub: { color: '#667085', fontSize: 12, lineHeight: 17 },
-  roomDetailCard: { backgroundColor: '#FFFFFF', borderRadius: 22, borderWidth: 1, borderColor: '#2C7A68', padding: 16 },
-  roomDetailTitle: { color: '#173E36', fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  roomDetailCard: { backgroundColor: theme.surface, borderRadius: 22, borderWidth: 1, borderColor: theme.border, padding: 16 },
+  roomDetailTitle: { color: theme.text, fontSize: 22, fontWeight: '900', marginBottom: 4 },
   roomInfoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14, marginBottom: 8 },
-  roomInfoItem: { width: '48%', backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 10 },
-  roomInfoLabel: { color: '#8C6A2F', fontSize: 11, fontWeight: '900', marginBottom: 4, textTransform: 'uppercase' },
-  roomInfoValue: { color: '#173E36', fontSize: 13, fontWeight: '800', lineHeight: 18 },
+  roomInfoItem: { width: '48%', backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 10 },
+  roomInfoLabel: { color: theme.secondary, fontSize: 11, fontWeight: '900', marginBottom: 4, textTransform: 'uppercase' },
+  roomInfoValue: { color: theme.text, fontSize: 13, fontWeight: '800', lineHeight: 18 },
   memberList: { gap: 10, marginBottom: 14 },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 10 },
-  messageRoomButton: { backgroundColor: '#E8F7F1', borderRadius: 14, borderWidth: 1, borderColor: '#A7F3D0', paddingHorizontal: 16, paddingVertical: 13, marginBottom: 10 },
-  messageRoomButtonText: { color: '#173E36', fontSize: 14, fontWeight: '900', textAlign: 'center' },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 10 },
+  messageRoomButton: { backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 16, paddingVertical: 13, marginBottom: 10 },
+  messageRoomButtonText: { color: theme.text, fontSize: 14, fontWeight: '900', textAlign: 'center' },
   confirmRow: { flexDirection: 'row', gap: 10 },
-  cancelButton: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16, paddingVertical: 13 },
+  cancelButton: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 16, paddingVertical: 13 },
   cancelButtonText: { color: '#475467', fontSize: 14, fontWeight: '900', textAlign: 'center' },
-  confirmButton: { flex: 1, backgroundColor: '#173E36', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13 },
-  confirmButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '900', textAlign: 'center' },
-  roomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
+  confirmButton: { flex: 1, backgroundColor: theme.secondary, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13 },
+  confirmButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '900', textAlign: 'center' },
+  roomCard: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
   roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  smallButton: { backgroundColor: '#173E36', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
-  smallButtonText: { color: '#ffffff', fontSize: 12, fontWeight: '900' },
+  smallButton: { backgroundColor: theme.secondary, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  smallButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 12, fontWeight: '900' },
 });

@@ -215,7 +215,7 @@ export default function FocusScreen() {
         <View style={[styles.progressFill, { width: `${progress * 100}%` as any, backgroundColor: color }]} />
       </View>
       <Text style={styles.progressLabel}>
-        {Math.round(progress * 100)}% of today's {task.hoursPerDay}h goal
+        {Math.round(progress * 100)}% of {"today's"} {task.hoursPerDay}h goal
       </Text>
 
       {/* Session coins */}

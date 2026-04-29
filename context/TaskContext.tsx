@@ -14,6 +14,7 @@ export type Task = {
 type TaskContextType = {
   tasks: Task[];
   addTask: (task: Omit<Task, 'id'>) => void;
+  deleteTask: (id: string) => void;
   updateHoursPerDay: (id: string, hours: number) => void;
   updateEstimatedHours: (id: string, hours: number) => void;
 };
@@ -21,6 +22,7 @@ type TaskContextType = {
 const TaskContext = createContext<TaskContextType>({
   tasks: [],
   addTask: () => {},
+  deleteTask: () => {},
   updateHoursPerDay: () => {},
   updateEstimatedHours: () => {},
 });
@@ -39,6 +41,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setTasks(prev => [...prev, { ...task, id: Date.now().toString() }]);
   };
 
+  const deleteTask = (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+  };
+
   const updateHoursPerDay = (id: string, hours: number) => {
     setTasks(prev =>
       prev.map(t => t.id === id ? { ...t, hoursPerDay: Math.max(0.5, hours) } : t)
@@ -52,7 +58,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <TaskContext.Provider value={{ tasks, addTask, updateHoursPerDay, updateEstimatedHours }}>
+    <TaskContext.Provider value={{ tasks, addTask, deleteTask, updateHoursPerDay, updateEstimatedHours }}>
       {children}
     </TaskContext.Provider>
   );

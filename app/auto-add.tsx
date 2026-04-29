@@ -1,7 +1,6 @@
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as Calendar from 'expo-calendar';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -18,14 +17,17 @@ import {
   View
 } from 'react-native';
 
-type Step = 'pick' | 'analyzing' | 'review' | 'calendar';
+type Step = 'pick' | 'analyzing' | 'review';
 
 type AIResult = {
   assignmentName: string;
   className: string;
   estimatedHours: number;
   reasoning: string;
+  workload: string;
 };
+
+const DropView = View as any;
 
 export default function AutoAddScreen() {
   const router = useRouter();
@@ -34,7 +36,6 @@ export default function AutoAddScreen() {
 
   const [step, setStep] = useState<Step>('pick');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [result, setResult] = useState<AIResult | null>(null);
   const [adjustedHours, setAdjustedHours] = useState(1);
   const [dueDate, setDueDate] = useState(new Date());
@@ -54,7 +55,7 @@ export default function AutoAddScreen() {
       });
     }
     // On native use expo-file-system which can read any local file URI.
-    return FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    return FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
   };
 
   const pickImage = async (useCamera: boolean) => {
@@ -96,70 +97,41 @@ export default function AutoAddScreen() {
       }
 
       setImageUri(asset.uri);
-      setImageBase64(base64);
       await analyzeImage(base64);
     } else {
       console.log('[pickImage] picker was canceled or returned no assets');
     }
   };
 
-  const analyzeImage = async (_base64: string) => {
+  const analyzeImage = async (_base64?: string) => {
     setStep('analyzing');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1200));
     const mock: AIResult = {
-      assignmentName: 'Chapter 5 Reading',
+      assignmentName: 'Chapter 5 Reading Notes',
       className: 'Biology 101',
       estimatedHours: 2.5,
-      reasoning: 'Mock response — real API call disabled.',
+      workload: 'Medium',
+      reasoning: 'Sample estimate: about 35 pages of reading, one notes page, and a short reflection. The AI estimates 2.5 hours, but you can adjust it to match your pace.',
     };
     setResult(mock);
     setAdjustedHours(mock.estimatedHours);
     setStep('review');
   };
 
-  const addToCalendar = async () => {
+  const saveAssignment = () => {
     if (!result) return;
-    try {
-      const { status } = await Calendar.requestCalendarPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Calendar access is needed to add the event.');
-        return;
-      }
+    const dueDateRaw = dueDate.toISOString();
+    addTask({
+      assignmentName: result.assignmentName,
+      className: result.className,
+      description: result.reasoning,
+      dueDate: dueDate.toLocaleDateString(),
+      dueDateRaw,
+      estimatedHours: adjustedHours,
+      hoursPerDay: computeHoursPerDay(adjustedHours, dueDateRaw),
+    });
 
-      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-      const writable = calendars.find(c => c.allowsModifications);
-      if (!writable) {
-        Alert.alert('No calendar found', 'Could not find a writable calendar on this device.');
-        return;
-      }
-
-      const startDate = new Date(dueDate);
-      startDate.setHours(startDate.getHours() - adjustedHours);
-      const endDate = new Date(dueDate);
-
-      await Calendar.createEventAsync(writable.id, {
-        title: result.assignmentName,
-        notes: `Class: ${result.className}\nEstimated time: ${adjustedHours}h`,
-        startDate,
-        endDate,
-        alarms: [{ relativeOffset: -60 }],
-      });
-
-      const dueDateRaw = dueDate.toISOString();
-      addTask({
-        assignmentName: result.assignmentName,
-        className: result.className,
-        description: result.reasoning,
-        dueDate: dueDate.toLocaleDateString(),
-        dueDateRaw,
-        estimatedHours: adjustedHours,
-        hoursPerDay: computeHoursPerDay(adjustedHours, dueDateRaw),
-      });
-
-      router.replace('/(tabs)/calendar');
-    } catch (e: any) {
-      Alert.alert('Calendar error', e.message ?? 'Could not add event.');
-    }
+    router.replace('/(tabs)/calendar');
   };
 
   const adjustHours = (delta: number) => {
@@ -196,10 +168,10 @@ export default function AutoAddScreen() {
 
   if (step === 'analyzing') {
     return (
-      <View style={styles.centered}>
+      <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={styles.analyzingText}>Analyzing assignment...</Text>
-        <Text style={styles.analyzingSub}>This only takes a moment</Text>
+        <Text style={[styles.analyzingText, { color: theme.text }]}>Estimating assignment time...</Text>
+        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Using a sample AI result for now</Text>
       </View>
     );
   }
@@ -211,15 +183,15 @@ export default function AutoAddScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.heading}>Auto-add Assignment</Text>
+        <Text style={styles.heading}>AI Assignment Estimate</Text>
       </View>
 
       {step === 'pick' && (
         <>
-          <Text style={styles.sub}>Snap or upload a photo of your assignment sheet — AI will fill in the details for you.</Text>
+          <Text style={styles.sub}>Take or upload an assignment. The AI estimates how long it should take, then you can adjust the time before saving.</Text>
 
           {Platform.OS === 'web' && (
-            <View
+            <DropView
               style={[styles.dropZone, isDragOver && styles.dropZoneActive]}
               onDragEnter={(e: any) => { e.preventDefault(); setIsDragOver(true); }}
               onDragOver={(e: any) => { e.preventDefault(); setIsDragOver(true); }}
@@ -229,7 +201,7 @@ export default function AutoAddScreen() {
               <Text style={styles.dropIcon}>☁️</Text>
               <Text style={styles.dropTitle}>{isDragOver ? 'Drop it!' : 'Drag & drop here'}</Text>
               <Text style={styles.dropSub}>PNG, JPG supported</Text>
-            </View>
+            </DropView>
           )}
 
           {Platform.OS !== 'web' && (
@@ -242,6 +214,10 @@ export default function AutoAddScreen() {
           <TouchableOpacity style={styles.secondaryButton} onPress={() => pickImage(false)}>
             <Text style={styles.secondaryButtonIcon}>🖼️</Text>
             <Text style={styles.secondaryButtonText}>Choose from Library</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.sampleButton} onPress={() => analyzeImage()}>
+            <Text style={styles.sampleButtonText}>Use sample assignment</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -264,12 +240,17 @@ export default function AutoAddScreen() {
             <Text style={styles.cardLabel}>Class</Text>
             <Text style={styles.cardValue}>{result.className}</Text>
           </View>
+          <View style={styles.estimateHero}>
+            <Text style={styles.cardLabel}>AI estimate</Text>
+            <Text style={styles.estimateHours}>{result.estimatedHours}h</Text>
+            <Text style={styles.estimateSub}>{result.workload} workload</Text>
+          </View>
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>AI Reasoning</Text>
+            <Text style={styles.cardLabel}>Why this estimate?</Text>
             <Text style={styles.cardReasoning}>{result.reasoning}</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Estimated Time</Text>
+          <Text style={styles.sectionTitle}>Adjust estimated time</Text>
           <View style={styles.timeAdjuster}>
             <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(-0.5)}>
               <Text style={styles.adjBtnText}>−</Text>
@@ -302,8 +283,8 @@ export default function AutoAddScreen() {
             />
           )}
 
-          <TouchableOpacity style={[styles.primaryButton, { marginTop: 24 }]} onPress={addToCalendar}>
-            <Text style={styles.primaryButtonText}>Add to Calendar</Text>
+          <TouchableOpacity style={[styles.primaryButton, { marginTop: 24 }]} onPress={saveAssignment}>
+            <Text style={styles.primaryButtonText}>Save assignment</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -397,6 +378,27 @@ const styles = StyleSheet.create({
     color: '#aaa',
     fontSize: 14,
     lineHeight: 20,
+  },
+  estimateHero: {
+    backgroundColor: '#6C63FF22',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#6C63FF66',
+    alignItems: 'center',
+  },
+  estimateHours: {
+    color: '#ffffff',
+    fontSize: 42,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  estimateSub: {
+    color: '#aaa',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4,
   },
   sectionTitle: {
     color: '#777',
@@ -522,6 +524,22 @@ const styles = StyleSheet.create({
     color: '#6C63FF',
     fontSize: 17,
     fontWeight: '600',
+  },
+  sampleButton: {
+    backgroundColor: '#6C63FF22',
+    borderRadius: 14,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#6C63FF66',
+  },
+  sampleButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   cancelButton: {
     alignItems: 'center',

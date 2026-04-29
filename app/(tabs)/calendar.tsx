@@ -1,19 +1,18 @@
 import { Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-function useButtonPulse() {
-  const scale = useRef(new Animated.Value(1)).current;
-  const press = () => {
-    Animated.sequence([
-      Animated.timing(scale, { toValue: 0.94, duration: 100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      Animated.timing(scale, { toValue: 1, duration: 200, easing: Easing.out(Easing.back(3)), useNativeDriver: true }),
-    ]).start();
-  };
-  return { scale, press };
-}
+type ScheduleItem = {
+  id: string;
+  type: 'class' | 'event';
+  title: string;
+  dateKey: string;
+  time: string;
+  location: string;
+  notes: string;
+};
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
@@ -53,29 +52,20 @@ function daysUntil(dueDateRaw: string) {
   ));
 }
 
-// ─── Task card (shown below calendar when day is selected) ────────────────────
+// Task card shown below the calendar when a day is selected.
 function TaskCard({
-  task, onAdjust, onAdjustTotal, onFocus, styles,
+  task, onFocus, onDelete, styles,
 }: {
   task: Task;
-  onAdjust: (delta: number) => void;
-  onAdjustTotal: (delta: number) => void;
   onFocus: () => void;
+  onDelete: () => void;
   styles: ReturnType<typeof createStyles>;
 }) {
   const color = hourColor(task.estimatedHours);
   const days = daysUntil(task.dueDateRaw);
-  const totalDaysNeeded = Math.ceil(task.estimatedHours / task.hoursPerDay);
-  const onTrack = totalDaysNeeded <= days;
-  const { scale, press } = useButtonPulse();
-
-  const handleStartSession = () => {
-    press();
-    setTimeout(onFocus, 120);
-  };
 
   return (
-    <View style={[styles.card, { borderTopColor: color, borderTopWidth: 3 }]}>
+    <View style={[styles.card, { borderLeftColor: color }]}>
       <View style={styles.cardHeader}>
         <View style={styles.cardTitles}>
           <Text style={styles.cardAssignment}>{task.assignmentName}</Text>
@@ -87,88 +77,30 @@ function TaskCard({
         </View>
       </View>
 
-      {!!task.description && (
-        <Text style={styles.cardDescription}>{task.description}</Text>
-      )}
+      {!!task.description && <Text style={styles.cardDescription}>{task.description}</Text>}
 
-      <View style={styles.dueRow}>
-        <Text style={styles.dueText}>Due: {task.dueDate}</Text>
-        <Text style={[styles.daysLeft, { color: days <= 1 ? '#EF4444' : days <= 3 ? '#F59E0B' : '#888' }]}>
-          {days === 0 ? 'Due today!' : days === 1 ? '1 day left' : `${days} days left`}
+      <View style={styles.simpleTaskMeta}>
+        <Text style={styles.simpleTaskText}>Due {task.dueDate}</Text>
+        <Text style={[styles.daysLeft, { color: days <= 1 ? '#EF4444' : days <= 3 ? '#F59E0B' : color }]}>
+          {days === 0 ? 'Due today' : days === 1 ? '1 day left' : `${days} days left`}
         </Text>
       </View>
 
-      <View style={styles.divider} />
-
-      <Text style={styles.sectionLabel}>⏳ Daily Study Time</Text>
-      <View style={styles.adjusterRow}>
-        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjust(-0.5)}>
-          <Text style={styles.adjBtnText}>−</Text>
+      <View style={styles.taskActions}>
+        <TouchableOpacity style={styles.focusBtn} onPress={onFocus}>
+          <Text style={styles.focusBtnText}>Start focus</Text>
         </TouchableOpacity>
-        <View style={styles.hoursCenter}>
-          <Text style={[styles.hoursNumber, { color }]}>{task.hoursPerDay}h</Text>
-          <Text style={styles.hoursSubtext}>per day</Text>
-        </View>
-        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjust(0.5)}>
-          <Text style={styles.adjBtnText}>+</Text>
+        <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
+          <Text style={styles.deleteBtnText}>Delete</Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.sectionLabel}>✅ Total Estimated Time</Text>
-      <View style={styles.adjusterRow}>
-        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjustTotal(-0.5)}>
-          <Text style={styles.adjBtnText}>−</Text>
-        </TouchableOpacity>
-        <View style={styles.hoursCenter}>
-          <Text style={[styles.hoursNumber, { color }]}>{task.estimatedHours}h</Text>
-          <Text style={styles.hoursSubtext}>total</Text>
-        </View>
-        <TouchableOpacity style={styles.adjBtn} onPress={() => onAdjustTotal(0.5)}>
-          <Text style={styles.adjBtnText}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.statusBar, { backgroundColor: onTrack ? '#22C55E22' : '#EF444422' }]}>
-        <Text style={[styles.statusText, { color: onTrack ? '#22C55E' : '#EF4444' }]}>
-          {onTrack
-            ? `At ${task.hoursPerDay}h/day you'll finish in ${totalDaysNeeded} day${totalDaysNeeded !== 1 ? 's' : ''} — on track`
-            : `At ${task.hoursPerDay}h/day you need ${totalDaysNeeded} days but only have ${days} — increase daily time`}
-        </Text>
-      </View>
-
-      {days > 0 && (
-        <View style={styles.progressRow}>
-          <View style={styles.progressBg}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${Math.min(100, (totalDaysNeeded / days) * 100)}%` as any, backgroundColor: onTrack ? color : '#EF4444' },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressLabel}>{totalDaysNeeded}/{days} days</Text>
-        </View>
-      )}
-
-      {/* Start Homework Session button */}
-      <Animated.View style={[styles.sessionBtnWrap, { transform: [{ scale }] }]}>
-        <TouchableOpacity
-          style={[styles.sessionBtn, { borderColor: color, shadowColor: color }]}
-          onPress={handleStartSession}
-          activeOpacity={1}
-        >
-          <Text style={styles.sessionBtnIcon}>▶</Text>
-          <Text style={[styles.sessionBtnText, { color }]}>Start Homework Session</Text>
-        </TouchableOpacity>
-      </Animated.View>
     </View>
   );
 }
-
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Main screen ──────────────────────────────────────────────────────────────
 export default function CalendarScreen() {
   const router = useRouter();
-  const { tasks, updateHoursPerDay, updateEstimatedHours } = useTasks();
+  const { tasks, deleteTask } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -176,6 +108,13 @@ export default function CalendarScreen() {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+  const [formType, setFormType] = useState<'class' | 'event' | null>(null);
+  const [itemTitle, setItemTitle] = useState('');
+  const [itemDate, setItemDate] = useState(todayKey());
+  const [itemTime, setItemTime] = useState('');
+  const [itemLocation, setItemLocation] = useState('');
+  const [itemNotes, setItemNotes] = useState('');
 
   // date key → tasks due that day
   const dueMap = useMemo(() => {
@@ -232,11 +171,110 @@ export default function CalendarScreen() {
   const selectedStudyTasks = selectedKey
     ? (studyMap[selectedKey] ?? []).filter(t => !selectedDueTasks.includes(t))
     : [];
+  const selectedScheduleItems = selectedKey ? scheduleItems.filter(item => item.dateKey === selectedKey) : [];
+
+  const openScheduleForm = (type: 'class' | 'event') => {
+    setFormType(type);
+    setItemTitle('');
+    setItemDate(selectedKey ?? todayKey());
+    setItemTime('');
+    setItemLocation('');
+    setItemNotes('');
+  };
+
+  const addScheduleItem = () => {
+    if (!formType || !itemTitle.trim() || !itemDate.trim()) return;
+
+    setScheduleItems(current => [
+      ...current,
+      {
+        id: `${formType}-${Date.now()}`,
+        type: formType,
+        title: itemTitle.trim(),
+        dateKey: itemDate.trim(),
+        time: itemTime.trim(),
+        location: itemLocation.trim(),
+        notes: itemNotes.trim(),
+      },
+    ]);
+    setSelectedKey(itemDate.trim());
+    setFormType(null);
+  };
+
+  const confirmDeleteTask = (task: Task) => {
+    Alert.alert(
+      'Delete assignment?',
+      `Remove ${task.assignmentName} from your schedule?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteTask(task.id) },
+      ],
+    );
+  };
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Schedule</Text>
-      <Text style={styles.headingSub}>Tap a day to see tasks</Text>
+      <Text style={styles.headingSub}>Pick a day to see assignments, classes, and events.</Text>
+
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.scheduleAction} onPress={() => openScheduleForm('class')}>
+          <Text style={styles.scheduleActionText}>Add class</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.scheduleActionSecondary} onPress={() => openScheduleForm('event')}>
+          <Text style={styles.scheduleActionSecondaryText}>Add event</Text>
+        </TouchableOpacity>
+      </View>
+
+      {!!formType && (
+        <View style={styles.scheduleForm}>
+          <Text style={styles.formTitle}>{formType === 'class' ? 'Add school class' : 'Add special event'}</Text>
+          <TextInput
+            value={itemTitle}
+            onChangeText={setItemTitle}
+            placeholder={formType === 'class' ? 'Class name' : 'Event name'}
+            placeholderTextColor={theme.muted}
+            style={styles.input}
+          />
+          <TextInput
+            value={itemDate}
+            onChangeText={setItemDate}
+            placeholder="Date as YYYY-MM-DD"
+            placeholderTextColor={theme.muted}
+            style={styles.input}
+          />
+          <TextInput
+            value={itemTime}
+            onChangeText={setItemTime}
+            placeholder="Time"
+            placeholderTextColor={theme.muted}
+            style={styles.input}
+          />
+          <TextInput
+            value={itemLocation}
+            onChangeText={setItemLocation}
+            placeholder="Location"
+            placeholderTextColor={theme.muted}
+            style={styles.input}
+          />
+          <TextInput
+            value={itemNotes}
+            onChangeText={setItemNotes}
+            placeholder="Notes"
+            placeholderTextColor={theme.muted}
+            style={[styles.input, styles.notesInput]}
+            multiline
+          />
+          <View style={styles.formButtons}>
+            <TouchableOpacity style={styles.cancelScheduleButton} onPress={() => setFormType(null)}>
+              <Text style={styles.cancelScheduleText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.saveScheduleButton} onPress={addScheduleItem}>
+              <Text style={styles.saveScheduleText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Month navigator */}
       <View style={styles.monthNav}>
@@ -267,8 +305,7 @@ export default function CalendarScreen() {
               const isSelected = key === selectedKey;
               const dueTasks = dueMap[key] ?? [];
               const studyTasks = (studyMap[key] ?? []).filter(t => !dueTasks.includes(t));
-              const hasActivity = dueTasks.length > 0 || studyTasks.length > 0;
-
+              const dayScheduleItems = scheduleItems.filter(item => item.dateKey === key);
               return (
                 <TouchableOpacity
                   key={di}
@@ -296,6 +333,9 @@ export default function CalendarScreen() {
                     {studyTasks.slice(0, 2).map(t => (
                       <View key={t.id} style={[styles.studyDot, { borderColor: hourColor(t.estimatedHours) }]} />
                     ))}
+                    {dayScheduleItems.slice(0, 2).map(item => (
+                      <View key={item.id} style={[styles.scheduleDot, item.type === 'class' ? styles.classDot : styles.eventDot]} />
+                    ))}
                   </View>
                 </TouchableOpacity>
               );
@@ -314,16 +354,14 @@ export default function CalendarScreen() {
           <View style={[styles.studyDot, { borderColor: '#aaa' }]} />
           <Text style={styles.legendText}>Study day</Text>
         </View>
-        {[
-          { color: '#22C55E', label: 'Light < 2h' },
-          { color: '#F59E0B', label: 'Moderate 2–5h' },
-          { color: '#EF4444', label: 'Heavy 5h+' },
-        ].map(({ color, label }) => (
-          <View key={color} style={styles.legendItem}>
-            <View style={[styles.dueDot, { backgroundColor: color }]} />
-            <Text style={styles.legendText}>{label}</Text>
-          </View>
-        ))}
+        <View style={styles.legendItem}>
+          <View style={[styles.scheduleDot, styles.classDot]} />
+          <Text style={styles.legendText}>Class</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.scheduleDot, styles.eventDot]} />
+          <Text style={styles.legendText}>Event</Text>
+        </View>
       </View>
 
       {/* Selected day panel */}
@@ -335,10 +373,24 @@ export default function CalendarScreen() {
             })}
           </Text>
 
-          {selectedDueTasks.length === 0 && selectedStudyTasks.length === 0 ? (
+          {selectedDueTasks.length === 0 && selectedStudyTasks.length === 0 && selectedScheduleItems.length === 0 ? (
             <Text style={styles.nothingText}>Nothing scheduled here.</Text>
           ) : (
             <>
+              {selectedScheduleItems.length > 0 && (
+                <>
+                  <Text style={styles.dayPanelSection}>Classes and events</Text>
+                  {selectedScheduleItems.map(item => (
+                    <View key={item.id} style={[styles.scheduleItemCard, item.type === 'class' ? styles.classItemCard : styles.eventItemCard]}>
+                      <Text style={styles.scheduleItemType}>{item.type === 'class' ? 'Class' : 'Event'}</Text>
+                      <Text style={styles.scheduleItemTitle}>{item.title}</Text>
+                      {!!item.time && <Text style={styles.scheduleItemMeta}>{item.time}</Text>}
+                      {!!item.location && <Text style={styles.scheduleItemMeta}>{item.location}</Text>}
+                      {!!item.notes && <Text style={styles.scheduleItemNotes}>{item.notes}</Text>}
+                    </View>
+                  ))}
+                </>
+              )}
               {selectedDueTasks.length > 0 && (
                 <>
                   <Text style={styles.dayPanelSection}>Due today</Text>
@@ -347,9 +399,8 @@ export default function CalendarScreen() {
                       key={task.id}
                       task={task}
                       styles={styles}
-                      onAdjust={delta => updateHoursPerDay(task.id, Math.round((task.hoursPerDay + delta) * 2) / 2)}
-                      onAdjustTotal={delta => updateEstimatedHours(task.id, Math.round((task.estimatedHours + delta) * 2) / 2)}
                       onFocus={() => router.push(`/focus?id=${task.id}`)}
+                      onDelete={() => confirmDeleteTask(task)}
                     />
                   ))}
                 </>
@@ -362,9 +413,8 @@ export default function CalendarScreen() {
                       key={task.id}
                       task={task}
                       styles={styles}
-                      onAdjust={delta => updateHoursPerDay(task.id, Math.round((task.hoursPerDay + delta) * 2) / 2)}
-                      onAdjustTotal={delta => updateEstimatedHours(task.id, Math.round((task.estimatedHours + delta) * 2) / 2)}
                       onFocus={() => router.push(`/focus?id=${task.id}`)}
+                      onDelete={() => confirmDeleteTask(task)}
                     />
                   ))}
                 </>
@@ -384,6 +434,30 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   heading: { fontSize: 26, fontWeight: '700', color: theme.text, marginBottom: 4, letterSpacing: -0.3 },
 
   headingSub: { color: theme.muted, fontSize: 13, fontWeight: '500', marginBottom: 20 },
+  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  scheduleAction: { flex: 1, backgroundColor: theme.secondary, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  scheduleActionText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '800' },
+  scheduleActionSecondary: { flex: 1, backgroundColor: theme.surface, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingVertical: 12, alignItems: 'center' },
+  scheduleActionSecondaryText: { color: theme.text, fontSize: 14, fontWeight: '800' },
+  scheduleForm: { backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 16 },
+  formTitle: { color: theme.text, fontSize: 17, fontWeight: '800', marginBottom: 10 },
+  input: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    color: theme.text,
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  notesInput: { minHeight: 74, textAlignVertical: 'top' },
+  formButtons: { flexDirection: 'row', gap: 10 },
+  cancelScheduleButton: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingVertical: 11, alignItems: 'center' },
+  cancelScheduleText: { color: theme.text, fontSize: 14, fontWeight: '800' },
+  saveScheduleButton: { flex: 1, backgroundColor: theme.secondary, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
+  saveScheduleText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '800' },
 
   // Month nav
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
@@ -418,34 +492,49 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   dotsRow: { flexDirection: 'row', gap: 2, flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 2 },
   dueDot: { width: 7, height: 7, borderRadius: 4 },
   studyDot: { width: 6, height: 6, borderRadius: 3, borderWidth: 1.5, backgroundColor: 'transparent' },
+  scheduleDot: { width: 7, height: 7, borderRadius: 4 },
+  classDot: { backgroundColor: theme.secondary },
+  eventDot: { backgroundColor: '#EC4899' },
 
   // Legend
-  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendText: { color: '#666', fontSize: 11 },
+  legendText: { color: theme.muted, fontSize: 11 },
 
   // Day panel
-  dayPanel: { marginTop: 4 },
-  dayPanelTitle: { color: '#fff', fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  dayPanel: { marginTop: 4, backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 12 },
+  dayPanelTitle: { color: theme.text, fontSize: 17, fontWeight: '800', marginBottom: 12 },
   dayPanelSection: {
-    color: '#555', fontSize: 11, fontWeight: '700',
+    color: theme.muted, fontSize: 11, fontWeight: '800',
     textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
   },
-  nothingText: { color: '#444', fontSize: 14, textAlign: 'center', marginTop: 20 },
+  nothingText: { color: theme.muted, fontSize: 14, textAlign: 'center', marginVertical: 18 },
+  scheduleItemCard: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 10 },
+  classItemCard: { borderLeftWidth: 4, borderLeftColor: theme.secondary },
+  eventItemCard: { borderLeftWidth: 4, borderLeftColor: '#EC4899' },
+  scheduleItemType: { color: theme.secondary, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 },
+  scheduleItemTitle: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  scheduleItemMeta: { color: theme.muted, fontSize: 13, lineHeight: 18 },
+  scheduleItemNotes: { color: theme.muted, fontSize: 13, lineHeight: 18, marginTop: 6 },
 
   // Task card
-  card: { backgroundColor: '#1e1e1e', borderRadius: 14, padding: 16, marginBottom: 16 },
+  card: { backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderLeftWidth: 4, borderColor: theme.border, padding: 14, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   cardTitles: { flex: 1, marginRight: 12 },
-  cardAssignment: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 2 },
-  cardClass: { color: '#888', fontSize: 13 },
-  cardDescription: { color: '#999', fontSize: 13, lineHeight: 19, marginBottom: 10 },
+  cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 2 },
+  cardClass: { color: theme.muted, fontSize: 13 },
+  cardDescription: { color: theme.muted, fontSize: 13, lineHeight: 19, marginBottom: 10 },
   workloadBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
   workloadLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   workloadHours: { fontSize: 13, fontWeight: '600', marginTop: 1 },
-  dueRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  dueText: { color: '#aaa', fontSize: 13 },
   daysLeft: { fontSize: 13, fontWeight: '600' },
+  simpleTaskMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 2 },
+  simpleTaskText: { color: theme.muted, fontSize: 13, fontWeight: '700' },
+  taskActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  focusBtn: { flex: 1, backgroundColor: theme.secondary, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
+  focusBtnText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '800' },
+  deleteBtn: { paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingVertical: 11, alignItems: 'center' },
+  deleteBtnText: { color: '#EF4444', fontSize: 14, fontWeight: '800' },
   divider: { height: 1, backgroundColor: '#2e2e2e', marginBottom: 14 },
   sectionLabel: { color: '#666', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
   adjusterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },

@@ -10,6 +10,7 @@ const MULTIPLAYER_HELP =
 export default function TabsLayout() {
   const { coins } = useCoins();
   const { theme } = useSchoolTheme();
+  const activeTint = theme.school ? theme.secondary : theme.primary;
 
   return (
     <Tabs
@@ -28,7 +29,7 @@ export default function TabsLayout() {
           shadowRadius: 12,
           elevation: 16,
         },
-        tabBarActiveTintColor: theme.primary,
+        tabBarActiveTintColor: activeTint,
         tabBarInactiveTintColor: theme.tabInactive,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
       }}
@@ -65,7 +66,7 @@ export default function TabsLayout() {
           title: 'Shop',
           tabBarIcon: ({ color }) => <FontAwesome5 name="coins" size={20} color={color} />,
           tabBarBadge: coins > 0 ? coins : undefined,
-          tabBarBadgeStyle: { backgroundColor: theme.secondary, color: theme.text, fontSize: 10, fontWeight: '700' },
+          tabBarBadgeStyle: { backgroundColor: theme.secondary, color: theme.school ? '#111' : theme.text, fontSize: 10, fontWeight: '700' },
         }}
       />
     </Tabs>
