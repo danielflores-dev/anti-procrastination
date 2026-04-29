@@ -1,4 +1,5 @@
 import { Task, useTasks } from '@/context/TaskContext';
+import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -54,12 +55,13 @@ function daysUntil(dueDateRaw: string) {
 
 // ─── Task card (shown below calendar when day is selected) ────────────────────
 function TaskCard({
-  task, onAdjust, onAdjustTotal, onFocus,
+  task, onAdjust, onAdjustTotal, onFocus, styles,
 }: {
   task: Task;
   onAdjust: (delta: number) => void;
   onAdjustTotal: (delta: number) => void;
   onFocus: () => void;
+  styles: ReturnType<typeof createStyles>;
 }) {
   const color = hourColor(task.estimatedHours);
   const days = daysUntil(task.dueDateRaw);
@@ -167,6 +169,8 @@ function TaskCard({
 export default function CalendarScreen() {
   const router = useRouter();
   const { tasks, updateHoursPerDay, updateEstimatedHours } = useTasks();
+  const { theme } = useSchoolTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
@@ -342,6 +346,7 @@ export default function CalendarScreen() {
                     <TaskCard
                       key={task.id}
                       task={task}
+                      styles={styles}
                       onAdjust={delta => updateHoursPerDay(task.id, Math.round((task.hoursPerDay + delta) * 2) / 2)}
                       onAdjustTotal={delta => updateEstimatedHours(task.id, Math.round((task.estimatedHours + delta) * 2) / 2)}
                       onFocus={() => router.push(`/focus?id=${task.id}`)}
@@ -356,6 +361,7 @@ export default function CalendarScreen() {
                     <TaskCard
                       key={task.id}
                       task={task}
+                      styles={styles}
                       onAdjust={delta => updateHoursPerDay(task.id, Math.round((task.hoursPerDay + delta) * 2) / 2)}
                       onAdjustTotal={delta => updateEstimatedHours(task.id, Math.round((task.estimatedHours + delta) * 2) / 2)}
                       onFocus={() => router.push(`/focus?id=${task.id}`)}
@@ -372,23 +378,23 @@ export default function CalendarScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#0f0f0f' },
+const createStyles = (theme: SchoolTheme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.background },
   container: { paddingHorizontal: 16, paddingTop: 64, paddingBottom: 60 },
-  heading: { fontSize: 26, fontWeight: '700', color: '#fff', marginBottom: 4, letterSpacing: -0.3 },
+  heading: { fontSize: 26, fontWeight: '700', color: theme.text, marginBottom: 4, letterSpacing: -0.3 },
 
-  headingSub: { color: '#555', fontSize: 13, fontWeight: '500', marginBottom: 20 },
+  headingSub: { color: theme.muted, fontSize: 13, fontWeight: '500', marginBottom: 20 },
 
   // Month nav
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   navBtn: { padding: 8 },
-  navArrow: { fontSize: 28, color: '#6C63FF', fontWeight: '300' },
-  monthTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  navArrow: { fontSize: 28, color: theme.primary, fontWeight: '300' },
+  monthTitle: { fontSize: 18, fontWeight: '700', color: theme.text },
 
   // Calendar box
-  calendarBox: { backgroundColor: '#1a1a1a', borderRadius: 16, overflow: 'hidden', marginBottom: 14 },
-  dowRow: { flexDirection: 'row', backgroundColor: '#111', paddingVertical: 8 },
-  dowText: { flex: 1, textAlign: 'center', color: '#555', fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  calendarBox: { backgroundColor: theme.surface, borderRadius: 16, overflow: 'hidden', marginBottom: 14, borderWidth: 1, borderColor: theme.border },
+  dowRow: { flexDirection: 'row', backgroundColor: theme.surfaceAlt, paddingVertical: 8 },
+  dowText: { flex: 1, textAlign: 'center', color: theme.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   weekRow: { flexDirection: 'row' },
 
   // Cells
@@ -400,13 +406,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingTop: 8,
     borderWidth: 0.5,
-    borderColor: '#222',
+    borderColor: theme.border,
   },
-  cellToday: { backgroundColor: '#1e1a2e' },
-  cellSelected: { backgroundColor: '#2a1f4a' },
-  cellDay: { fontSize: 14, color: '#ccc', fontWeight: '500', marginBottom: 4 },
-  cellDayToday: { color: '#6C63FF', fontWeight: '800' },
-  cellDaySelected: { color: '#fff', fontWeight: '800' },
+  cellToday: { backgroundColor: theme.surfaceAlt },
+  cellSelected: { backgroundColor: theme.primary },
+  cellDay: { fontSize: 14, color: theme.text, fontWeight: '500', marginBottom: 4 },
+  cellDayToday: { color: theme.primary, fontWeight: '800' },
+  cellDaySelected: { color: theme.onPrimary, fontWeight: '800' },
 
   // Dots
   dotsRow: { flexDirection: 'row', gap: 2, flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 2 },

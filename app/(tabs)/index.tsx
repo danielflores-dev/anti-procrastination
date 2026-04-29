@@ -1,5 +1,7 @@
 import { Task, useTasks } from '@/context/TaskContext';
+import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function getGreeting(): string {
@@ -25,7 +27,7 @@ function daysUntil(raw: string): number {
   return Math.max(0, Math.ceil((new Date(raw).getTime() - Date.now()) / 86400000));
 }
 
-function TaskRow({ task, onPress }: { task: Task; onPress: () => void }) {
+function TaskRow({ task, onPress, styles }: { task: Task; onPress: () => void; styles: ReturnType<typeof createStyles> }) {
   const color = urgencyColor(task.estimatedHours);
   const days = daysUntil(task.dueDateRaw);
 
@@ -55,6 +57,8 @@ function TaskRow({ task, onPress }: { task: Task; onPress: () => void }) {
 export default function HomeScreen() {
   const router = useRouter();
   const { tasks } = useTasks();
+  const { theme } = useSchoolTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const totalHours = tasks.reduce((sum, t) => sum + t.estimatedHours, 0);
   const urgentCount = tasks.filter(t => daysUntil(t.dueDateRaw) <= 2).length;
@@ -110,7 +114,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <TaskRow task={item} onPress={() => router.push(`/focus?id=${item.id}`)} />
+            <TaskRow task={item} styles={styles} onPress={() => router.push(`/focus?id=${item.id}`)} />
           )}
         />
       )}
@@ -128,10 +132,10 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f0f',
+    backgroundColor: theme.background,
     paddingTop: 64,
   },
   header: {
@@ -144,17 +148,17 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#ffffff',
+    color: theme.text,
     letterSpacing: -0.3,
   },
   date: {
     fontSize: 13,
-    color: '#555',
+    color: theme.muted,
     marginTop: 3,
     fontWeight: '500',
   },
   countPill: {
-    backgroundColor: '#6C63FF22',
+    backgroundColor: theme.surfaceAlt,
     borderRadius: 20,
     minWidth: 36,
     height: 36,
@@ -162,29 +166,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: '#6C63FF44',
+    borderColor: theme.border,
   },
   countPillText: {
-    color: '#6C63FF',
+    color: theme.primary,
     fontSize: 16,
     fontWeight: '700',
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.surface,
     marginHorizontal: 24,
     borderRadius: 14,
     paddingVertical: 14,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#252525',
+    borderColor: theme.border,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statValue: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.5,
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
   statLabel: {
-    color: '#555',
+    color: theme.muted,
     fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#252525',
+    backgroundColor: theme.border,
   },
   list: {
     flex: 1,
@@ -212,13 +216,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
     borderLeftWidth: 4,
     borderWidth: 1,
-    borderColor: '#252525',
+    borderColor: theme.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -236,14 +240,14 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   cardAssignment: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.2,
     marginBottom: 3,
   },
   cardClass: {
-    color: '#555',
+    color: theme.muted,
     fontSize: 13,
     fontWeight: '500',
   },
@@ -262,10 +266,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#252525',
+    borderTopColor: theme.border,
   },
   cardDue: {
-    color: '#555',
+    color: theme.muted,
     fontSize: 12,
     fontWeight: '500',
   },
@@ -284,14 +288,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   emptySub: {
-    color: '#555',
+    color: theme.muted,
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 40,
@@ -308,20 +312,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 24,
     paddingTop: 12,
-    backgroundColor: '#0f0f0f',
+    backgroundColor: theme.background,
     borderTopWidth: 1,
-    borderTopColor: '#1a1a1a',
+    borderTopColor: theme.border,
   },
   autoBtn: {
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#252525',
-    backgroundColor: '#1a1a1a',
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
   },
   autoBtnText: {
-    color: '#6C63FF',
+    color: theme.primary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -329,10 +333,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6C63FF',
+    shadowColor: theme.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 10,

@@ -1,4 +1,5 @@
 import { SUBJECTS } from '@/constants/courseData';
+import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -18,6 +19,7 @@ const HOUR_PRESETS = [0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10];
 export default function AddTaskScreen() {
   const router = useRouter();
   const { addTask } = useTasks();
+  const { theme } = useSchoolTheme();
 
   const [assignmentName, setAssignmentName] = useState('');
   const [className, setClassName] = useState('');
@@ -57,7 +59,9 @@ export default function AddTaskScreen() {
 
   const inputStyle = (field: string) => [
     styles.input,
+    { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text },
     focused === field && styles.inputFocused,
+    focused === field && { borderColor: theme.primary },
   ];
 
   const openPicker = () => {
@@ -73,7 +77,7 @@ export default function AddTaskScreen() {
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView style={[styles.scroll, { backgroundColor: theme.background }]} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

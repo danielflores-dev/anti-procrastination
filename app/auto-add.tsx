@@ -1,4 +1,5 @@
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
+import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Calendar from 'expo-calendar';
 import * as FileSystem from 'expo-file-system';
@@ -29,6 +30,7 @@ type AIResult = {
 export default function AutoAddScreen() {
   const router = useRouter();
   const { addTask } = useTasks();
+  const { theme } = useSchoolTheme();
 
   const [step, setStep] = useState<Step>('pick');
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -195,7 +197,7 @@ export default function AutoAddScreen() {
   if (step === 'analyzing') {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#6C63FF" />
+        <ActivityIndicator size="large" color={theme.primary} />
         <Text style={styles.analyzingText}>Analyzing assignment...</Text>
         <Text style={styles.analyzingSub}>This only takes a moment</Text>
       </View>
@@ -203,7 +205,7 @@ export default function AutoAddScreen() {
   }
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+    <ScrollView style={[styles.scroll, { backgroundColor: theme.background }]} contentContainerStyle={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>

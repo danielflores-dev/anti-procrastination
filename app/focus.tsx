@@ -1,4 +1,5 @@
 import { useCoins } from '@/context/CoinContext';
+import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useTasks } from '@/context/TaskContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -110,6 +111,7 @@ export default function FocusScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { tasks } = useTasks();
+  const { theme } = useSchoolTheme();
   const { coins, addCoins } = useCoins();
   const task = tasks.find(t => t.id === id);
 
@@ -121,7 +123,7 @@ export default function FocusScreen() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevCoinCount = useRef(0);
 
-  const color = task ? hourColor(task.estimatedHours) : '#6C63FF';
+  const color = task ? hourColor(task.estimatedHours) : theme.primary;
 
   useEffect(() => {
     if (running) {
@@ -155,10 +157,10 @@ export default function FocusScreen() {
 
   if (!task) {
     return (
-      <View style={styles.container}>
-        <Text style={{ color: '#fff' }}>Assignment not found.</Text>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={{ color: theme.text }}>Assignment not found.</Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: '#6C63FF', marginTop: 16 }}>Go back</Text>
+          <Text style={{ color: theme.primary, marginTop: 16 }}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -170,7 +172,7 @@ export default function FocusScreen() {
   const nextCoinIn = COIN_INTERVAL - (elapsed % COIN_INTERVAL);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle="light-content" />
 
       {/* Animated background */}

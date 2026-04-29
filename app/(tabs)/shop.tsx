@@ -1,5 +1,6 @@
 import { useCoins } from '@/context/CoinContext';
-import { useState } from 'react';
+import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type ShopItem = {
@@ -89,6 +90,8 @@ const TAG_COLORS: Record<string, string> = {
 
 export default function ShopScreen() {
   const { coins, spendCoins } = useCoins();
+  const { theme } = useSchoolTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [owned, setOwned] = useState<Set<string>>(new Set());
 
   const handleBuy = (item: ShopItem) => {
@@ -182,56 +185,56 @@ export default function ShopScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#0f0f0f' },
+const createStyles = (theme: SchoolTheme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.background },
   container: { paddingHorizontal: 20, paddingTop: 64, paddingBottom: 60 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  heading: { fontSize: 26, fontWeight: 'bold', color: '#fff' },
+  heading: { fontSize: 26, fontWeight: 'bold', color: theme.text },
   balanceBadge: {
-    backgroundColor: '#F59E0B22',
+    backgroundColor: theme.surfaceAlt,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#F59E0B55',
+    borderColor: theme.border,
   },
-  balanceText: { color: '#F59E0B', fontSize: 16, fontWeight: '700' },
-  sub: { color: '#666', fontSize: 14, marginBottom: 4 },
-  earn: { color: '#444', fontSize: 12, marginBottom: 28 },
+  balanceText: { color: theme.primary, fontSize: 16, fontWeight: '700' },
+  sub: { color: theme.muted, fontSize: 14, marginBottom: 4 },
+  earn: { color: theme.muted, fontSize: 12, marginBottom: 28 },
 
   card: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: theme.border,
   },
-  cardOwned: { borderColor: '#6C63FF55', backgroundColor: '#1a1a2a' },
+  cardOwned: { borderColor: theme.primary, backgroundColor: theme.surfaceAlt },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14 },
   itemEmoji: { fontSize: 36, marginRight: 14, marginTop: 2 },
   itemInfo: { flex: 1 },
   itemTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' },
-  itemName: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  itemName: { color: theme.text, fontSize: 16, fontWeight: '700' },
   tag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   tagText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  itemDesc: { color: '#888', fontSize: 13, lineHeight: 19 },
+  itemDesc: { color: theme.muted, fontSize: 13, lineHeight: 19 },
 
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cost: { color: '#F59E0B', fontSize: 16, fontWeight: '700' },
-  costUnaffordable: { color: '#555' },
+  cost: { color: theme.secondary, fontSize: 16, fontWeight: '700' },
+  costUnaffordable: { color: theme.muted },
 
   buyBtn: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: theme.primary,
     borderRadius: 10,
     paddingHorizontal: 24,
     paddingVertical: 9,
   },
-  buyBtnDisabled: { backgroundColor: '#2a2a2a' },
-  buyBtnOwned: { backgroundColor: '#1e1e2e', borderWidth: 1, borderColor: '#6C63FF55' },
+  buyBtnDisabled: { backgroundColor: theme.border },
+  buyBtnOwned: { backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.primary },
   buyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  buyBtnTextOwned: { color: '#6C63FF' },
+  buyBtnTextOwned: { color: theme.primary },
 
-  footer: { color: '#333', fontSize: 13, textAlign: 'center', marginTop: 12 },
+  footer: { color: theme.muted, fontSize: 13, textAlign: 'center', marginTop: 12 },
 });

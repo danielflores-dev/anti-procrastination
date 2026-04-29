@@ -1,4 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
+import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -173,6 +175,8 @@ const STARTING_POSTS: HelpPost[] = [
 ];
 
 export default function MultiPlayerScreen() {
+  const { theme, setSchoolTheme } = useSchoolTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [isSearching, setIsSearching] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
@@ -249,6 +253,7 @@ export default function MultiPlayerScreen() {
   const handleSelectSchool = (school: string) => {
     setSelectedSchool(school);
     setSchoolSearch(school);
+    setSchoolTheme(school);
   };
 
   const handleSaveProfile = () => {
@@ -746,16 +751,40 @@ export default function MultiPlayerScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <View style={styles.hero}>
-        <Text style={styles.heading}>Study Groups</Text>
-        <Text style={styles.description}>
-          Find classmates from your school and join a study group for your major or related field.
-        </Text>
+        <View style={styles.heroTop}>
+          <View style={styles.heroCopy}>
+            <Text style={styles.kicker}>Campus hub</Text>
+            <Text style={styles.heading}>Study Groups</Text>
+            <Text style={styles.description}>
+              Meet classmates, find rooms, and get unstuck together.
+            </Text>
+          </View>
+          <View style={styles.heroIcon}>
+            <FontAwesome5 name="user-graduate" size={24} color="#F8FAFC" />
+          </View>
+        </View>
+
+        <View style={styles.heroStats}>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{SAMPLE_PROFILES.length}</Text>
+            <Text style={styles.heroStatLabel}>students</Text>
+          </View>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{studyRooms.length}</Text>
+            <Text style={styles.heroStatLabel}>rooms</Text>
+          </View>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{helpPosts.length}</Text>
+            <Text style={styles.heroStatLabel}>posts</Text>
+          </View>
+        </View>
       </View>
 
       {profileCreated ? (
         renderBrowse()
       ) : !isSearching ? (
         <TouchableOpacity style={styles.beginButton} onPress={() => setIsSearching(true)} activeOpacity={0.82}>
+          <FontAwesome5 name="search-location" size={16} color="#10201C" />
           <Text style={styles.beginButtonText}>Start with your school</Text>
         </TouchableOpacity>
       ) : (
@@ -800,32 +829,56 @@ export default function MultiPlayerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#0f0f0f' },
-  container: { paddingHorizontal: 22, paddingTop: 64, paddingBottom: 36 },
-  hero: { marginBottom: 28 },
-  heading: { color: '#ffffff', fontSize: 30, fontWeight: '800', marginBottom: 10 },
-  description: { color: '#b5b5b5', fontSize: 15, lineHeight: 22 },
+const createStyles = (theme: SchoolTheme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.background },
+  container: { paddingHorizontal: 18, paddingTop: 56, paddingBottom: 36 },
+  hero: {
+    backgroundColor: theme.primary,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: theme.primary,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
+  heroCopy: { flex: 1 },
+  kicker: { color: theme.secondary, fontSize: 12, fontWeight: '900', letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' },
+  heroIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accent, borderWidth: 1, borderColor: theme.secondary },
+  heroStats: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  heroStat: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 16, paddingVertical: 10, alignItems: 'center' },
+  heroStatValue: { color: theme.primary, fontSize: 18, fontWeight: '900' },
+  heroStatLabel: { color: theme.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
+  heading: { color: '#ffffff', fontSize: 32, fontWeight: '900', marginBottom: 8 },
+  description: { color: theme.onPrimary, fontSize: 15, lineHeight: 22 },
   beginButton: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: theme.secondary,
+    borderRadius: 18,
     paddingHorizontal: 22,
     paddingVertical: 16,
-    shadowColor: '#6C63FF',
+    shadowColor: theme.secondary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 6,
   },
-  beginButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  panel: { backgroundColor: '#1a1a1a', borderRadius: 16, borderWidth: 1, borderColor: '#282828', padding: 16 },
-  panelTitle: { color: '#ffffff', fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  beginButtonText: { color: theme.text, fontSize: 16, fontWeight: '900', textAlign: 'center' },
+  panel: { backgroundColor: theme.surface, borderRadius: 22, borderWidth: 1, borderColor: theme.border, padding: 16 },
+  panelTitle: { color: theme.text, fontSize: 20, fontWeight: '900', marginBottom: 12 },
   input: {
-    backgroundColor: '#101010',
-    borderRadius: 12,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#303030',
-    color: '#ffffff',
+    borderColor: theme.border,
+    color: theme.text,
     fontSize: 15,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -835,7 +888,7 @@ const styles = StyleSheet.create({
   twoColumn: { flexDirection: 'row', gap: 10 },
   halfInput: { flex: 1 },
   sectionLabel: {
-    color: '#777',
+    color: '#8C6A2F',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -844,96 +897,96 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   schoolList: { gap: 8 },
-  schoolOption: { backgroundColor: '#111111', borderRadius: 12, borderWidth: 1, borderColor: '#282828', paddingHorizontal: 14, paddingVertical: 12 },
-  schoolOptionText: { color: '#d8d8d8', fontSize: 14, fontWeight: '600' },
+  schoolOption: { backgroundColor: '#FFF8E8', borderRadius: 14, borderWidth: 1, borderColor: '#F1D99E', paddingHorizontal: 14, paddingVertical: 12 },
+  schoolOptionText: { color: '#173E36', fontSize: 14, fontWeight: '800' },
   profileSection: { marginTop: 4 },
-  selectedSchool: { backgroundColor: '#252044', borderRadius: 12, borderWidth: 1, borderColor: '#6C63FF', padding: 12, marginBottom: 18 },
-  selectedSchoolLabel: { color: '#9f9aff', fontSize: 11, fontWeight: '700', marginBottom: 3, textTransform: 'uppercase' },
-  selectedSchoolText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
-  profileTitle: { color: '#ffffff', fontSize: 20, fontWeight: '800', marginBottom: 5 },
-  profileSub: { color: '#888', fontSize: 13, lineHeight: 19, marginBottom: 16 },
-  photoButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#101010', borderRadius: 14, borderWidth: 1, borderColor: '#303030', padding: 12, marginBottom: 14 },
-  photoPlaceholder: { width: 62, height: 62, borderRadius: 31, alignItems: 'center', justifyContent: 'center', backgroundColor: '#262240', borderWidth: 1, borderColor: '#6C63FF' },
-  photoInitials: { color: '#ffffff', fontSize: 28, fontWeight: '400' },
+  selectedSchool: { backgroundColor: '#E8F7F1', borderRadius: 16, borderWidth: 1, borderColor: '#A7F3D0', padding: 12, marginBottom: 18 },
+  selectedSchoolLabel: { color: '#2C7A68', fontSize: 11, fontWeight: '900', marginBottom: 3, textTransform: 'uppercase' },
+  selectedSchoolText: { color: '#173E36', fontSize: 15, fontWeight: '900' },
+  profileTitle: { color: '#173E36', fontSize: 20, fontWeight: '900', marginBottom: 5 },
+  profileSub: { color: '#667085', fontSize: 13, lineHeight: 19, marginBottom: 16 },
+  photoButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 18, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, marginBottom: 14 },
+  photoPlaceholder: { width: 62, height: 62, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E8F7F1', borderWidth: 1, borderColor: '#2C7A68' },
+  photoInitials: { color: '#173E36', fontSize: 28, fontWeight: '600' },
   profileImage: { width: 62, height: 62, borderRadius: 31 },
   photoTextWrap: { flex: 1, marginLeft: 12 },
-  photoTitle: { color: '#ffffff', fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  photoSub: { color: '#888', fontSize: 13 },
+  photoTitle: { color: '#173E36', fontSize: 15, fontWeight: '900', marginBottom: 3 },
+  photoSub: { color: '#667085', fontSize: 13 },
   choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  choiceChip: { backgroundColor: '#101010', borderRadius: 999, borderWidth: 1, borderColor: '#303030', paddingHorizontal: 12, paddingVertical: 8 },
-  choiceChipSelected: { backgroundColor: '#6C63FF', borderColor: '#6C63FF' },
-  choiceText: { color: '#d8d8d8', fontSize: 13, fontWeight: '700' },
+  choiceChip: { backgroundColor: '#FFFFFF', borderRadius: 999, borderWidth: 1, borderColor: '#D9CDBB', paddingHorizontal: 12, paddingVertical: 8 },
+  choiceChipSelected: { backgroundColor: '#173E36', borderColor: '#173E36' },
+  choiceText: { color: '#667085', fontSize: 13, fontWeight: '800' },
   choiceTextSelected: { color: '#ffffff' },
-  saveButton: { backgroundColor: '#6C63FF', borderRadius: 12, marginTop: 8, paddingHorizontal: 16, paddingVertical: 14 },
+  saveButton: { backgroundColor: '#173E36', borderRadius: 16, marginTop: 8, paddingHorizontal: 16, paddingVertical: 14 },
   createRoomButton: { marginTop: 0 },
   saveButtonText: { color: '#ffffff', fontSize: 15, fontWeight: '800', textAlign: 'center' },
-  myProfileCard: { backgroundColor: '#252044', borderRadius: 16, borderWidth: 1, borderColor: '#6C63FF', padding: 16, marginBottom: 16 },
-  myProfileName: { color: '#ffffff', fontSize: 20, fontWeight: '800', marginBottom: 4 },
-  myProfileDetails: { color: '#d7d5ff', fontSize: 14, lineHeight: 20 },
-  privacyMiniButton: { alignSelf: 'flex-start', backgroundColor: '#101010', borderRadius: 10, borderWidth: 1, borderColor: '#6C63FF66', marginTop: 12, paddingHorizontal: 12, paddingVertical: 8 },
-  privacyMiniButtonText: { color: '#ffffff', fontSize: 12, fontWeight: '800' },
-  tabRow: { flexDirection: 'row', backgroundColor: '#1a1a1a', borderRadius: 12, borderWidth: 1, borderColor: '#282828', padding: 4, marginBottom: 16 },
-  browseTab: { flex: 1, borderRadius: 9, paddingVertical: 10, alignItems: 'center' },
-  browseTabActive: { backgroundColor: '#6C63FF' },
-  browseTabText: { color: '#999', fontSize: 12, fontWeight: '800', textAlign: 'center' },
+  myProfileCard: { backgroundColor: '#FFFFFF', borderRadius: 22, borderWidth: 1, borderColor: '#E6DDCE', padding: 16, marginBottom: 14 },
+  myProfileName: { color: '#173E36', fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  myProfileDetails: { color: '#667085', fontSize: 14, lineHeight: 20 },
+  privacyMiniButton: { alignSelf: 'flex-start', backgroundColor: '#FFF8E8', borderRadius: 12, borderWidth: 1, borderColor: '#F1D99E', marginTop: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  privacyMiniButtonText: { color: '#8C6A2F', fontSize: 12, fontWeight: '900' },
+  tabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, backgroundColor: '#FFFFFF', borderRadius: 18, borderWidth: 1, borderColor: '#E6DDCE', padding: 8, marginBottom: 16 },
+  browseTab: { flexGrow: 1, flexBasis: '47%', borderRadius: 13, paddingVertical: 11, alignItems: 'center', backgroundColor: '#F8FAFC' },
+  browseTabActive: { backgroundColor: '#173E36' },
+  browseTabText: { color: '#667085', fontSize: 12, fontWeight: '900', textAlign: 'center' },
   browseTabTextActive: { color: '#ffffff' },
   cardList: { gap: 12 },
-  profileCard: { backgroundColor: '#1a1a1a', borderRadius: 14, borderWidth: 1, borderColor: '#262626', padding: 14 },
-  friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: '#1a1a1a', borderRadius: 14, borderWidth: 1, borderColor: '#262626', padding: 14 },
-  avatar: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#303030' },
-  avatarText: { color: '#ffffff', fontSize: 18, fontWeight: '800' },
+  profileCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
+  friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
+  avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2C7A68' },
+  avatarText: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   profileTitleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   profileHeadingText: { flex: 1 },
   profileActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardName: { color: '#ffffff', fontSize: 16, fontWeight: '800' },
-  cardMeta: { color: '#777', fontSize: 12, fontWeight: '700' },
-  cardMajor: { color: '#9f9aff', fontSize: 13, fontWeight: '700', marginTop: 3 },
-  cardFact: { color: '#c8c8c8', fontSize: 13, lineHeight: 19, marginTop: 12 },
-  cardSubtle: { color: '#777', fontSize: 12, lineHeight: 18, marginTop: 3 },
-  iconButton: { minWidth: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#101010', borderWidth: 1, borderColor: '#343434', paddingHorizontal: 8 },
-  iconButtonActive: { backgroundColor: '#252044', borderColor: '#6C63FF' },
-  iconButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '700', lineHeight: 22 },
-  messageButton: { backgroundColor: '#252044', borderRadius: 10, borderWidth: 1, borderColor: '#6C63FF66', paddingHorizontal: 12, paddingVertical: 8 },
-  messageButtonText: { color: '#ffffff', fontSize: 12, fontWeight: '800' },
+  cardName: { color: '#173E36', fontSize: 16, fontWeight: '900' },
+  cardMeta: { color: '#8C6A2F', fontSize: 12, fontWeight: '800' },
+  cardMajor: { color: '#2C7A68', fontSize: 13, fontWeight: '900', marginTop: 3 },
+  cardFact: { color: '#475467', fontSize: 13, lineHeight: 19, marginTop: 12 },
+  cardSubtle: { color: '#667085', fontSize: 12, lineHeight: 18, marginTop: 3 },
+  iconButton: { minWidth: 36, height: 36, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF8E8', borderWidth: 1, borderColor: '#F1D99E', paddingHorizontal: 8 },
+  iconButtonActive: { backgroundColor: '#E8F7F1', borderColor: '#2C7A68' },
+  iconButtonText: { color: '#173E36', fontSize: 18, fontWeight: '900', lineHeight: 22 },
+  messageButton: { backgroundColor: '#E8F7F1', borderRadius: 12, borderWidth: 1, borderColor: '#A7F3D0', paddingHorizontal: 12, paddingVertical: 8 },
+  messageButtonText: { color: '#173E36', fontSize: 12, fontWeight: '900' },
   blockButton: { alignSelf: 'flex-start', marginTop: 10, paddingVertical: 4 },
   blockButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '800' },
-  tag: { color: '#d8d8d8', backgroundColor: '#101010', borderRadius: 999, borderWidth: 1, borderColor: '#303030', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '700' },
-  emptyPanel: { backgroundColor: '#1a1a1a', borderRadius: 14, borderWidth: 1, borderColor: '#262626', padding: 18, gap: 10 },
-  emptyTitle: { color: '#ffffff', fontSize: 16, fontWeight: '800', marginBottom: 2 },
-  emptyText: { color: '#777', fontSize: 14, lineHeight: 20 },
+  tag: { color: '#173E36', backgroundColor: '#E8F7F1', borderRadius: 999, borderWidth: 1, borderColor: '#A7F3D0', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '900' },
+  emptyPanel: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 18, gap: 10 },
+  emptyTitle: { color: '#173E36', fontSize: 16, fontWeight: '900', marginBottom: 2 },
+  emptyText: { color: '#667085', fontSize: 14, lineHeight: 20 },
   requestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  feedCard: { backgroundColor: '#1a1a1a', borderRadius: 14, borderWidth: 1, borderColor: '#262626', padding: 14 },
-  feedKind: { alignSelf: 'flex-start', color: '#ffffff', backgroundColor: '#252044', borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 4, fontSize: 11, fontWeight: '800', marginBottom: 8 },
+  feedCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
+  feedKind: { alignSelf: 'flex-start', color: '#173E36', backgroundColor: '#FBCB62', borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 4, fontSize: 11, fontWeight: '900', marginBottom: 8 },
   commentList: { gap: 6, marginTop: 12 },
-  commentText: { color: '#d8d8d8', backgroundColor: '#101010', borderRadius: 10, borderWidth: 1, borderColor: '#303030', padding: 10, fontSize: 13, lineHeight: 18 },
+  commentText: { color: '#475467', backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', padding: 10, fontSize: 13, lineHeight: 18 },
   commentRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   commentInput: { flex: 1, marginBottom: 0 },
-  roomForm: { backgroundColor: '#1a1a1a', borderRadius: 14, borderWidth: 1, borderColor: '#262626', padding: 14 },
-  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#101010', borderRadius: 12, borderWidth: 1, borderColor: '#303030', padding: 12, marginBottom: 10 },
-  privacyRowActive: { backgroundColor: '#252044', borderColor: '#6C63FF66' },
-  toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#555' },
-  toggleDotActive: { backgroundColor: '#6C63FF', borderColor: '#9f9aff' },
+  roomForm: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
+  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, marginBottom: 10 },
+  privacyRowActive: { backgroundColor: '#E8F7F1', borderColor: '#2C7A68' },
+  toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#94A3B8' },
+  toggleDotActive: { backgroundColor: '#2C7A68', borderColor: '#173E36' },
   privacyTextWrap: { flex: 1 },
-  privacyTitle: { color: '#ffffff', fontSize: 14, fontWeight: '800', marginBottom: 3 },
-  privacySub: { color: '#888', fontSize: 12, lineHeight: 17 },
-  roomDetailCard: { backgroundColor: '#1a1a1a', borderRadius: 16, borderWidth: 1, borderColor: '#6C63FF66', padding: 16 },
-  roomDetailTitle: { color: '#ffffff', fontSize: 22, fontWeight: '800', marginBottom: 4 },
+  privacyTitle: { color: '#173E36', fontSize: 14, fontWeight: '900', marginBottom: 3 },
+  privacySub: { color: '#667085', fontSize: 12, lineHeight: 17 },
+  roomDetailCard: { backgroundColor: '#FFFFFF', borderRadius: 22, borderWidth: 1, borderColor: '#2C7A68', padding: 16 },
+  roomDetailTitle: { color: '#173E36', fontSize: 22, fontWeight: '900', marginBottom: 4 },
   roomInfoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14, marginBottom: 8 },
-  roomInfoItem: { width: '48%', backgroundColor: '#101010', borderRadius: 12, borderWidth: 1, borderColor: '#303030', padding: 10 },
-  roomInfoLabel: { color: '#777', fontSize: 11, fontWeight: '800', marginBottom: 4, textTransform: 'uppercase' },
-  roomInfoValue: { color: '#ffffff', fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  roomInfoItem: { width: '48%', backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 10 },
+  roomInfoLabel: { color: '#8C6A2F', fontSize: 11, fontWeight: '900', marginBottom: 4, textTransform: 'uppercase' },
+  roomInfoValue: { color: '#173E36', fontSize: 13, fontWeight: '800', lineHeight: 18 },
   memberList: { gap: 10, marginBottom: 14 },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#101010', borderRadius: 12, borderWidth: 1, borderColor: '#303030', padding: 10 },
-  messageRoomButton: { backgroundColor: '#252044', borderRadius: 12, borderWidth: 1, borderColor: '#6C63FF66', paddingHorizontal: 16, paddingVertical: 13, marginBottom: 10 },
-  messageRoomButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 10 },
+  messageRoomButton: { backgroundColor: '#E8F7F1', borderRadius: 14, borderWidth: 1, borderColor: '#A7F3D0', paddingHorizontal: 16, paddingVertical: 13, marginBottom: 10 },
+  messageRoomButtonText: { color: '#173E36', fontSize: 14, fontWeight: '900', textAlign: 'center' },
   confirmRow: { flexDirection: 'row', gap: 10 },
-  cancelButton: { flex: 1, backgroundColor: '#101010', borderRadius: 12, borderWidth: 1, borderColor: '#303030', paddingHorizontal: 16, paddingVertical: 13 },
-  cancelButtonText: { color: '#d8d8d8', fontSize: 14, fontWeight: '800', textAlign: 'center' },
-  confirmButton: { flex: 1, backgroundColor: '#6C63FF', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13 },
-  confirmButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '800', textAlign: 'center' },
-  roomCard: { backgroundColor: '#1a1a1a', borderRadius: 16, borderWidth: 1, borderColor: '#282828', padding: 14 },
+  cancelButton: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16, paddingVertical: 13 },
+  cancelButtonText: { color: '#475467', fontSize: 14, fontWeight: '900', textAlign: 'center' },
+  confirmButton: { flex: 1, backgroundColor: '#173E36', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13 },
+  confirmButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '900', textAlign: 'center' },
+  roomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E6DDCE', padding: 15 },
   roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  smallButton: { backgroundColor: '#6C63FF', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  smallButtonText: { color: '#ffffff', fontSize: 12, fontWeight: '800' },
+  smallButton: { backgroundColor: '#173E36', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  smallButtonText: { color: '#ffffff', fontSize: 12, fontWeight: '900' },
 });

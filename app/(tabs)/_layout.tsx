@@ -1,4 +1,5 @@
 import { useCoins } from '@/context/CoinContext';
+import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Alert } from 'react-native';
@@ -8,14 +9,15 @@ const MULTIPLAYER_HELP =
 
 export default function TabsLayout() {
   const { coins } = useCoins();
+  const { theme } = useSchoolTheme();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#141414',
-          borderTopColor: '#222',
+          backgroundColor: theme.tabBar,
+          borderTopColor: theme.border,
           borderTopWidth: 1,
           height: 70,
           paddingBottom: 12,
@@ -26,8 +28,8 @@ export default function TabsLayout() {
           shadowRadius: 12,
           elevation: 16,
         },
-        tabBarActiveTintColor: '#6C63FF',
-        tabBarInactiveTintColor: '#444',
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.tabInactive,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
       }}
     >
@@ -63,7 +65,7 @@ export default function TabsLayout() {
           title: 'Shop',
           tabBarIcon: ({ color }) => <FontAwesome5 name="coins" size={20} color={color} />,
           tabBarBadge: coins > 0 ? coins : undefined,
-          tabBarBadgeStyle: { backgroundColor: '#F59E0B', color: '#000', fontSize: 10, fontWeight: '700' },
+          tabBarBadgeStyle: { backgroundColor: theme.secondary, color: theme.text, fontSize: 10, fontWeight: '700' },
         }}
       />
     </Tabs>
