@@ -42,6 +42,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="single-player"
+        options={{
+          title: 'Single',
+          tabBarIcon: ({ color }) => <FontAwesome5 name="tasks" size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="multi-player"
         listeners={{
           tabPress: () => {
@@ -57,6 +64,7 @@ export default function TabsLayout() {
         name="calendar"
         options={{
           title: 'Schedule',
+          href: null,
           tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={20} color={color} />,
         }}
       />

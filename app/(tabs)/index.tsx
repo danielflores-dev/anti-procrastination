@@ -1,8 +1,8 @@
-import { StudySession, Task, TaskProgress, useTasks } from '@/context/TaskContext';
+import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -17,21 +17,8 @@ function formatDate(): string {
   });
 }
 
-function urgencyColor(hours: number): string {
-  if (hours < 2) return '#22C55E';
-  if (hours < 5) return '#F59E0B';
-  return '#EF4444';
-}
-
 function daysUntil(raw: string): number {
   return Math.max(0, Math.ceil((new Date(raw).getTime() - Date.now()) / 86400000));
-}
-
-const PROGRESS_STEPS: TaskProgress[] = ['Not started', 'Working', 'Almost done', 'Done'];
-
-function nextProgress(progress?: TaskProgress): TaskProgress {
-  const current = PROGRESS_STEPS.indexOf(progress ?? 'Not started');
-  return PROGRESS_STEPS[(current + 1) % PROGRESS_STEPS.length];
 }
 
 function formatSessionTime(seconds: number): string {
@@ -40,13 +27,6 @@ function formatSessionTime(seconds: number): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
   return rest ? `${hours}h ${rest}m` : `${hours}h`;
-}
-
-function progressColor(progress?: TaskProgress): string {
-  if (progress === 'Done') return '#22C55E';
-  if (progress === 'Almost done') return '#F59E0B';
-  if (progress === 'Working') return '#6C63FF';
-  return '#94A3B8';
 }
 
 type SmartSuggestion = {
@@ -175,55 +155,9 @@ function buildSmartSuggestions(tasks: Task[], sessions: ReturnType<typeof useTas
     .slice(0, 2);
 }
 
-function TaskRow({
-  task, onPress, onProgress, styles,
-}: {
-  task: Task;
-  onPress: () => void;
-  onProgress: () => void;
-  styles: ReturnType<typeof createStyles>;
-}) {
-  const color = urgencyColor(task.estimatedHours);
-  const days = daysUntil(task.dueDateRaw);
-  const progress = task.progress ?? 'Not started';
-  const statusColor = progressColor(progress);
-
-  return (
-    <View style={[styles.card, { borderLeftColor: color }]}>
-      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-        <View style={styles.cardTop}>
-          <View style={styles.cardTitles}>
-            <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
-            <Text style={styles.cardClass}>{task.className}</Text>
-          </View>
-          <View style={[styles.hourPill, { backgroundColor: color + '20' }]}>
-            <Text style={[styles.hourPillText, { color }]}>{task.estimatedHours}h</Text>
-          </View>
-        </View>
-        <View style={styles.cardFooter}>
-          <Text style={styles.cardDue}>Due {task.dueDate}</Text>
-          <Text style={[styles.cardDays, {
-            color: days === 0 ? '#EF4444' : days <= 2 ? '#F59E0B' : '#555',
-          }]}>
-            {days === 0 ? 'Due today!' : days === 1 ? '1 day left' : `${days} days`}
-          </Text>
-        </View>
-      </TouchableOpacity>
-      <View style={styles.progressRow}>
-        <View style={[styles.progressPill, { backgroundColor: statusColor + '20' }]}>
-          <Text style={[styles.progressPillText, { color: statusColor }]}>{progress}</Text>
-        </View>
-        <TouchableOpacity style={styles.progressButton} onPress={onProgress}>
-          <Text style={styles.progressButtonText}>Update</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
 export default function HomeScreen() {
   const router = useRouter();
-  const { tasks, sessions, updateProgress } = useTasks();
+  const { tasks, sessions } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -238,7 +172,7 @@ export default function HomeScreen() {
   const nextBadge = badges.find(badge => !badge.unlocked);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.dashboardContent}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -348,41 +282,15 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Content */}
-      {tasks.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>📚</Text>
-          <Text style={styles.emptyTitle}>No assignments yet</Text>
-          <Text style={styles.emptySub}>Hit the + button below to add your first task</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={tasks}
-          keyExtractor={item => item.id}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TaskRow
-              task={item}
-              styles={styles}
-              onPress={() => router.push(`/focus?id=${item.id}`)}
-              onProgress={() => updateProgress(item.id, nextProgress(item.progress))}
-            />
-          )}
-        />
-      )}
-
-      {/* Bottom action bar */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.autoBtn} onPress={() => router.push('/auto-add')}>
-          <Text style={styles.autoBtnText}>⚡ Auto-add</Text>
+      <View style={styles.homeActions}>
+        <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/single-player')}>
+          <Text style={styles.primaryHomeActionText}>{tasks.length > 0 ? 'Open assignments' : 'Add assignments'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={() => router.push('/add-task')}>
-          <Text style={styles.fabIcon}>+</Text>
+        <TouchableOpacity style={styles.secondaryHomeAction} onPress={() => router.push('/(tabs)/multi-player')}>
+          <Text style={styles.secondaryHomeActionText}>Find study groups</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -391,6 +299,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.background,
     paddingTop: 64,
+  },
+  dashboardContent: {
+    paddingBottom: 36,
   },
   header: {
     flexDirection: 'row',
@@ -559,6 +470,100 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     color: theme.text,
     fontSize: 12,
     fontWeight: '800',
+  },
+  breakdownBox: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginTop: 12,
+    padding: 12,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  breakdownTitle: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  breakdownCount: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingVertical: 6,
+  },
+  stepCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surface,
+  },
+  stepCheckDone: {
+    backgroundColor: '#22C55E',
+    borderColor: '#22C55E',
+  },
+  stepCheckText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  stepText: {
+    flex: 1,
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  stepTextDone: {
+    color: theme.muted,
+    textDecorationLine: 'line-through',
+  },
+  planBox: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginTop: 10,
+    padding: 12,
+    gap: 8,
+  },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  planDate: {
+    width: 66,
+    color: theme.secondary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  planTextWrap: {
+    flex: 1,
+  },
+  planFocus: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  planMinutes: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
   },
   badgePanel: {
     backgroundColor: theme.surface,
@@ -753,6 +758,35 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   sessionPercent: {
     color: theme.primary,
     fontSize: 13,
+    fontWeight: '900',
+  },
+  homeActions: {
+    gap: 10,
+    marginHorizontal: 24,
+    marginTop: 2,
+  },
+  primaryHomeAction: {
+    backgroundColor: theme.secondary,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  primaryHomeActionText: {
+    color: theme.school ? theme.background : theme.onPrimary,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  secondaryHomeAction: {
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  secondaryHomeActionText: {
+    color: theme.text,
+    fontSize: 15,
     fontWeight: '900',
   },
   emptyState: {
