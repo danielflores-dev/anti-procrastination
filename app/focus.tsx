@@ -118,7 +118,7 @@ export default function FocusScreen() {
     className?: string;
     goalHours?: string;
   }>();
-  const { tasks, updateHoursPerDay } = useTasks();
+  const { tasks, addStudySession, updateHoursPerDay, updateProgress } = useTasks();
   const { theme } = useSchoolTheme();
   const { coins, addCoins } = useCoins();
   const task = tasks.find(t => t.id === id);
@@ -201,7 +201,22 @@ export default function FocusScreen() {
   };
 
   const finishSession = () => {
+    if (!focusTask) return;
     applyGoalUpdate();
+    addStudySession({
+      taskId: task?.id,
+      assignmentName: focusTask.assignmentName,
+      className: focusTask.className,
+      focusedSeconds: elapsed,
+      coinsEarned: sessionCoins,
+      goalHours: newGoalHours,
+      progressPercent,
+      coinMultiplier,
+      partyRoom,
+    });
+    if (task) {
+      updateProgress(task.id, goalReached ? 'Done' : progressPercent >= 75 ? 'Almost done' : 'Working');
+    }
     setElapsed(0);
     setShowRecap(false);
     router.back();

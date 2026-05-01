@@ -50,6 +50,7 @@ type StudyRoom = {
   friendsOnly?: boolean;
   host?: string;
   memberIds: string[];
+  pendingJoinIds: string[];
   assignments: PartyAssignment[];
 };
 
@@ -127,6 +128,7 @@ const STARTING_ROOMS: StudyRoom[] = [
     duration: '1 hour',
     subject: 'General study',
     memberIds: ['maya', 'sam'],
+    pendingJoinIds: [],
     assignments: [
       {
         id: 'quiet-2a-exam',
@@ -157,6 +159,7 @@ const STARTING_ROOMS: StudyRoom[] = [
     subject: 'Exam prep',
     approvalRequired: true,
     memberIds: ['jordan'],
+    pendingJoinIds: ['sam'],
     assignments: [
       {
         id: 'group-1c-exam',
@@ -179,6 +182,7 @@ const STARTING_ROOMS: StudyRoom[] = [
     subject: 'Projects',
     friendsOnly: true,
     memberIds: ['maya', 'jordan'],
+    pendingJoinIds: [],
     assignments: [
       {
         id: 'media-3b-project',
@@ -318,6 +322,10 @@ export default function MultiPlayerScreen() {
 
     return [...activePartyRoom.assignments, ...personalAssignments];
   }, [activePartyRoom, name, tasks]);
+  const isHost = !!activePartyRoom?.host && activePartyRoom.host === name.trim();
+  const pendingRoomProfiles = activePartyRoom
+    ? SAMPLE_PROFILES.filter(profile => activePartyRoom.pendingJoinIds.includes(profile.id))
+    : [];
 
   const pickProfileImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -391,7 +399,8 @@ export default function MultiPlayerScreen() {
       approvalRequired,
       friendsOnly,
       host: name.trim(),
-      memberIds: [],
+      memberIds: ['you'],
+      pendingJoinIds: approvalRequired ? ['maya', 'jordan'] : [],
       assignments: [
         {
           id: `assignment-${Date.now()}`,
@@ -405,6 +414,8 @@ export default function MultiPlayerScreen() {
     };
 
     setStudyRooms(current => [room, ...current]);
+    setActivePartyRoom(room);
+    setPartyTaskId(room.assignments[0]?.id ?? null);
     setRoomName('');
     setRoomSubject('');
     setRoomLocation('');
@@ -415,6 +426,7 @@ export default function MultiPlayerScreen() {
     setApprovalRequired(true);
     setFriendsOnly(false);
     setShowRoomForm(false);
+    Alert.alert('Room created', 'You are now hosting this study group.');
   };
 
   const handleMessageRoom = (room: StudyRoom) => {
@@ -423,6 +435,11 @@ export default function MultiPlayerScreen() {
 
   const handleConfirmJoin = (room: StudyRoom) => {
     if (room.approvalRequired) {
+      setStudyRooms(current => current.map(item => (
+        item.id === room.id
+          ? { ...item, pendingJoinIds: item.pendingJoinIds.includes('you') ? item.pendingJoinIds : [...item.pendingJoinIds, 'you'] }
+          : item
+      )));
       Alert.alert('Request sent', `${room.name} will open once the host approves you.`);
       setSelectedRoom(null);
       return;
@@ -471,6 +488,44 @@ export default function MultiPlayerScreen() {
     setPartyTaskId(null);
     setSelectedRoom(null);
     Alert.alert('Left study group', 'You can now join or create another library room.');
+  };
+
+  const updateActivePartyRoom = (updater: (room: StudyRoom) => StudyRoom) => {
+    if (!activePartyRoom) return;
+    const updatedRoom = updater(activePartyRoom);
+    setActivePartyRoom(updatedRoom);
+    setStudyRooms(current => current.map(room => room.id === updatedRoom.id ? updatedRoom : room));
+  };
+
+  const handleApproveRoomRequest = (profileId: string) => {
+    updateActivePartyRoom(room => ({
+      ...room,
+      pendingJoinIds: room.pendingJoinIds.filter(id => id !== profileId),
+      memberIds: room.memberIds.includes(profileId) ? room.memberIds : [...room.memberIds, profileId],
+    }));
+  };
+
+  const handleDenyRoomRequest = (profileId: string) => {
+    updateActivePartyRoom(room => ({
+      ...room,
+      pendingJoinIds: room.pendingJoinIds.filter(id => id !== profileId),
+    }));
+  };
+
+  const handleRemoveRoomMember = (profileId: string) => {
+    updateActivePartyRoom(room => ({
+      ...room,
+      memberIds: room.memberIds.filter(id => id !== profileId),
+    }));
+  };
+
+  const handleCloseRoom = () => {
+    if (!activePartyRoom) return;
+    setStudyRooms(current => current.filter(room => room.id !== activePartyRoom.id));
+    setActivePartyRoom(null);
+    setPartyTaskId(null);
+    setSelectedRoom(null);
+    Alert.alert('Room closed', 'Your study room is no longer listed.');
   };
 
   const handleCreateHelpPost = () => {
@@ -758,6 +813,7 @@ export default function MultiPlayerScreen() {
                   <Text style={styles.cardSubtle}>
                     {assignment.className} - {assignment.goalHours}h goal - Added by {assignment.owner}
                   </Text>
+                  {partyTaskId === assignment.id && <Text style={styles.activeAssignmentText}>Current room focus</Text>}
                   <Text style={styles.partyTaskDetails}>{assignment.details}</Text>
                 </View>
                 <FontAwesome5 name="chevron-right" size={12} color={theme.secondary} />
@@ -766,6 +822,62 @@ export default function MultiPlayerScreen() {
           </View>
         ) : (
           <Text style={styles.emptyText}>No group assignments have been added yet.</Text>
+        )}
+
+        {isHost && (
+          <View style={styles.hostPanel}>
+            <Text style={styles.hostTitle}>Host controls</Text>
+            <Text style={styles.hostSub}>Manage requests, members, and the room focus.</Text>
+
+            <Text style={styles.sectionLabel}>Join requests</Text>
+            {pendingRoomProfiles.length > 0 ? (
+              pendingRoomProfiles.map(profile => (
+                <View key={profile.id} style={styles.hostRow}>
+                  <View style={styles.profileTitleRow}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
+                    </View>
+                    <View style={styles.profileHeadingText}>
+                      <Text style={styles.cardName}>{profile.name}</Text>
+                      <Text style={styles.cardSubtle}>{profile.major}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.hostActions}>
+                    <TouchableOpacity style={styles.smallButton} onPress={() => handleApproveRoomRequest(profile.id)}>
+                      <Text style={styles.smallButtonText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.denyButton} onPress={() => handleDenyRoomRequest(profile.id)}>
+                      <Text style={styles.denyButtonText}>Deny</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No pending requests.</Text>
+            )}
+
+            <Text style={styles.sectionLabel}>Members</Text>
+            {activePartyMembers.filter(member => member.id !== 'you').map(member => (
+              <View key={member.id} style={styles.hostRow}>
+                <View style={styles.profileTitleRow}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{member.name.slice(0, 1)}</Text>
+                  </View>
+                  <View style={styles.profileHeadingText}>
+                    <Text style={styles.cardName}>{member.name}</Text>
+                    <Text style={styles.cardSubtle}>{member.major}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveRoomMember(member.id)}>
+                  <Text style={styles.removeButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.closeRoomButton} onPress={handleCloseRoom} activeOpacity={0.85}>
+              <Text style={styles.closeRoomButtonText}>Close room</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         <TouchableOpacity style={styles.partyFocusButton} onPress={handleStartPartyFocus} activeOpacity={0.85}>
@@ -1211,8 +1323,20 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   partyTaskButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 12 },
   partyTaskButtonActive: { borderColor: theme.secondary, backgroundColor: theme.school ? theme.surfaceAlt : '#231F35' },
   partyTaskTitle: { color: theme.text, fontSize: 15, fontWeight: '900', marginBottom: 3 },
+  activeAssignmentText: { alignSelf: 'flex-start', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.secondary, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: '900', marginTop: 7 },
   partyTaskDetails: { color: '#667085', fontSize: 12, lineHeight: 17, marginTop: 6 },
   previewAssignmentCard: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 12 },
+  hostPanel: { backgroundColor: theme.surfaceAlt, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14, gap: 10 },
+  hostTitle: { color: theme.text, fontSize: 18, fontWeight: '900' },
+  hostSub: { color: '#667085', fontSize: 13, lineHeight: 18, marginTop: -6 },
+  hostRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 10 },
+  hostActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  denyButton: { backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
+  denyButtonText: { color: '#475467', fontSize: 12, fontWeight: '900' },
+  removeButton: { borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 8 },
+  removeButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '900' },
+  closeRoomButton: { alignItems: 'center', borderRadius: 14, backgroundColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13, marginTop: 4 },
+  closeRoomButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '900' },
   partyFocusButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: theme.secondary, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14 },
   partyFocusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 15, fontWeight: '900' },
   leavePartyButton: { alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13 },

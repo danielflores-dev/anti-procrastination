@@ -1,4 +1,4 @@
-import { Task, useTasks } from '@/context/TaskContext';
+import { StudySession, Task, TaskProgress, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
@@ -27,42 +27,215 @@ function daysUntil(raw: string): number {
   return Math.max(0, Math.ceil((new Date(raw).getTime() - Date.now()) / 86400000));
 }
 
-function TaskRow({ task, onPress, styles }: { task: Task; onPress: () => void; styles: ReturnType<typeof createStyles> }) {
+const PROGRESS_STEPS: TaskProgress[] = ['Not started', 'Working', 'Almost done', 'Done'];
+
+function nextProgress(progress?: TaskProgress): TaskProgress {
+  const current = PROGRESS_STEPS.indexOf(progress ?? 'Not started');
+  return PROGRESS_STEPS[(current + 1) % PROGRESS_STEPS.length];
+}
+
+function formatSessionTime(seconds: number): string {
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+}
+
+function progressColor(progress?: TaskProgress): string {
+  if (progress === 'Done') return '#22C55E';
+  if (progress === 'Almost done') return '#F59E0B';
+  if (progress === 'Working') return '#6C63FF';
+  return '#94A3B8';
+}
+
+type SmartSuggestion = {
+  task: Task;
+  title: string;
+  reason: string;
+  action: string;
+  score: number;
+};
+
+type Badge = {
+  id: string;
+  name: string;
+  detail: string;
+  unlocked: boolean;
+};
+
+function sessionDateKey(dateRaw: string): string {
+  const d = new Date(dateRaw);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getStudyStreak(sessions: StudySession[]): number {
+  const studiedDays = new Set(sessions.map(session => sessionDateKey(session.createdAt)));
+  let streak = 0;
+  const cursor = new Date();
+
+  while (studiedDays.has(sessionDateKey(cursor.toISOString()))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
+
+function buildBadges(sessions: StudySession[], tasks: Task[], streak: number): Badge[] {
+  const totalCoins = sessions.reduce((sum, session) => sum + session.coinsEarned, 0);
+  const totalMinutes = Math.round(sessions.reduce((sum, session) => sum + session.focusedSeconds, 0) / 60);
+  const hasGroupSession = sessions.some(session => !!session.partyRoom);
+  const completedCount = tasks.filter(task => task.progress === 'Done').length;
+
+  return [
+    {
+      id: 'first-focus',
+      name: 'First Focus',
+      detail: 'Finish your first focus session.',
+      unlocked: sessions.length > 0,
+    },
+    {
+      id: 'three-day-streak',
+      name: '3 Day Streak',
+      detail: 'Study three days in a row.',
+      unlocked: streak >= 3,
+    },
+    {
+      id: 'group-study',
+      name: 'Group Study',
+      detail: 'Complete a party focus session.',
+      unlocked: hasGroupSession,
+    },
+    {
+      id: 'coin-builder',
+      name: 'Coin Builder',
+      detail: 'Earn 25 coins from studying.',
+      unlocked: totalCoins >= 25,
+    },
+    {
+      id: 'assignment-closer',
+      name: 'Assignment Closer',
+      detail: 'Mark an assignment as done.',
+      unlocked: completedCount > 0,
+    },
+    {
+      id: 'deep-work',
+      name: 'Deep Work',
+      detail: 'Log 60 total focus minutes.',
+      unlocked: totalMinutes >= 60,
+    },
+  ];
+}
+
+function buildSmartSuggestions(tasks: Task[], sessions: ReturnType<typeof useTasks>['sessions']): SmartSuggestion[] {
+  const recentTaskIds = new Set(sessions.slice(0, 3).map(session => session.taskId).filter(Boolean));
+  const workableTasks = tasks.filter(task => task.progress !== 'Done');
+
+  return workableTasks
+    .map(task => {
+      const days = daysUntil(task.dueDateRaw);
+      const untouched = (task.progress ?? 'Not started') === 'Not started';
+      const recentlyStudied = recentTaskIds.has(task.id);
+      const heavy = task.estimatedHours >= 5;
+      const dueSoon = days <= 2;
+      const score =
+        (dueSoon ? 80 : Math.max(0, 28 - days * 3)) +
+        (heavy ? 18 : task.estimatedHours * 2) +
+        (untouched ? 12 : 0) +
+        (recentlyStudied ? 10 : 0);
+
+      const title = dueSoon
+        ? days === 0 ? 'Start this now' : 'Do this next'
+        : recentlyStudied
+          ? 'Keep the momentum'
+          : heavy
+            ? 'Break this into a focus round'
+            : 'Good quick win';
+
+      const reason = dueSoon
+        ? days === 0
+          ? 'It is due today, so even a short focus session helps.'
+          : `It is due in ${days} day${days === 1 ? '' : 's'} and still needs attention.`
+        : recentlyStudied
+          ? 'You worked on this recently, so it is easier to continue now.'
+          : heavy
+            ? `${task.estimatedHours}h estimated. Starting early keeps it from getting stressful.`
+            : 'It is manageable and can build momentum.';
+
+      return {
+        task,
+        title,
+        reason,
+        action: `Start ${task.hoursPerDay}h focus`,
+        score,
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+}
+
+function TaskRow({
+  task, onPress, onProgress, styles,
+}: {
+  task: Task;
+  onPress: () => void;
+  onProgress: () => void;
+  styles: ReturnType<typeof createStyles>;
+}) {
   const color = urgencyColor(task.estimatedHours);
   const days = daysUntil(task.dueDateRaw);
+  const progress = task.progress ?? 'Not started';
+  const statusColor = progressColor(progress);
 
   return (
-    <TouchableOpacity style={[styles.card, { borderLeftColor: color }]} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.cardTop}>
-        <View style={styles.cardTitles}>
-          <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
-          <Text style={styles.cardClass}>{task.className}</Text>
+    <View style={[styles.card, { borderLeftColor: color }]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        <View style={styles.cardTop}>
+          <View style={styles.cardTitles}>
+            <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
+            <Text style={styles.cardClass}>{task.className}</Text>
+          </View>
+          <View style={[styles.hourPill, { backgroundColor: color + '20' }]}>
+            <Text style={[styles.hourPillText, { color }]}>{task.estimatedHours}h</Text>
+          </View>
         </View>
-        <View style={[styles.hourPill, { backgroundColor: color + '20' }]}>
-          <Text style={[styles.hourPillText, { color }]}>{task.estimatedHours}h</Text>
+        <View style={styles.cardFooter}>
+          <Text style={styles.cardDue}>Due {task.dueDate}</Text>
+          <Text style={[styles.cardDays, {
+            color: days === 0 ? '#EF4444' : days <= 2 ? '#F59E0B' : '#555',
+          }]}>
+            {days === 0 ? 'Due today!' : days === 1 ? '1 day left' : `${days} days`}
+          </Text>
         </View>
+      </TouchableOpacity>
+      <View style={styles.progressRow}>
+        <View style={[styles.progressPill, { backgroundColor: statusColor + '20' }]}>
+          <Text style={[styles.progressPillText, { color: statusColor }]}>{progress}</Text>
+        </View>
+        <TouchableOpacity style={styles.progressButton} onPress={onProgress}>
+          <Text style={styles.progressButtonText}>Update</Text>
+        </TouchableOpacity>
       </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.cardDue}>Due {task.dueDate}</Text>
-        <Text style={[styles.cardDays, {
-          color: days === 0 ? '#EF4444' : days <= 2 ? '#F59E0B' : '#555',
-        }]}>
-          {days === 0 ? 'Due today!' : days === 1 ? '1 day left' : `${days} days`}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { tasks } = useTasks();
+  const { tasks, sessions, updateProgress } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const totalHours = tasks.reduce((sum, t) => sum + t.estimatedHours, 0);
   const urgentCount = tasks.filter(t => daysUntil(t.dueDateRaw) <= 2).length;
-  const onTrackCount = tasks.filter(t => daysUntil(t.dueDateRaw) > 5).length;
+  const completedCount = tasks.filter(t => t.progress === 'Done').length;
+  const recentSessions = sessions.slice(0, 3);
+  const smartSuggestions = buildSmartSuggestions(tasks, sessions);
+  const streak = getStudyStreak(sessions);
+  const badges = buildBadges(sessions, tasks, streak);
+  const unlockedBadges = badges.filter(badge => badge.unlocked);
+  const nextBadge = badges.find(badge => !badge.unlocked);
 
   return (
     <View style={styles.container}>
@@ -93,9 +266,85 @@ export default function HomeScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{onTrackCount}</Text>
-            <Text style={styles.statLabel}>on track</Text>
+            <Text style={styles.statValue}>{completedCount}</Text>
+            <Text style={styles.statLabel}>done</Text>
           </View>
+        </View>
+      )}
+
+      {(sessions.length > 0 || unlockedBadges.length > 0) && (
+        <View style={styles.badgePanel}>
+          <View style={styles.badgeHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Streaks and badges</Text>
+              <Text style={styles.suggestionHint}>
+                {streak > 0 ? `${streak} day study streak` : 'Finish a session to start a streak'}
+              </Text>
+            </View>
+            <View style={styles.streakBadge}>
+              <Text style={styles.streakValue}>{streak}</Text>
+              <Text style={styles.streakLabel}>days</Text>
+            </View>
+          </View>
+
+          <View style={styles.badgeGrid}>
+            {badges.map(badge => (
+              <View key={badge.id} style={[styles.badgeCard, !badge.unlocked && styles.badgeCardLocked]}>
+                <Text style={[styles.badgeName, !badge.unlocked && styles.badgeNameLocked]}>{badge.name}</Text>
+                <Text style={styles.badgeDetail}>{badge.unlocked ? 'Unlocked' : badge.detail}</Text>
+              </View>
+            ))}
+          </View>
+
+          {!!nextBadge && (
+            <View style={styles.nextBadgeCallout}>
+              <Text style={styles.nextBadgeTitle}>Next badge</Text>
+              <Text style={styles.nextBadgeText}>{nextBadge.name}: {nextBadge.detail}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {smartSuggestions.length > 0 && (
+        <View style={styles.suggestionPanel}>
+          <View style={styles.suggestionHeader}>
+            <Text style={styles.sectionTitle}>Smart suggestion</Text>
+            <Text style={styles.suggestionHint}>Based on due dates and progress</Text>
+          </View>
+          {smartSuggestions.map(suggestion => (
+            <TouchableOpacity
+              key={suggestion.task.id}
+              style={styles.suggestionCard}
+              onPress={() => router.push(`/focus?id=${suggestion.task.id}`)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.suggestionText}>
+                <Text style={styles.suggestionTitle}>{suggestion.title}</Text>
+                <Text style={styles.suggestionTask} numberOfLines={1}>{suggestion.task.assignmentName}</Text>
+                <Text style={styles.suggestionReason}>{suggestion.reason}</Text>
+              </View>
+              <View style={styles.suggestionAction}>
+                <Text style={styles.suggestionActionText}>{suggestion.action}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {recentSessions.length > 0 && (
+        <View style={styles.historyPanel}>
+          <Text style={styles.sectionTitle}>Recent focus</Text>
+          {recentSessions.map(session => (
+            <View key={session.id} style={styles.sessionRow}>
+              <View style={styles.sessionText}>
+                <Text style={styles.sessionTitle} numberOfLines={1}>{session.assignmentName}</Text>
+                <Text style={styles.sessionMeta}>
+                  {formatSessionTime(session.focusedSeconds)} focused - {session.coinsEarned} coins
+                </Text>
+              </View>
+              <Text style={styles.sessionPercent}>{session.progressPercent}%</Text>
+            </View>
+          ))}
         </View>
       )}
 
@@ -114,7 +363,12 @@ export default function HomeScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <TaskRow task={item} styles={styles} onPress={() => router.push(`/focus?id=${item.id}`)} />
+            <TaskRow
+              task={item}
+              styles={styles}
+              onPress={() => router.push(`/focus?id=${item.id}`)}
+              onProgress={() => updateProgress(item.id, nextProgress(item.progress))}
+            />
           )}
         />
       )}
@@ -276,6 +530,230 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cardDays: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 12,
+  },
+  progressPill: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  progressPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  progressButton: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surfaceAlt,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+  },
+  progressButtonText: {
+    color: theme.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  badgePanel: {
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginHorizontal: 24,
+    marginBottom: 18,
+    padding: 14,
+  },
+  badgeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  streakBadge: {
+    minWidth: 58,
+    borderRadius: 16,
+    backgroundColor: theme.secondary,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  streakValue: {
+    color: theme.school ? theme.background : theme.onPrimary,
+    fontSize: 20,
+    fontWeight: '900',
+    lineHeight: 22,
+  },
+  streakLabel: {
+    color: theme.school ? theme.background : theme.onPrimary,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  badgeCard: {
+    width: '48%',
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.secondary,
+    padding: 10,
+    minHeight: 78,
+  },
+  badgeCardLocked: {
+    borderColor: theme.border,
+    opacity: 0.68,
+  },
+  badgeName: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '900',
+    marginBottom: 5,
+  },
+  badgeNameLocked: {
+    color: theme.muted,
+  },
+  badgeDetail: {
+    color: theme.muted,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 15,
+  },
+  nextBadgeCallout: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 11,
+    marginTop: 10,
+  },
+  nextBadgeTitle: {
+    color: theme.secondary,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 4,
+  },
+  nextBadgeText: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  suggestionPanel: {
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginHorizontal: 24,
+    marginBottom: 18,
+    padding: 14,
+  },
+  suggestionHeader: {
+    marginBottom: 10,
+  },
+  suggestionHint: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: -4,
+  },
+  suggestionCard: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 12,
+    marginTop: 8,
+  },
+  suggestionText: {
+    marginBottom: 10,
+  },
+  suggestionTitle: {
+    color: theme.secondary,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 5,
+  },
+  suggestionTask: {
+    color: theme.text,
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  suggestionReason: {
+    color: theme.muted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  suggestionAction: {
+    alignSelf: 'flex-start',
+    backgroundColor: theme.secondary,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  suggestionActionText: {
+    color: theme.school ? theme.background : theme.onPrimary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  historyPanel: {
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginHorizontal: 24,
+    marginBottom: 18,
+    padding: 14,
+  },
+  sectionTitle: {
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  sessionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  sessionText: {
+    flex: 1,
+  },
+  sessionTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  sessionMeta: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sessionPercent: {
+    color: theme.primary,
+    fontSize: 13,
+    fontWeight: '900',
   },
   emptyState: {
     flex: 1,

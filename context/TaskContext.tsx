@@ -1,5 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 
+export type TaskProgress = 'Not started' | 'Working' | 'Almost done' | 'Done';
+
 export type Task = {
   id: string;
   assignmentName: string;
@@ -9,20 +11,41 @@ export type Task = {
   dueDateRaw: string;       // ISO date string for calculations
   estimatedHours: number;
   hoursPerDay: number;      // user-adjustable daily commitment
+  progress?: TaskProgress;
+};
+
+export type StudySession = {
+  id: string;
+  taskId?: string;
+  assignmentName: string;
+  className: string;
+  focusedSeconds: number;
+  coinsEarned: number;
+  goalHours: number;
+  progressPercent: number;
+  coinMultiplier: number;
+  partyRoom?: string;
+  createdAt: string;
 };
 
 type TaskContextType = {
   tasks: Task[];
+  sessions: StudySession[];
   addTask: (task: Omit<Task, 'id'>) => void;
   deleteTask: (id: string) => void;
+  addStudySession: (session: Omit<StudySession, 'id' | 'createdAt'>) => void;
+  updateProgress: (id: string, progress: TaskProgress) => void;
   updateHoursPerDay: (id: string, hours: number) => void;
   updateEstimatedHours: (id: string, hours: number) => void;
 };
 
 const TaskContext = createContext<TaskContextType>({
   tasks: [],
+  sessions: [],
   addTask: () => {},
   deleteTask: () => {},
+  addStudySession: () => {},
+  updateProgress: () => {},
   updateHoursPerDay: () => {},
   updateEstimatedHours: () => {},
 });
@@ -36,13 +59,26 @@ function computeHoursPerDay(estimatedHours: number, dueDateRaw: string): number 
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
 
   const addTask = (task: Omit<Task, 'id'>) => {
-    setTasks(prev => [...prev, { ...task, id: Date.now().toString() }]);
+    setTasks(prev => [...prev, { ...task, progress: task.progress ?? 'Not started', id: Date.now().toString() }]);
   };
 
   const deleteTask = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  const addStudySession = (session: Omit<StudySession, 'id' | 'createdAt'>) => {
+    setSessions(prev => [{
+      ...session,
+      id: `session-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    }, ...prev]);
+  };
+
+  const updateProgress = (id: string, progress: TaskProgress) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, progress } : t));
   };
 
   const updateHoursPerDay = (id: string, hours: number) => {
@@ -58,7 +94,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <TaskContext.Provider value={{ tasks, addTask, deleteTask, updateHoursPerDay, updateEstimatedHours }}>
+    <TaskContext.Provider value={{ tasks, sessions, addTask, deleteTask, addStudySession, updateProgress, updateHoursPerDay, updateEstimatedHours }}>
       {children}
     </TaskContext.Provider>
   );
