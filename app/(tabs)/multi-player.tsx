@@ -1,6 +1,8 @@
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -25,6 +27,16 @@ type StudentProfile = {
   availability: string;
 };
 
+type PartyAssignment = {
+  id: string;
+  title: string;
+  className: string;
+  owner: string;
+  goalHours: number;
+  details: string;
+  localTaskId?: string;
+};
+
 type StudyRoom = {
   id: string;
   name: string;
@@ -38,6 +50,7 @@ type StudyRoom = {
   friendsOnly?: boolean;
   host?: string;
   memberIds: string[];
+  assignments: PartyAssignment[];
 };
 
 type HelpPost = {
@@ -114,6 +127,24 @@ const STARTING_ROOMS: StudyRoom[] = [
     duration: '1 hour',
     subject: 'General study',
     memberIds: ['maya', 'sam'],
+    assignments: [
+      {
+        id: 'quiet-2a-exam',
+        title: 'Review for calculus exam',
+        className: 'Math study group',
+        owner: 'Maya',
+        goalHours: 1,
+        details: 'Practice problems, formulas, and any questions before the exam.',
+      },
+      {
+        id: 'quiet-2a-notes',
+        title: 'Clean up lecture notes',
+        className: 'Shared notes',
+        owner: 'Sam',
+        goalHours: 0.5,
+        details: 'Compare notes and fill in missing examples.',
+      },
+    ],
   },
   {
     id: 'group-1c',
@@ -126,6 +157,16 @@ const STARTING_ROOMS: StudyRoom[] = [
     subject: 'Exam prep',
     approvalRequired: true,
     memberIds: ['jordan'],
+    assignments: [
+      {
+        id: 'group-1c-exam',
+        title: 'Study for biology exam',
+        className: 'Biology 101',
+        owner: 'Jordan',
+        goalHours: 2,
+        details: 'Go through study guide, flashcards, and lab review questions.',
+      },
+    ],
   },
   {
     id: 'media-3b',
@@ -138,6 +179,16 @@ const STARTING_ROOMS: StudyRoom[] = [
     subject: 'Projects',
     friendsOnly: true,
     memberIds: ['maya', 'jordan'],
+    assignments: [
+      {
+        id: 'media-3b-project',
+        title: 'Finish project presentation',
+        className: 'Project work',
+        owner: 'Maya',
+        goalHours: 1.5,
+        details: 'Build slides, rehearse, and check sources together.',
+      },
+    ],
   },
 ];
 
@@ -175,7 +226,9 @@ const STARTING_POSTS: HelpPost[] = [
 ];
 
 export default function MultiPlayerScreen() {
+  const router = useRouter();
   const { theme, setSchoolTheme } = useSchoolTheme();
+  const { tasks } = useTasks();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [isSearching, setIsSearching] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
@@ -210,6 +263,8 @@ export default function MultiPlayerScreen() {
   const [approvalRequired, setApprovalRequired] = useState(true);
   const [friendsOnly, setFriendsOnly] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<StudyRoom | null>(null);
+  const [activePartyRoom, setActivePartyRoom] = useState<StudyRoom | null>(null);
+  const [partyTaskId, setPartyTaskId] = useState<string | null>(null);
   const [helpPosts, setHelpPosts] = useState<HelpPost[]>(STARTING_POSTS);
   const [helpTopic, setHelpTopic] = useState('');
   const [helpDetails, setHelpDetails] = useState('');
@@ -232,6 +287,37 @@ export default function MultiPlayerScreen() {
       return profile.focus === activeFilter;
     });
   }, [activeFilter, blockedIds, major]);
+
+  const activePartyMembers = useMemo(() => {
+    if (!activePartyRoom) return [];
+    const roomMembers = SAMPLE_PROFILES.filter(profile => activePartyRoom.memberIds.includes(profile.id));
+    return [
+      {
+        id: 'you',
+        name: name.trim() || 'You',
+        major: major.trim() || 'Student',
+        year: 'Party host',
+        focus: 'Shared focus',
+      },
+      ...roomMembers,
+    ];
+  }, [activePartyRoom, major, name]);
+
+  const partyMultiplier = 1 + Math.max(0, activePartyMembers.length - 1) * 0.5;
+  const activePartyAssignments = useMemo(() => {
+    if (!activePartyRoom) return [];
+    const personalAssignments: PartyAssignment[] = tasks.map(task => ({
+      id: `task-${task.id}`,
+      title: task.assignmentName,
+      className: task.className,
+      owner: name.trim() || 'You',
+      goalHours: task.hoursPerDay,
+      details: task.description || `Due ${task.dueDate}`,
+      localTaskId: task.id,
+    }));
+
+    return [...activePartyRoom.assignments, ...personalAssignments];
+  }, [activePartyRoom, name, tasks]);
 
   const pickProfileImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -306,6 +392,16 @@ export default function MultiPlayerScreen() {
       friendsOnly,
       host: name.trim(),
       memberIds: [],
+      assignments: [
+        {
+          id: `assignment-${Date.now()}`,
+          title: roomSubject.trim() || 'Study together',
+          className: major.trim() || 'Study group',
+          owner: name.trim() || 'You',
+          goalHours: 1,
+          details: roomVibe.trim() || 'Work on the main study goal for this room.',
+        },
+      ],
     };
 
     setStudyRooms(current => [room, ...current]);
@@ -326,9 +422,55 @@ export default function MultiPlayerScreen() {
   };
 
   const handleConfirmJoin = (room: StudyRoom) => {
-    const action = room.approvalRequired ? 'request sent' : 'joined';
-    Alert.alert('Done', `You ${action} ${room.name}.`);
+    if (room.approvalRequired) {
+      Alert.alert('Request sent', `${room.name} will open once the host approves you.`);
+      setSelectedRoom(null);
+      return;
+    }
+
+    const joinedRoom = {
+      ...room,
+      memberIds: room.memberIds.includes('you') ? room.memberIds : ['you', ...room.memberIds],
+    };
+    setStudyRooms(current => current.map(item => item.id === room.id ? joinedRoom : item));
+    setActivePartyRoom(joinedRoom);
+    setPartyTaskId(joinedRoom.assignments[0]?.id ?? (tasks[0] ? `task-${tasks[0].id}` : null));
     setSelectedRoom(null);
+    Alert.alert('Joined party', `You are now connected with ${room.name}. Pick an assignment to focus together.`);
+  };
+
+  const handleStartPartyFocus = () => {
+    const selectedAssignment = activePartyAssignments.find(assignment => assignment.id === partyTaskId);
+    if (!selectedAssignment) {
+      Alert.alert('Pick an assignment', 'Choose the group assignment everyone is working on first.');
+      return;
+    }
+
+    router.push({
+      pathname: '/focus',
+      params: {
+        id: selectedAssignment.localTaskId ?? selectedAssignment.id,
+        partyRoom: activePartyRoom?.name ?? 'Study party',
+        partySize: String(activePartyMembers.length),
+        partyNames: activePartyMembers.map(member => member.name).join(', '),
+        assignmentName: selectedAssignment.title,
+        className: selectedAssignment.className,
+        goalHours: String(selectedAssignment.goalHours),
+      },
+    });
+  };
+
+  const handleLeaveParty = () => {
+    if (!activePartyRoom) return;
+    setStudyRooms(current => current.map(room => (
+      room.id === activePartyRoom.id
+        ? { ...room, memberIds: room.memberIds.filter(memberId => memberId !== 'you') }
+        : room
+    )));
+    setActivePartyRoom(null);
+    setPartyTaskId(null);
+    setSelectedRoom(null);
+    Alert.alert('Left study group', 'You can now join or create another library room.');
   };
 
   const handleCreateHelpPost = () => {
@@ -569,8 +711,85 @@ export default function MultiPlayerScreen() {
     </View>
   );
 
-  const renderStudyRooms = () => (
-    <View style={styles.cardList}>
+  const renderActiveParty = () => {
+    if (!activePartyRoom) return null;
+
+    return (
+      <View style={styles.partyCard}>
+        <View style={styles.partyHeader}>
+          <View style={styles.profileHeadingText}>
+            <Text style={styles.selectedSchoolLabel}>Live party</Text>
+            <Text style={styles.partyTitle}>{activePartyRoom.name}</Text>
+            <Text style={styles.cardSubtle}>
+              {activePartyMembers.length} students connected - {partyMultiplier.toFixed(1)}x coins
+            </Text>
+          </View>
+          <View style={styles.multiplierBadge}>
+            <Text style={styles.multiplierText}>{partyMultiplier.toFixed(1)}x</Text>
+          </View>
+        </View>
+
+        <View style={styles.partyMemberStack}>
+          {activePartyMembers.map(member => (
+            <View key={member.id} style={styles.partyMemberPill}>
+              <View style={styles.partyAvatar}>
+                <Text style={styles.avatarText}>{member.name.slice(0, 1)}</Text>
+              </View>
+              <View style={styles.profileHeadingText}>
+                <Text style={styles.cardName}>{member.name}</Text>
+                <Text style={styles.cardSubtle}>{member.major}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.sectionLabel}>Party assignments</Text>
+        {activePartyAssignments.length > 0 ? (
+          <View style={styles.partyTaskList}>
+            {activePartyAssignments.map(assignment => (
+              <TouchableOpacity
+                key={assignment.id}
+                style={[styles.partyTaskButton, partyTaskId === assignment.id && styles.partyTaskButtonActive]}
+                onPress={() => setPartyTaskId(assignment.id)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.profileHeadingText}>
+                  <Text style={styles.partyTaskTitle}>{assignment.title}</Text>
+                  <Text style={styles.cardSubtle}>
+                    {assignment.className} - {assignment.goalHours}h goal - Added by {assignment.owner}
+                  </Text>
+                  <Text style={styles.partyTaskDetails}>{assignment.details}</Text>
+                </View>
+                <FontAwesome5 name="chevron-right" size={12} color={theme.secondary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.emptyText}>No group assignments have been added yet.</Text>
+        )}
+
+        <TouchableOpacity style={styles.partyFocusButton} onPress={handleStartPartyFocus} activeOpacity={0.85}>
+          <FontAwesome5 name="play" size={13} color={theme.school ? theme.background : theme.onPrimary} />
+          <Text style={styles.partyFocusButtonText}>Start party focus</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.leavePartyButton} onPress={handleLeaveParty} activeOpacity={0.85}>
+          <Text style={styles.leavePartyButtonText}>Leave study group</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderStudyRooms = () => {
+    if (activePartyRoom) {
+      return (
+        <View style={styles.cardList}>
+          {renderActiveParty()}
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.cardList}>
       {!!selectedRoom && (
         <View style={styles.roomDetailCard}>
           <Text style={styles.selectedSchoolLabel}>Review room</Text>
@@ -601,6 +820,19 @@ export default function MultiPlayerScreen() {
                 {selectedRoom.friendsOnly ? 'Friends only' : selectedRoom.approvalRequired ? 'Approval needed' : 'Open join'}
               </Text>
             </View>
+          </View>
+
+          <Text style={styles.sectionLabel}>Group assignments</Text>
+          <View style={styles.partyTaskList}>
+            {selectedRoom.assignments.map(assignment => (
+              <View key={assignment.id} style={styles.previewAssignmentCard}>
+                <Text style={styles.partyTaskTitle}>{assignment.title}</Text>
+                <Text style={styles.cardSubtle}>
+                  {assignment.className} - {assignment.goalHours}h goal - Added by {assignment.owner}
+                </Text>
+                <Text style={styles.partyTaskDetails}>{assignment.details}</Text>
+              </View>
+            ))}
           </View>
 
           <Text style={styles.sectionLabel}>People in this room</Text>
@@ -686,6 +918,9 @@ export default function MultiPlayerScreen() {
             <Text style={styles.cardMajor}>{room.floor} - {room.capacity}</Text>
           </View>
           <Text style={styles.cardFact}>{room.subject} - {room.vibe}</Text>
+          {!!room.assignments[0] && (
+            <Text style={styles.roomAssignmentPreview}>Working on: {room.assignments[0].title}</Text>
+          )}
           <Text style={styles.cardSubtle}>Time: {room.available} - Duration: {room.duration}</Text>
           {!!room.host && <Text style={styles.cardSubtle}>Hosted by {room.host}</Text>}
           <View style={styles.roomFooter}>
@@ -697,8 +932,9 @@ export default function MultiPlayerScreen() {
           </View>
         </View>
       ))}
-    </View>
-  );
+      </View>
+    );
+  };
 
   const renderBrowse = () => (
     <>
@@ -963,6 +1199,24 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   commentRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   commentInput: { flex: 1, marginBottom: 0 },
   roomForm: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
+  partyCard: { backgroundColor: theme.surface, borderRadius: 22, borderWidth: 1, borderColor: theme.secondary, padding: 16, gap: 12 },
+  partyHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  partyTitle: { color: theme.text, fontSize: 22, fontWeight: '900', marginBottom: 3 },
+  multiplierBadge: { minWidth: 58, borderRadius: 16, backgroundColor: theme.secondary, paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center' },
+  multiplierText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 16, fontWeight: '900' },
+  partyMemberStack: { gap: 8 },
+  partyMemberPill: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 10 },
+  partyAvatar: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primary },
+  partyTaskList: { gap: 8 },
+  partyTaskButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 12 },
+  partyTaskButtonActive: { borderColor: theme.secondary, backgroundColor: theme.school ? theme.surfaceAlt : '#231F35' },
+  partyTaskTitle: { color: theme.text, fontSize: 15, fontWeight: '900', marginBottom: 3 },
+  partyTaskDetails: { color: '#667085', fontSize: 12, lineHeight: 17, marginTop: 6 },
+  previewAssignmentCard: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 12 },
+  partyFocusButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: theme.secondary, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14 },
+  partyFocusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 15, fontWeight: '900' },
+  leavePartyButton: { alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13 },
+  leavePartyButtonText: { color: '#EF4444', fontSize: 14, fontWeight: '900' },
   privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 10 },
   privacyRowActive: { backgroundColor: theme.secondary, borderColor: theme.secondary },
   toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#94A3B8' },
@@ -986,6 +1240,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   confirmButton: { flex: 1, backgroundColor: theme.secondary, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13 },
   confirmButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '900', textAlign: 'center' },
   roomCard: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
+  roomAssignmentPreview: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 12, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, fontWeight: '800', marginTop: 10 },
   roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   smallButton: { backgroundColor: theme.secondary, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
   smallButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 12, fontWeight: '900' },
