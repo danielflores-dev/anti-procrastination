@@ -168,7 +168,6 @@ export default function HomeScreen() {
   const smartSuggestions = buildSmartSuggestions(tasks, sessions);
   const streak = getStudyStreak(sessions);
   const badges = buildBadges(sessions, tasks, streak);
-  const unlockedBadges = badges.filter(badge => badge.unlocked);
   const nextBadge = badges.find(badge => !badge.unlocked);
 
   return (
@@ -176,6 +175,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
+          <Text style={styles.kicker}>Today</Text>
           <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.date}>{formatDate()}</Text>
         </View>
@@ -206,36 +206,15 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {(sessions.length > 0 || unlockedBadges.length > 0) && (
-        <View style={styles.badgePanel}>
-          <View style={styles.badgeHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Streaks and badges</Text>
-              <Text style={styles.suggestionHint}>
-                {streak > 0 ? `${streak} day study streak` : 'Finish a session to start a streak'}
-              </Text>
-            </View>
-            <View style={styles.streakBadge}>
-              <Text style={styles.streakValue}>{streak}</Text>
-              <Text style={styles.streakLabel}>days</Text>
-            </View>
-          </View>
-
-          <View style={styles.badgeGrid}>
-            {badges.map(badge => (
-              <View key={badge.id} style={[styles.badgeCard, !badge.unlocked && styles.badgeCardLocked]}>
-                <Text style={[styles.badgeName, !badge.unlocked && styles.badgeNameLocked]}>{badge.name}</Text>
-                <Text style={styles.badgeDetail}>{badge.unlocked ? 'Unlocked' : badge.detail}</Text>
-              </View>
-            ))}
-          </View>
-
-          {!!nextBadge && (
-            <View style={styles.nextBadgeCallout}>
-              <Text style={styles.nextBadgeTitle}>Next badge</Text>
-              <Text style={styles.nextBadgeText}>{nextBadge.name}: {nextBadge.detail}</Text>
-            </View>
-          )}
+      {tasks.length === 0 && (
+        <View style={styles.suggestionPanel}>
+          <Text style={styles.sectionTitle}>Start simple</Text>
+          <Text style={styles.suggestionReason}>
+            Add one assignment and the app will help estimate time, plan focus sessions, and track progress.
+          </Text>
+          <TouchableOpacity style={styles.suggestionAction} onPress={() => router.push('/auto-add')} activeOpacity={0.85}>
+            <Text style={styles.suggestionActionText}>Auto-add assignment</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -265,6 +244,46 @@ export default function HomeScreen() {
         </View>
       )}
 
+      <View style={styles.homeActions}>
+        <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/single-player')}>
+          <Text style={styles.primaryHomeActionText}>{tasks.length > 0 ? 'Open assignments' : 'Add assignments'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/multi-player')}>
+          <Text style={styles.primaryHomeActionText}>Find study groups</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.badgePanel}>
+        <View style={styles.badgeHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Streaks and badges</Text>
+            <Text style={styles.suggestionHint}>
+              {streak > 0 ? `${streak} day study streak` : 'Finish a session to start a streak'}
+            </Text>
+          </View>
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakValue}>{streak}</Text>
+            <Text style={styles.streakLabel}>days</Text>
+          </View>
+        </View>
+
+        <View style={styles.badgeGrid}>
+          {badges.map(badge => (
+            <View key={badge.id} style={[styles.badgeCard, !badge.unlocked && styles.badgeCardLocked]}>
+              <Text style={[styles.badgeName, !badge.unlocked && styles.badgeNameLocked]}>{badge.name}</Text>
+              <Text style={styles.badgeDetail}>{badge.unlocked ? 'Unlocked' : badge.detail}</Text>
+            </View>
+          ))}
+        </View>
+
+        {!!nextBadge && (
+          <View style={styles.nextBadgeCallout}>
+            <Text style={styles.nextBadgeTitle}>Next badge</Text>
+            <Text style={styles.nextBadgeText}>{nextBadge.name}: {nextBadge.detail}</Text>
+          </View>
+        )}
+      </View>
+
       {recentSessions.length > 0 && (
         <View style={styles.historyPanel}>
           <Text style={styles.sectionTitle}>Recent focus</Text>
@@ -273,7 +292,7 @@ export default function HomeScreen() {
               <View style={styles.sessionText}>
                 <Text style={styles.sessionTitle} numberOfLines={1}>{session.assignmentName}</Text>
                 <Text style={styles.sessionMeta}>
-                  {formatSessionTime(session.focusedSeconds)} focused - {session.coinsEarned} coins
+                  {formatSessionTime(session.focusedSeconds)} focused, {session.coinsEarned} coins
                 </Text>
               </View>
               <Text style={styles.sessionPercent}>{session.progressPercent}%</Text>
@@ -282,14 +301,6 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <View style={styles.homeActions}>
-        <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/single-player')}>
-          <Text style={styles.primaryHomeActionText}>{tasks.length > 0 ? 'Open assignments' : 'Add assignments'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryHomeAction} onPress={() => router.push('/(tabs)/multi-player')}>
-          <Text style={styles.secondaryHomeActionText}>Find study groups</Text>
-        </TouchableOpacity>
-      </View>
     </ScrollView>
   );
 }
@@ -298,23 +309,30 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
-    paddingTop: 64,
+    paddingTop: 36,
   },
   dashboardContent: {
-    paddingBottom: 36,
+    paddingBottom: 124,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 24,
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    marginBottom: 18,
+  },
+  kicker: {
+    color: theme.school ? theme.secondary : theme.accent,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginBottom: 5,
+    textTransform: 'uppercase',
   },
   greeting: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '900',
     color: theme.text,
-    letterSpacing: -0.3,
   },
   date: {
     fontSize: 13,
@@ -341,10 +359,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     backgroundColor: theme.surface,
-    marginHorizontal: 24,
-    borderRadius: 14,
+    marginHorizontal: 20,
+    borderRadius: 18,
     paddingVertical: 14,
-    marginBottom: 24,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: theme.border,
   },
@@ -385,7 +403,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
-    borderLeftWidth: 4,
     borderWidth: 1,
     borderColor: theme.border,
     shadowColor: '#000',
@@ -546,7 +563,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   planDate: {
     width: 66,
-    color: theme.secondary,
+    color: theme.school ? theme.secondary : theme.accent,
     fontSize: 12,
     fontWeight: '900',
   },
@@ -570,9 +587,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.border,
-    marginHorizontal: 24,
+    marginHorizontal: 20,
     marginBottom: 18,
-    padding: 14,
+    padding: 16,
   },
   badgeHeader: {
     flexDirection: 'row',
@@ -584,7 +601,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   streakBadge: {
     minWidth: 58,
     borderRadius: 16,
-    backgroundColor: theme.secondary,
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -610,15 +627,15 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   badgeCard: {
     width: '48%',
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: theme.secondary,
+    borderColor: theme.border,
     padding: 10,
     minHeight: 78,
   },
   badgeCardLocked: {
     borderColor: theme.border,
-    opacity: 0.68,
+    opacity: 0.82,
   },
   badgeName: {
     color: theme.text,
@@ -644,7 +661,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     marginTop: 10,
   },
   nextBadgeTitle: {
-    color: theme.secondary,
+    color: theme.school ? theme.secondary : theme.accent,
     fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -662,9 +679,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.border,
-    marginHorizontal: 24,
+    marginHorizontal: 20,
     marginBottom: 18,
-    padding: 14,
+    padding: 16,
   },
   suggestionHeader: {
     marginBottom: 10,
@@ -677,7 +694,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   suggestionCard: {
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.border,
     padding: 12,
@@ -687,7 +704,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     marginBottom: 10,
   },
   suggestionTitle: {
-    color: theme.secondary,
+    color: theme.school ? theme.secondary : theme.accent,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -707,10 +724,16 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   suggestionAction: {
     alignSelf: 'flex-start',
-    backgroundColor: theme.secondary,
-    borderRadius: 12,
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
+    borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    marginTop: 10,
+    shadowColor: theme.school ? theme.secondary : theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
   },
   suggestionActionText: {
     color: theme.school ? theme.background : theme.onPrimary,
@@ -722,7 +745,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.border,
-    marginHorizontal: 24,
+    marginHorizontal: 20,
     marginBottom: 18,
     padding: 14,
   },
@@ -762,14 +785,19 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   homeActions: {
     gap: 10,
-    marginHorizontal: 24,
+    marginHorizontal: 20,
     marginTop: 2,
   },
   primaryHomeAction: {
-    backgroundColor: theme.secondary,
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
     borderRadius: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
+    shadowColor: theme.school ? theme.secondary : theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
   },
   primaryHomeActionText: {
     color: theme.school ? theme.background : theme.onPrimary,

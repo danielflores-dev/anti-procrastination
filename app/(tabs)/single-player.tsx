@@ -49,7 +49,7 @@ function AssignmentCard({
   const doneSteps = steps.filter(step => step.done).length;
 
   return (
-    <View style={[styles.card, { borderLeftColor: workloadColor }]}>
+    <View style={styles.card}>
       <View style={styles.cardTop}>
         <View style={styles.cardTitles}>
           <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
@@ -61,7 +61,10 @@ function AssignmentCard({
       </View>
 
       <View style={styles.metaRow}>
-        <Text style={styles.cardDue}>Due {task.dueDate}</Text>
+        <View style={styles.metaLeft}>
+          <View style={[styles.workloadDot, { backgroundColor: workloadColor }]} />
+          <Text style={styles.cardDue}>Due {task.dueDate}</Text>
+        </View>
         <Text style={[styles.cardDays, { color: days <= 1 ? '#EF4444' : days <= 2 ? '#F59E0B' : '#667085' }]}>
           {days === 0 ? 'Due today' : days === 1 ? '1 day left' : `${days} days left`}
         </Text>
@@ -125,8 +128,9 @@ export default function SinglePlayerScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Single Player</Text>
-          <Text style={styles.date}>Assignments, plans, and focus sessions</Text>
+          <Text style={styles.kicker}>Solo study</Text>
+          <Text style={styles.greeting}>Assignments</Text>
+          <Text style={styles.date}>Plan the work, then start a focus session.</Text>
         </View>
         <View style={styles.countPill}>
           <Text style={styles.countPillText}>{tasks.length}</Text>
@@ -154,7 +158,7 @@ export default function SinglePlayerScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>+</Text>
           <Text style={styles.emptyTitle}>Add your first assignment</Text>
-          <Text style={styles.emptySub}>Use Auto-add for a sample AI estimate or create one manually.</Text>
+          <Text style={styles.emptySub}>Use Auto-add for an estimate or create one yourself.</Text>
         </View>
       ) : (
         <FlatList
@@ -177,7 +181,7 @@ export default function SinglePlayerScreen() {
 
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.autoBtn} onPress={() => router.push('/auto-add')}>
-          <Text style={styles.autoBtnText}>Auto-add</Text>
+          <Text style={styles.autoBtnText}>Auto-add assignment</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.fab} onPress={() => router.push('/add-task')}>
           <Text style={styles.fabIcon}>+</Text>
@@ -188,36 +192,57 @@ export default function SinglePlayerScreen() {
 }
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background, paddingTop: 64 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 24, marginBottom: 18 },
-  greeting: { fontSize: 26, fontWeight: '800', color: theme.text },
-  date: { fontSize: 13, color: theme.muted, marginTop: 3, fontWeight: '600' },
-  countPill: { backgroundColor: theme.surfaceAlt, borderRadius: 18, minWidth: 36, height: 36, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: theme.border },
-  countPillText: { color: theme.primary, fontSize: 16, fontWeight: '800' },
-  statsRow: { flexDirection: 'row', backgroundColor: theme.surface, marginHorizontal: 24, borderRadius: 14, paddingVertical: 14, marginBottom: 16, borderWidth: 1, borderColor: theme.border },
+  container: { flex: 1, backgroundColor: theme.background, paddingTop: 36 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 16 },
+  kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '900', letterSpacing: 0.8, marginBottom: 5, textTransform: 'uppercase' },
+  greeting: { fontSize: 28, fontWeight: '900', color: theme.text },
+  date: { fontSize: 13, color: theme.muted, marginTop: 4, fontWeight: '600', lineHeight: 18 },
+  countPill: { backgroundColor: theme.surfaceAlt, borderRadius: 18, minWidth: 40, height: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: theme.border },
+  countPillText: { color: theme.text, fontSize: 16, fontWeight: '900' },
+  statsRow: { flexDirection: 'row', backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 18, paddingVertical: 14, marginBottom: 14, borderWidth: 1, borderColor: theme.border },
   statItem: { flex: 1, alignItems: 'center' },
   statValue: { color: theme.text, fontSize: 20, fontWeight: '800' },
   statUrgent: { color: '#EF4444' },
   statLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   statDivider: { width: 1, backgroundColor: theme.border },
   list: { flex: 1 },
-  listContent: { paddingHorizontal: 24, paddingBottom: 100 },
-  card: { backgroundColor: theme.surface, borderRadius: 14, padding: 16, marginBottom: 12, borderLeftWidth: 4, borderWidth: 1, borderColor: theme.border },
+  listContent: { paddingHorizontal: 20, paddingBottom: 108 },
+  card: {
+    backgroundColor: theme.surface,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   cardTitles: { flex: 1, marginRight: 10 },
   cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 3 },
   cardClass: { color: theme.muted, fontSize: 13, fontWeight: '600' },
   hourPill: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   hourPillText: { fontSize: 13, fontWeight: '800' },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border },
+  metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 },
+  workloadDot: { width: 8, height: 8, borderRadius: 4 },
   cardDue: { color: theme.muted, fontSize: 12, fontWeight: '600' },
   cardDays: { fontSize: 12, fontWeight: '800' },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  focusButton: { flex: 1, backgroundColor: theme.secondary, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  focusButton: {
+    flex: 1,
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    shadowColor: theme.school ? theme.secondary : theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   focusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '900' },
-  progressButton: { borderRadius: 12, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surfaceAlt, paddingHorizontal: 12, paddingVertical: 11 },
+  progressButton: { borderRadius: 14, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surfaceAlt, paddingHorizontal: 12, paddingVertical: 13 },
   progressButtonText: { fontSize: 12, fontWeight: '900' },
-  breakdownBox: { backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, marginTop: 12, padding: 12 },
+  breakdownBox: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 12, padding: 12 },
   breakdownHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   sectionMiniTitle: { color: theme.text, fontSize: 13, fontWeight: '900' },
   breakdownCount: { color: theme.muted, fontSize: 12, fontWeight: '800' },
@@ -227,9 +252,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   stepCheckText: { color: '#ffffff', fontSize: 13, fontWeight: '900' },
   stepText: { flex: 1, color: theme.text, fontSize: 13, fontWeight: '700' },
   stepTextDone: { color: theme.muted, textDecorationLine: 'line-through' },
-  planBox: { backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, marginTop: 10, padding: 12, gap: 8 },
+  planBox: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 10, padding: 12, gap: 8 },
   planRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  planDate: { width: 66, color: theme.secondary, fontSize: 12, fontWeight: '900' },
+  planDate: { width: 66, color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '900' },
   planTextWrap: { flex: 1 },
   planFocus: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 17 },
   planMinutes: { color: theme.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
@@ -237,9 +262,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.primary, color: '#fff', textAlign: 'center', lineHeight: 54, fontSize: 30, fontWeight: '300', marginBottom: 16 },
   emptyTitle: { color: theme.text, fontSize: 20, fontWeight: '800', marginBottom: 8 },
   emptySub: { color: theme.muted, fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingBottom: 24, paddingTop: 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border },
-  autoBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface },
-  autoBtnText: { color: theme.primary, fontSize: 14, fontWeight: '800' },
-  fab: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center' },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 24, paddingTop: 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border },
+  autoBtn: { flex: 1, marginRight: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, alignItems: 'center' },
+  autoBtnText: { color: theme.text, fontSize: 14, fontWeight: '900' },
+  fab: { width: 56, height: 56, borderRadius: 20, backgroundColor: theme.school ? theme.secondary : theme.primary, alignItems: 'center', justifyContent: 'center', shadowColor: theme.school ? theme.secondary : theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 },
   fabIcon: { color: '#ffffff', fontSize: 30, fontWeight: '300', lineHeight: 34, marginTop: -2 },
 });

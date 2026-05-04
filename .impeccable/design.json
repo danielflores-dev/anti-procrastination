@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-04T11:16:00-07:00",
+  "title": "Design System: AntiProcrastination",
+  "extensions": {
+    "colorMeta": {
+      "default-primary": {
+        "role": "primary",
+        "displayName": "Default Game Purple",
+        "canonical": "#6C63FF",
+        "tonalRamp": ["oklch(18% 0.08 290)", "oklch(28% 0.12 290)", "oklch(38% 0.16 290)", "oklch(50% 0.19 290)", "oklch(62% 0.2 290)", "oklch(74% 0.15 290)", "oklch(86% 0.09 290)", "oklch(95% 0.04 290)"]
+      },
+      "default-secondary": {
+        "role": "secondary",
+        "displayName": "Default Night Black",
+        "canonical": "#0F0F0F",
+        "tonalRamp": ["#0F0F0F", "#171717", "#1F1F1F", "#2A2A2A", "#444444", "#666666", "#999999", "#D0D0D0"]
+      },
+      "default-accent": {
+        "role": "tertiary",
+        "displayName": "Soft Party Lavender",
+        "canonical": "#B8B5FF",
+        "tonalRamp": ["oklch(20% 0.05 290)", "oklch(32% 0.07 290)", "oklch(44% 0.09 290)", "oklch(56% 0.11 290)", "oklch(68% 0.11 290)", "oklch(78% 0.09 290)", "oklch(88% 0.06 290)", "oklch(96% 0.03 290)"]
+      },
+      "default-surface": {
+        "role": "neutral",
+        "displayName": "Raised Surface",
+        "canonical": "#1A1A1A",
+        "tonalRamp": ["#111111", "#1A1A1A", "#252525", "#333333", "#555555", "#777777", "#AAAAAA", "#E5E5E5"]
+      },
+      "default-surface-alt": {
+        "role": "neutral",
+        "displayName": "Purple Shadow Surface",
+        "canonical": "#252044",
+        "tonalRamp": ["#141124", "#1C1833", "#252044", "#332D5B", "#4B4280", "#756DB0", "#A9A2DA", "#E4E1FF"]
+      },
+      "success": {
+        "role": "tertiary",
+        "displayName": "Completion Green",
+        "canonical": "#22C55E",
+        "tonalRamp": ["oklch(18% 0.06 150)", "oklch(28% 0.09 150)", "oklch(38% 0.12 150)", "oklch(50% 0.15 150)", "oklch(62% 0.17 150)", "oklch(74% 0.13 150)", "oklch(86% 0.08 150)", "oklch(95% 0.04 150)"]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "Coin Gold",
+        "canonical": "#F59E0B",
+        "tonalRamp": ["oklch(20% 0.06 75)", "oklch(32% 0.09 75)", "oklch(44% 0.12 75)", "oklch(58% 0.15 75)", "oklch(72% 0.17 75)", "oklch(82% 0.13 75)", "oklch(90% 0.08 75)", "oklch(96% 0.04 75)"]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "Urgency Red",
+        "canonical": "#EF4444",
+        "tonalRamp": ["oklch(20% 0.07 25)", "oklch(32% 0.1 25)", "oklch(44% 0.14 25)", "oklch(56% 0.17 25)", "oklch(68% 0.18 25)", "oklch(80% 0.12 25)", "oklch(90% 0.07 25)", "oklch(96% 0.035 25)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Multiplayer hero titles and rare high-impact screen headings." },
+      "headline": { "displayName": "Headline", "purpose": "Main tab headings, dashboard greetings, and screen titles." },
+      "title": { "displayName": "Title", "purpose": "Cards, room names, profile names, modal titles, and party assignment names." },
+      "body": { "displayName": "Body", "purpose": "Descriptions, metadata, helper text, comments, and assignment details." },
+      "label": { "displayName": "Label", "purpose": "Section labels, stats, tags, due-state labels, and recap kickers." }
+    },
+    "shadows": [
+      { "name": "tab-bar-lift", "value": "shadowOffset 0 -4, shadowOpacity 0.4, shadowRadius 12, elevation 16", "purpose": "Bottom navigation only." },
+      { "name": "hero-lift", "value": "shadowOffset 0 10, shadowOpacity 0.18, shadowRadius 18, elevation 8", "purpose": "Top-level feature panels." },
+      { "name": "action-glow", "value": "shadowOpacity 0.35, shadowRadius 10, elevation 6", "purpose": "Primary actions that start a flow." }
+    ],
+    "motion": [
+      { "name": "focus-ring-pulse", "value": "3000ms scale and fade loop", "purpose": "Immersive focus screen progress atmosphere." },
+      { "name": "coin-toast", "value": "1200ms translateY and fade", "purpose": "Coin reward feedback without blocking study flow." }
+    ],
+    "breakpoints": [
+      { "name": "mobile-first", "value": "React Native flexible layout" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main study action or flow-starting control.",
+      "html": "<button class=\"ds-btn-primary\">Start focus</button>",
+      "css": ".ds-btn-primary { background: #6C63FF; color: #FFFFFF; border: 0; border-radius: 16px; padding: 14px 16px; font-size: 15px; font-weight: 900; min-height: 48px; box-shadow: 0 6px 18px rgba(108, 99, 255, 0.28); } .ds-btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(184, 181, 255, 0.55); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Support action, message action, cancel action, or low-pressure choice.",
+      "html": "<button class=\"ds-btn-secondary\">Message room</button>",
+      "css": ".ds-btn-secondary { background: #252044; color: #FFFFFF; border: 1px solid #2A2A2A; border-radius: 14px; padding: 13px 16px; font-size: 14px; font-weight: 900; min-height: 46px; } .ds-btn-secondary:hover { border-color: #6C63FF; } .ds-btn-secondary:focus-visible { outline: 3px solid rgba(108, 99, 255, 0.4); outline-offset: 2px; }"
+    },
+    {
+      "name": "Study Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Assignment, profile, feed post, room, or schedule item container.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-card-label\">Computer Science</p><h3>Project checkpoint</h3><p>Start a short focus session and keep the plan moving.</p></article>",
+      "css": ".ds-card { background: #1A1A1A; color: #FFFFFF; border: 1px solid #2A2A2A; border-radius: 16px; padding: 16px; } .ds-card h3 { margin: 4px 0 6px; font-size: 18px; line-height: 1.2; font-weight: 900; } .ds-card p { margin: 0; color: #9CA3AF; font-size: 13px; line-height: 1.45; } .ds-card-label { color: #B8B5FF; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "School search, profile fields, room creation, and schedule forms.",
+      "html": "<label class=\"ds-field\"><span>University</span><input placeholder=\"Type your school name\" /></label>",
+      "css": ".ds-field { display: grid; gap: 8px; color: #FFFFFF; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; } .ds-field input { background: #252044; color: #FFFFFF; border: 1px solid #2A2A2A; border-radius: 14px; padding: 12px 14px; font-size: 15px; min-height: 46px; } .ds-field input::placeholder { color: #9CA3AF; } .ds-field input:focus { outline: 3px solid rgba(108, 99, 255, 0.35); border-color: #6C63FF; }"
+    },
+    {
+      "name": "Selected Chip",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "Filter, active assignment, tag, or privacy state.",
+      "html": "<span class=\"ds-chip\">Exam prep</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; min-height: 32px; padding: 8px 12px; border-radius: 999px; background: #6C63FF; color: #FFFFFF; font-size: 12px; font-weight: 900; } .ds-chip:hover { filter: brightness(1.08); } .ds-chip:focus-visible { outline: 3px solid rgba(184, 181, 255, 0.55); outline-offset: 2px; }"
+    },
+    {
+      "name": "Bottom Tab",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Stable five-tab mobile navigation.",
+      "html": "<nav class=\"ds-tabs\"><span class=\"ds-tab active\">Home</span><span class=\"ds-tab\">Single</span><span class=\"ds-tab\">Multi-player</span></nav>",
+      "css": ".ds-tabs { display: flex; gap: 8px; align-items: center; justify-content: space-around; background: #141414; border-top: 1px solid #2A2A2A; padding: 8px 12px 14px; box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4); } .ds-tab { color: #666666; font-size: 11px; font-weight: 600; letter-spacing: 0.2px; } .ds-tab.active { color: #6C63FF; font-weight: 800; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Campus Game Night",
+    "overview": "AntiProcrastination should feel like a clean campus study hub with the warmth of a small group chat and the motivation loop of a light study game. The app is social, lively, and motivating, with a hint of Discord in the way students find people, rooms, and shared study activity.",
+    "keyCharacteristics": [
+      "School-driven theme colors across the full app.",
+      "Dark default canvas with high-contrast cards and clear touch targets.",
+      "Rounded, lifted surfaces for active areas, study rooms, and focus controls.",
+      "Motivational accents through coins, streaks, badges, and progress state.",
+      "Social UI that feels useful before it feels busy."
+    ],
+    "rules": [
+      { "name": "The School Takes Over Rule", "body": "After a student selects a school, use the school theme for the entire app surface, not only badges or tiny accents.", "section": "colors" },
+      { "name": "The Contrast First Rule", "body": "Every school theme must keep text readable on primary, secondary, surface, and button colors. If a school color makes text hard to read, darken the surface or change the text token before shipping.", "section": "colors" },
+      { "name": "The Short Labels Rule", "body": "Buttons and tabs must use short, obvious phrases. Use \"Start focus\", \"Add class\", \"Find study groups\", and \"Save recap\" style copy.", "section": "typography" },
+      { "name": "The No Portal Copy Rule", "body": "Avoid institutional wording. Say \"Study room\", not \"resource reservation\"; say \"Find classmates\", not \"peer collaboration directory\".", "section": "typography" },
+      { "name": "The Lift What Matters Rule", "body": "Use strong elevation only for navigation, primary actions, active study states, and focus mode. Ordinary list cards stay bordered and tidy.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do make the next study action obvious on every screen.",
+      "Do use school colors across the full app after school selection.",
+      "Do keep social areas useful: profiles, friends, rooms, feed, and messages should support studying.",
+      "Do use large touch targets for tabs, buttons, chips, room actions, and focus controls.",
+      "Do keep contrast strong when school colors are bright or low contrast.",
+      "Do reserve strong lift and glow for active states, primary actions, and focus mode."
+    ],
+    "donts": [
+      "Don't make the app feel like corporate productivity software.",
+      "Don't make the app feel too childish.",
+      "Don't create crowded dashboards.",
+      "Don't make it look like a boring school portal.",
+      "Don't use social-feed density that competes with assignments and focus.",
+      "Don't use color alone for progress, privacy, approval, friend request, or urgency state.",
+      "Don't use border-left greater than 1px as a colored stripe on new card patterns. Use full borders, badges, icons, or workload pills instead."
+    ]
+  }
+}

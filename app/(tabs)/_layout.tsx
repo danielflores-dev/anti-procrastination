@@ -64,7 +64,6 @@ export default function TabsLayout() {
         name="calendar"
         options={{
           title: 'Schedule',
-          href: null,
           tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={20} color={color} />,
         }}
       />
