@@ -66,7 +66,7 @@ export default function AutoAddScreen() {
 
     console.log('[pickImage] permission status:', permission.status);
     if (!permission.granted) {
-      Alert.alert('Permission required', 'Please allow access to continue.');
+      Alert.alert('Photo access needed', 'Allow photo access so we can estimate this assignment.');
       return;
     }
 
@@ -91,7 +91,7 @@ export default function AutoAddScreen() {
           console.log('[pickImage] blob read succeeded, length:', base64.length);
         } catch (e: any) {
           console.error('[pickImage] readAsBase64 failed:', e.message);
-          Alert.alert('Image error', 'Could not read image data: ' + e.message);
+          Alert.alert('Could not read image', 'Try a clearer photo or choose another file.');
           return;
         }
       }
@@ -111,7 +111,7 @@ export default function AutoAddScreen() {
       className: 'Biology 101',
       estimatedHours: 2.5,
       workload: 'Medium',
-      reasoning: 'Sample estimate: about 35 pages of reading, one notes page, and a short reflection. The AI estimates 2.5 hours, but you can adjust it to match your pace.',
+      reasoning: 'Sample estimate: 35 pages of reading, one page of notes, and a short reflection. Adjust the time if you work faster or slower.',
     };
     setResult(mock);
     setAdjustedHours(mock.estimatedHours);
@@ -144,11 +144,11 @@ export default function AutoAddScreen() {
     const file: File | undefined = event.nativeEvent?.dataTransfer?.files?.[0];
     console.log('[handleDrop] dropped file:', file?.name, '| type:', file?.type, '| size:', file?.size);
     if (!file) {
-      Alert.alert('Drop error', 'No file detected in the drop event.');
+      Alert.alert('No file found', 'Drop an image file of your assignment.');
       return;
     }
     if (!file.type.startsWith('image/')) {
-      Alert.alert('Wrong file type', `Expected an image but got: ${file.type}`);
+      Alert.alert('Use an image file', 'Upload a PNG or JPG of your assignment.');
       return;
     }
     const reader = new FileReader();
@@ -161,7 +161,7 @@ export default function AutoAddScreen() {
     };
     reader.onerror = (e) => {
       console.error('[handleDrop] FileReader error:', e);
-      Alert.alert('File read error', 'Could not read the dropped file.');
+      Alert.alert('Could not read file', 'Try uploading the image again.');
     };
     reader.readAsDataURL(file);
   };
@@ -170,8 +170,8 @@ export default function AutoAddScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.analyzingText, { color: theme.text }]}>Estimating assignment time...</Text>
-        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Using a sample AI result for now</Text>
+        <Text style={[styles.analyzingText, { color: theme.text }]}>Estimating study time...</Text>
+        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Sample result for now</Text>
       </View>
     );
   }
@@ -183,12 +183,12 @@ export default function AutoAddScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.heading}>AI Assignment Estimate</Text>
+        <Text style={styles.heading}>Estimate assignment</Text>
       </View>
 
       {step === 'pick' && (
         <>
-          <Text style={styles.sub}>Take or upload an assignment. The AI estimates how long it should take, then you can adjust the time before saving.</Text>
+          <Text style={styles.sub}>Upload an assignment. We will estimate the study time, then you can adjust it before saving.</Text>
 
           {Platform.OS === 'web' && (
             <DropView
@@ -199,25 +199,25 @@ export default function AutoAddScreen() {
               onDrop={handleDrop}
             >
               <Text style={styles.dropIcon}>☁️</Text>
-              <Text style={styles.dropTitle}>{isDragOver ? 'Drop it!' : 'Drag & drop here'}</Text>
-              <Text style={styles.dropSub}>PNG, JPG supported</Text>
+              <Text style={styles.dropTitle}>{isDragOver ? 'Drop the image' : 'Drop assignment image'}</Text>
+              <Text style={styles.dropSub}>PNG or JPG</Text>
             </DropView>
           )}
 
           {Platform.OS !== 'web' && (
             <TouchableOpacity style={styles.primaryButton} onPress={() => pickImage(true)}>
               <Text style={styles.primaryButtonIcon}>📷</Text>
-              <Text style={styles.primaryButtonText}>Take a Photo</Text>
+              <Text style={styles.primaryButtonText}>Take photo</Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity style={styles.secondaryButton} onPress={() => pickImage(false)}>
             <Text style={styles.secondaryButtonIcon}>🖼️</Text>
-            <Text style={styles.secondaryButtonText}>Choose from Library</Text>
+            <Text style={styles.secondaryButtonText}>Choose photo</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sampleButton} onPress={() => analyzeImage()}>
-            <Text style={styles.sampleButtonText}>Use sample assignment</Text>
+            <Text style={styles.sampleButtonText}>Try sample assignment</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -241,16 +241,16 @@ export default function AutoAddScreen() {
             <Text style={styles.cardValue}>{result.className}</Text>
           </View>
           <View style={styles.estimateHero}>
-            <Text style={styles.cardLabel}>AI estimate</Text>
+            <Text style={styles.cardLabel}>Estimated time</Text>
             <Text style={styles.estimateHours}>{result.estimatedHours}h</Text>
             <Text style={styles.estimateSub}>{result.workload} workload</Text>
           </View>
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Why this estimate?</Text>
+            <Text style={styles.cardLabel}>Why this time?</Text>
             <Text style={styles.cardReasoning}>{result.reasoning}</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Adjust estimated time</Text>
+          <Text style={styles.sectionTitle}>Adjust time</Text>
           <View style={styles.timeAdjuster}>
             <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(-0.5)}>
               <Text style={styles.adjBtnText}>−</Text>
@@ -261,7 +261,7 @@ export default function AutoAddScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionTitle}>Due Date</Text>
+          <Text style={styles.sectionTitle}>Due date</Text>
           <TouchableOpacity
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}

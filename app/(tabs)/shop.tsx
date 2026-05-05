@@ -17,7 +17,7 @@ const ITEMS: ShopItem[] = [
     id: 'streak_shield',
     emoji: '🛡️',
     name: 'Streak Shield',
-    description: 'Protect your study streak for one missed day. It happens to the best of us.',
+    description: 'Keep your streak safe if you miss one day.',
     cost: 30,
     tag: 'Protection',
   },
@@ -25,7 +25,7 @@ const ITEMS: ShopItem[] = [
     id: 'double_coins',
     emoji: '⚡',
     name: 'Coin Surge',
-    description: 'Earn 2× coins for your next focus session. Stack your rewards faster.',
+    description: 'Earn 2x coins in your next focus session.',
     cost: 50,
     tag: 'Boost',
   },
@@ -33,7 +33,7 @@ const ITEMS: ShopItem[] = [
     id: 'focus_music',
     emoji: '🎵',
     name: 'Focus Playlist',
-    description: 'Unlock a curated lo-fi playlist that plays during your focus sessions.',
+    description: 'Unlock a lo-fi playlist for focus sessions.',
     cost: 75,
     tag: 'Focus',
   },
@@ -41,7 +41,7 @@ const ITEMS: ShopItem[] = [
     id: 'dark_theme',
     emoji: '🌑',
     name: 'Midnight Theme',
-    description: 'A deeper, richer dark theme with blue accents across the whole app.',
+    description: 'Switch to a darker theme with blue accents.',
     cost: 100,
     tag: 'Theme',
   },
@@ -49,7 +49,7 @@ const ITEMS: ShopItem[] = [
     id: 'purple_theme',
     emoji: '💜',
     name: 'Neon Purple Theme',
-    description: 'Turn the accent color up to 11 with a vivid neon purple look.',
+    description: 'Switch to a bright purple app theme.',
     cost: 100,
     tag: 'Theme',
   },
@@ -57,7 +57,7 @@ const ITEMS: ShopItem[] = [
     id: 'skip_pass',
     emoji: '✅',
     name: 'Grace Pass',
-    description: 'Mark one assignment as complete without penalty. Use wisely.',
+    description: 'Mark one assignment complete when you need a reset.',
     cost: 150,
     tag: 'Utility',
   },
@@ -65,7 +65,7 @@ const ITEMS: ShopItem[] = [
     id: 'custom_ring',
     emoji: '💫',
     name: 'Custom Focus Ring',
-    description: 'Unlock animated star & galaxy ring effects for your focus mode background.',
+    description: 'Unlock a new focus timer ring style.',
     cost: 200,
     tag: 'Cosmetic',
   },
@@ -73,7 +73,7 @@ const ITEMS: ShopItem[] = [
     id: 'xp_boost',
     emoji: '🚀',
     name: 'XP Rocket',
-    description: '3× coins for an entire week. Supercharge your reward rate.',
+    description: 'Earn 3x coins for one week.',
     cost: 300,
     tag: 'Boost',
   },
@@ -96,7 +96,7 @@ export default function ShopScreen() {
 
   const handleBuy = (item: ShopItem) => {
     if (owned.has(item.id)) {
-      Alert.alert('Already owned', `You already have ${item.name}.`);
+      Alert.alert('Already owned', `${item.name} is already in your shop items.`);
       return;
     }
     if (coins < item.cost) {
@@ -108,7 +108,7 @@ export default function ShopScreen() {
     }
     Alert.alert(
       `Buy ${item.name}?`,
-      `This will cost ${item.cost} 🪙. You currently have ${coins} 🪙.`,
+      `${item.name} costs ${item.cost} coins. You have ${coins}.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -117,7 +117,7 @@ export default function ShopScreen() {
             const ok = spendCoins(item.cost);
             if (ok) {
               setOwned(prev => new Set([...prev, item.id]));
-              Alert.alert('Purchased!', `${item.emoji} ${item.name} is now yours. (Coming soon — stay tuned!)`);
+              Alert.alert('Purchased', `${item.name} is now yours. Item effects are coming soon.`);
             }
           },
         },
@@ -134,8 +134,8 @@ export default function ShopScreen() {
           <Text style={styles.balanceText}>🪙 {coins}</Text>
         </View>
       </View>
-      <Text style={styles.sub}>Earn coins by studying. Spend them here.</Text>
-      <Text style={styles.earn}>2 coins per minute of focus time</Text>
+      <Text style={styles.sub}>Earn coins from focus sessions. Spend them here.</Text>
+      <Text style={styles.earn}>2 coins per minute</Text>
 
       {/* Items */}
       {ITEMS.map(item => {

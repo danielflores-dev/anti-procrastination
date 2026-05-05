@@ -5,7 +5,7 @@ import { Tabs } from 'expo-router';
 import { Alert } from 'react-native';
 
 const MULTIPLAYER_HELP =
-  'This mode will let you search you univeristy and you can create or find a study group for people in your major or related field';
+  'Find your school, make a profile, and join study rooms with students in your major or nearby fields.';
 
 export default function TabsLayout() {
   const { coins } = useCoins();
@@ -52,7 +52,7 @@ export default function TabsLayout() {
         name="multi-player"
         listeners={{
           tabPress: () => {
-            Alert.alert('Multi-player', MULTIPLAYER_HELP);
+            Alert.alert('Study groups', MULTIPLAYER_HELP);
           },
         }}
         options={{

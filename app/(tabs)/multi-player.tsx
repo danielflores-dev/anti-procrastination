@@ -3,16 +3,19 @@ import { useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { type ComponentProps, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ScrollView,
   StyleSheet,
+  type StyleProp,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  type ViewStyle,
 } from 'react-native';
 
 type StudentProfile = {
@@ -65,6 +68,11 @@ type HelpPost = {
   comments: string[];
 };
 
+type ProfileField = 'name' | 'major' | 'age' | 'year' | 'coolFact' | 'studyGoal' | 'availability';
+type RoomField = 'roomName' | 'roomSubject' | 'roomLocation' | 'roomTime' | 'roomDuration' | 'roomCapacity' | 'roomVibe';
+type FieldErrors<T extends string> = Partial<Record<T, string>>;
+type TextInputKeyboardType = ComponentProps<typeof TextInput>['keyboardType'];
+
 const SCHOOL_OPTIONS = [
   'University of Washington',
   'University of California, Los Angeles',
@@ -80,6 +88,13 @@ const MEETING_OPTIONS = ['In person', 'Online', 'Either'];
 const STUDY_OPTIONS = ['Homework', 'Exam prep', 'Projects', 'Accountability'];
 const BROWSE_TABS = ['Profiles', 'Friends', 'Feed', 'Library rooms'] as const;
 const FILTER_OPTIONS = ['All', 'Same major', 'Online', 'In person', 'Exam prep', 'Projects'];
+const FEED_KINDS: HelpPost['kind'][] = ['Help', 'Suggestion'];
+const MIN_STUDENT_AGE = 13;
+const MAX_STUDENT_AGE = 100;
+const MAX_ROOM_CAPACITY = 20;
+
+const cleanText = (value: string, maxLength: number) => value.trim().replace(/\s+/g, ' ').slice(0, maxLength);
+const isPlainNumber = (value: string) => /^\d+$/.test(value.trim());
 
 const SAMPLE_PROFILES: StudentProfile[] = [
   {
@@ -246,10 +261,12 @@ export default function MultiPlayerScreen() {
   const [coolFact, setCoolFact] = useState('');
   const [studyGoal, setStudyGoal] = useState('');
   const [availability, setAvailability] = useState('');
+  const [profileErrors, setProfileErrors] = useState<FieldErrors<ProfileField>>({});
   const [meetingPreference, setMeetingPreference] = useState('Either');
   const [studyFocus, setStudyFocus] = useState('Homework');
-  const [activeBrowseTab, setActiveBrowseTab] = useState<(typeof BROWSE_TABS)[number]>('Profiles');
+  const [activeBrowseTab, setActiveBrowseTab] = useState<(typeof BROWSE_TABS)[number]>('Library rooms');
   const [activeFilter, setActiveFilter] = useState('All');
+  const [showProfileFilters, setShowProfileFilters] = useState(false);
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [pendingFriendIds, setPendingFriendIds] = useState<string[]>([]);
   const [incomingFriendIds, setIncomingFriendIds] = useState<string[]>(['jordan']);
@@ -264,14 +281,17 @@ export default function MultiPlayerScreen() {
   const [roomDuration, setRoomDuration] = useState('');
   const [roomCapacity, setRoomCapacity] = useState('');
   const [roomVibe, setRoomVibe] = useState('');
+  const [roomErrors, setRoomErrors] = useState<FieldErrors<RoomField>>({});
   const [approvalRequired, setApprovalRequired] = useState(true);
   const [friendsOnly, setFriendsOnly] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<StudyRoom | null>(null);
   const [activePartyRoom, setActivePartyRoom] = useState<StudyRoom | null>(null);
   const [partyTaskId, setPartyTaskId] = useState<string | null>(null);
   const [helpPosts, setHelpPosts] = useState<HelpPost[]>(STARTING_POSTS);
+  const [postKind, setPostKind] = useState<HelpPost['kind']>('Help');
   const [helpTopic, setHelpTopic] = useState('');
   const [helpDetails, setHelpDetails] = useState('');
+  const [showFeedComposer, setShowFeedComposer] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
 
   const filteredSchools = useMemo(() => {
@@ -350,18 +370,71 @@ export default function MultiPlayerScreen() {
     setSchoolTheme(school);
   };
 
+  const clearProfileError = (field: ProfileField) => {
+    setProfileErrors(current => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const clearRoomError = (field: RoomField) => {
+    setRoomErrors(current => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
   const handleSaveProfile = () => {
-    if (!name.trim() || !major.trim() || !age.trim()) {
-      Alert.alert('Almost done', 'Please add your name, major, and age before saving.');
+    const nextErrors: FieldErrors<ProfileField> = {};
+    const nextName = cleanText(name, 40);
+    const nextMajor = cleanText(major, 60);
+    const nextAge = cleanText(age, 3);
+    const nextYear = cleanText(year, 30);
+    const nextFact = cleanText(coolFact, 140);
+    const nextStudyGoal = cleanText(studyGoal, 80);
+    const nextAvailability = cleanText(availability, 80);
+
+    if (nextName.length < 2) nextErrors.name = 'Add at least 2 characters.';
+    if (nextMajor.length < 2) nextErrors.major = 'Add your major or field.';
+    if (!nextAge) {
+      nextErrors.age = 'Add your age.';
+    } else if (!isPlainNumber(nextAge)) {
+      nextErrors.age = 'Use numbers only.';
+    } else {
+      const parsedAge = Number(nextAge);
+      if (parsedAge < MIN_STUDENT_AGE || parsedAge > MAX_STUDENT_AGE) {
+        nextErrors.age = `Use an age from ${MIN_STUDENT_AGE} to ${MAX_STUDENT_AGE}.`;
+      }
+    }
+    if (nextFact.length > 0 && nextFact.length < 8) nextErrors.coolFact = 'Add a little more detail or leave it blank.';
+    if (nextStudyGoal.length > 0 && nextStudyGoal.length < 3) nextErrors.studyGoal = 'Add a clearer study goal or leave it blank.';
+    if (nextAvailability.length > 0 && nextAvailability.length < 3) nextErrors.availability = 'Add a clearer time or leave it blank.';
+
+    setName(nextName);
+    setMajor(nextMajor);
+    setAge(nextAge);
+    setYear(nextYear);
+    setCoolFact(nextFact);
+    setStudyGoal(nextStudyGoal);
+    setAvailability(nextAvailability);
+    setProfileErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      Alert.alert('Check your profile', 'Fix the highlighted fields before creating your profile.');
       return;
     }
+
     setProfileCreated(true);
   };
 
   const handleAddFriend = (profile: StudentProfile) => {
     if (friendIds.includes(profile.id) || pendingFriendIds.includes(profile.id)) return;
     setPendingFriendIds(current => [...current, profile.id]);
-    Alert.alert('Friend request sent', `${profile.name} will need to approve your request.`);
+    Alert.alert('Friend request sent', `${profile.name} needs to approve before they appear in your friends list.`);
   };
 
   const handleApproveFriend = (profileId: string) => {
@@ -378,24 +451,59 @@ export default function MultiPlayerScreen() {
     setFriendIds(current => current.filter(id => id !== profile.id));
     setPendingFriendIds(current => current.filter(id => id !== profile.id));
     setIncomingFriendIds(current => current.filter(id => id !== profile.id));
-    Alert.alert('Student blocked', `${profile.name} will no longer appear in your profiles or friends list.`);
+    Alert.alert('Student blocked', `${profile.name} is hidden from profiles and friends.`);
   };
 
   const handleCreateRoom = () => {
-    if (!roomName.trim() || !roomLocation.trim() || !roomTime.trim() || !roomDuration.trim()) {
-      Alert.alert('Almost done', 'Please add a room name, location, meeting time, and duration.');
+    const nextErrors: FieldErrors<RoomField> = {};
+    const nextRoomName = cleanText(roomName, 50);
+    const nextSubject = cleanText(roomSubject, 70);
+    const nextLocation = cleanText(roomLocation, 70);
+    const nextTime = cleanText(roomTime, 60);
+    const nextDuration = cleanText(roomDuration, 40);
+    const nextCapacity = cleanText(roomCapacity, 2);
+    const nextVibe = cleanText(roomVibe, 80);
+
+    if (nextRoomName.length < 2) nextErrors.roomName = 'Add a room name.';
+    if (nextSubject.length < 2) nextErrors.roomSubject = 'Add the class or study goal.';
+    if (nextLocation.length < 2) nextErrors.roomLocation = 'Add the library room or location.';
+    if (nextTime.length < 3) nextErrors.roomTime = 'Add a clear meeting time.';
+    if (nextDuration.length < 2) nextErrors.roomDuration = 'Add how long the room will meet.';
+    if (nextCapacity) {
+      if (!isPlainNumber(nextCapacity)) {
+        nextErrors.roomCapacity = 'Use numbers only.';
+      } else {
+        const parsedCapacity = Number(nextCapacity);
+        if (parsedCapacity < 1 || parsedCapacity > MAX_ROOM_CAPACITY) {
+          nextErrors.roomCapacity = `Use 1 to ${MAX_ROOM_CAPACITY}.`;
+        }
+      }
+    }
+    if (nextVibe.length > 0 && nextVibe.length < 3) nextErrors.roomVibe = 'Add a clearer vibe or leave it blank.';
+
+    setRoomName(nextRoomName);
+    setRoomSubject(nextSubject);
+    setRoomLocation(nextLocation);
+    setRoomTime(nextTime);
+    setRoomDuration(nextDuration);
+    setRoomCapacity(nextCapacity);
+    setRoomVibe(nextVibe);
+    setRoomErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      Alert.alert('Check your room', 'Fix the highlighted fields before publishing.');
       return;
     }
 
     const room: StudyRoom = {
       id: `room-${Date.now()}`,
-      name: roomName.trim(),
-      floor: roomLocation.trim(),
-      capacity: roomCapacity.trim() || 'Open capacity',
-      vibe: roomVibe.trim() || 'Study session',
-      available: roomTime.trim(),
-      duration: roomDuration.trim(),
-      subject: roomSubject.trim() || major.trim() || 'General study',
+      name: nextRoomName,
+      floor: nextLocation,
+      capacity: nextCapacity ? `${nextCapacity} people` : 'Open capacity',
+      vibe: nextVibe || 'Study session',
+      available: nextTime,
+      duration: nextDuration,
+      subject: nextSubject,
       approvalRequired,
       friendsOnly,
       host: name.trim(),
@@ -404,11 +512,11 @@ export default function MultiPlayerScreen() {
       assignments: [
         {
           id: `assignment-${Date.now()}`,
-          title: roomSubject.trim() || 'Study together',
+          title: nextSubject,
           className: major.trim() || 'Study group',
           owner: name.trim() || 'You',
           goalHours: 1,
-          details: roomVibe.trim() || 'Work on the main study goal for this room.',
+          details: nextVibe || 'Work on the main study goal for this room.',
         },
       ],
     };
@@ -425,6 +533,7 @@ export default function MultiPlayerScreen() {
     setRoomVibe('');
     setApprovalRequired(true);
     setFriendsOnly(false);
+    setRoomErrors({});
     setShowRoomForm(false);
     Alert.alert('Room created', 'You are now hosting this study group.');
   };
@@ -440,7 +549,7 @@ export default function MultiPlayerScreen() {
           ? { ...item, pendingJoinIds: item.pendingJoinIds.includes('you') ? item.pendingJoinIds : [...item.pendingJoinIds, 'you'] }
           : item
       )));
-      Alert.alert('Request sent', `${room.name} will open once the host approves you.`);
+      Alert.alert('Request sent', `You can join ${room.name} after the host approves you.`);
       setSelectedRoom(null);
       return;
     }
@@ -530,7 +639,7 @@ export default function MultiPlayerScreen() {
 
   const handleCreateHelpPost = () => {
     if (!helpTopic.trim() || !helpDetails.trim()) {
-      Alert.alert('Almost done', 'Add what you need help with and a short detail.');
+      Alert.alert('Add a topic', 'Add a topic and a short detail before posting.');
       return;
     }
 
@@ -538,7 +647,7 @@ export default function MultiPlayerScreen() {
       id: `post-${Date.now()}`,
       author: name.trim() || 'You',
       major: major.trim() || 'Student',
-      kind: 'Help',
+      kind: postKind,
       topic: helpTopic.trim(),
       details: helpDetails.trim(),
       time: 'Just now',
@@ -546,6 +655,7 @@ export default function MultiPlayerScreen() {
     }, ...current]);
     setHelpTopic('');
     setHelpDetails('');
+    setShowFeedComposer(false);
   };
 
   const handleAddComment = (postId: string) => {
@@ -557,6 +667,48 @@ export default function MultiPlayerScreen() {
     setCommentDrafts(current => ({ ...current, [postId]: '' }));
   };
 
+  const renderField = ({
+    value,
+    onChangeText,
+    placeholder,
+    error,
+    maxLength,
+    multiline,
+    keyboardType,
+    containerStyle,
+  }: {
+    value: string;
+    onChangeText: (text: string) => void;
+    placeholder: string;
+    error?: string;
+    maxLength: number;
+    multiline?: boolean;
+    keyboardType?: TextInputKeyboardType;
+    containerStyle?: StyleProp<ViewStyle>;
+  }) => (
+    <View style={[styles.fieldWrap, containerStyle]}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.muted}
+        style={[styles.input, styles.fieldInput, multiline && styles.multiInput, !!error && styles.inputError]}
+        multiline={multiline}
+        keyboardType={keyboardType}
+        maxLength={maxLength}
+        accessibilityLabel={placeholder}
+        accessibilityHint={error ?? `${maxLength} characters maximum`}
+      />
+      <View style={styles.fieldMetaRow}>
+        {!!error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : (
+          <Text style={styles.helperText}>{maxLength - value.length} left</Text>
+        )}
+      </View>
+    </View>
+  );
+
   const renderProfileSetup = () => (
     <View style={styles.profileSection}>
       <View style={styles.selectedSchool}>
@@ -565,7 +717,7 @@ export default function MultiPlayerScreen() {
       </View>
 
       <Text style={styles.profileTitle}>Create your profile</Text>
-      <Text style={styles.profileSub}>Share enough so classmates know who they are studying with.</Text>
+      <Text style={styles.profileSub}>Add the details classmates need before studying with you.</Text>
 
       <TouchableOpacity style={styles.photoButton} onPress={pickProfileImage} activeOpacity={0.85}>
         {profileImage ? (
@@ -581,15 +733,82 @@ export default function MultiPlayerScreen() {
         </View>
       </TouchableOpacity>
 
-      <TextInput value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={theme.muted} style={styles.input} />
-      <TextInput value={major} onChangeText={setMajor} placeholder="Major or field" placeholderTextColor={theme.muted} style={styles.input} />
+      {renderField({
+        value: name,
+        onChangeText: text => {
+          setName(text);
+          clearProfileError('name');
+        },
+        placeholder: 'Your name',
+        error: profileErrors.name,
+        maxLength: 40,
+      })}
+      {renderField({
+        value: major,
+        onChangeText: text => {
+          setMajor(text);
+          clearProfileError('major');
+        },
+        placeholder: 'Major or field',
+        error: profileErrors.major,
+        maxLength: 60,
+      })}
       <View style={styles.twoColumn}>
-        <TextInput value={age} onChangeText={setAge} placeholder="Age" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} keyboardType="number-pad" />
-        <TextInput value={year} onChangeText={setYear} placeholder="Year" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} />
+        {renderField({
+          value: age,
+          onChangeText: text => {
+            setAge(text.replace(/[^\d]/g, ''));
+            clearProfileError('age');
+          },
+          placeholder: 'Age',
+          error: profileErrors.age,
+          maxLength: 3,
+          keyboardType: 'number-pad',
+          containerStyle: styles.halfInput,
+        })}
+        {renderField({
+          value: year,
+          onChangeText: text => {
+            setYear(text);
+            clearProfileError('year');
+          },
+          placeholder: 'Year',
+          error: profileErrors.year,
+          maxLength: 30,
+          containerStyle: styles.halfInput,
+        })}
       </View>
-      <TextInput value={coolFact} onChangeText={setCoolFact} placeholder="Cool fact about you" placeholderTextColor={theme.muted} style={[styles.input, styles.multiInput]} multiline />
-      <TextInput value={studyGoal} onChangeText={setStudyGoal} placeholder="What are you studying?" placeholderTextColor={theme.muted} style={styles.input} />
-      <TextInput value={availability} onChangeText={setAvailability} placeholder="When are you free?" placeholderTextColor={theme.muted} style={styles.input} />
+      {renderField({
+        value: coolFact,
+        onChangeText: text => {
+          setCoolFact(text);
+          clearProfileError('coolFact');
+        },
+        placeholder: 'Cool fact about you',
+        error: profileErrors.coolFact,
+        maxLength: 140,
+        multiline: true,
+      })}
+      {renderField({
+        value: studyGoal,
+        onChangeText: text => {
+          setStudyGoal(text);
+          clearProfileError('studyGoal');
+        },
+        placeholder: 'Study goal',
+        error: profileErrors.studyGoal,
+        maxLength: 80,
+      })}
+      {renderField({
+        value: availability,
+        onChangeText: text => {
+          setAvailability(text);
+          clearProfileError('availability');
+        },
+        placeholder: 'When are you free?',
+        error: profileErrors.availability,
+        maxLength: 80,
+      })}
 
       <Text style={styles.sectionLabel}>Preferred meeting style</Text>
       <View style={styles.choiceRow}>
@@ -600,7 +819,7 @@ export default function MultiPlayerScreen() {
         ))}
       </View>
 
-      <Text style={styles.sectionLabel}>Looking for</Text>
+      <Text style={styles.sectionLabel}>Study goal</Text>
       <View style={styles.choiceRow}>
         {STUDY_OPTIONS.map(option => (
           <TouchableOpacity key={option} style={[styles.choiceChip, studyFocus === option && styles.choiceChipSelected]} onPress={() => setStudyFocus(option)}>
@@ -617,9 +836,17 @@ export default function MultiPlayerScreen() {
 
   const renderProfiles = () => (
     <View style={styles.cardList}>
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>Classmates</Text>
+          <Text style={styles.sectionHint}>Find students by major, study goal, or meeting style.</Text>
+        </View>
+        <Text style={styles.countPill}>{filteredProfiles.length}</Text>
+      </View>
       {filteredProfiles.map(profile => {
         const isFriend = friendIds.includes(profile.id);
         const isPending = pendingFriendIds.includes(profile.id);
+        const approvalCopy = isFriend ? 'Friend added' : isPending ? 'Waiting for approval' : '';
         return (
           <View key={profile.id} style={styles.profileCard}>
             <View style={styles.cardHeader}>
@@ -633,19 +860,40 @@ export default function MultiPlayerScreen() {
                 </View>
               </View>
               <View style={styles.profileActions}>
-                <TouchableOpacity style={[styles.iconButton, (isFriend || isPending) && styles.iconButtonActive]} onPress={() => handleAddFriend(profile)}>
-                  <Text style={styles.iconButtonText}>{isFriend ? '✓' : isPending ? '...' : '+'}</Text>
+                <TouchableOpacity
+                  style={[styles.iconButton, (isFriend || isPending) && styles.iconButtonActive]}
+                  onPress={() => handleAddFriend(profile)}
+                  disabled={isFriend || isPending}
+                  accessibilityLabel={isFriend ? `${profile.name} is your friend` : isPending ? `Waiting for ${profile.name} to approve` : `Add ${profile.name} as a friend`}
+                >
+                  {isPending ? (
+                    <ActivityIndicator size="small" color={theme.school ? theme.background : theme.onPrimary} />
+                  ) : (
+                    <FontAwesome5
+                      name={isFriend ? 'check' : 'plus'}
+                      size={14}
+                      color={isFriend ? (theme.school ? theme.background : theme.onPrimary) : theme.text}
+                    />
+                  )}
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.messageButton} onPress={() => handleMessage(profile)}>
+                <TouchableOpacity style={styles.messageButton} onPress={() => handleMessage(profile)} accessibilityLabel={`Message ${profile.name}`}>
+                  <FontAwesome5 name="comment" size={12} color={theme.text} />
                   <Text style={styles.messageButtonText}>Message</Text>
                 </TouchableOpacity>
               </View>
             </View>
-            <Text style={styles.cardFact}>{profile.year} • {profile.focus} • {profile.meeting}</Text>
-            <Text style={styles.cardSubtle}>{profile.availability}</Text>
-            <TouchableOpacity style={styles.blockButton} onPress={() => handleBlockStudent(profile)}>
-              <Text style={styles.blockButtonText}>Block student</Text>
-            </TouchableOpacity>
+            <View style={styles.metaChipRow}>
+              <Text style={styles.metaChip}>{profile.year}</Text>
+              <Text style={styles.metaChip}>{profile.focus}</Text>
+              <Text style={styles.metaChip}>{profile.meeting}</Text>
+            </View>
+            <Text style={styles.cardSubtle}>Free: {profile.availability}</Text>
+            <View style={styles.cardFooterActions}>
+              {!!approvalCopy && <Text style={styles.approvalHint}>{approvalCopy}</Text>}
+              <TouchableOpacity style={styles.blockButton} onPress={() => handleBlockStudent(profile)} accessibilityLabel={`Block ${profile.name}`}>
+                <Text style={styles.blockButtonText}>Block</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
       })}
@@ -661,6 +909,13 @@ export default function MultiPlayerScreen() {
 
     return (
       <View style={styles.cardList}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Friends</Text>
+            <Text style={styles.sectionHint}>Approved study friends stay here.</Text>
+          </View>
+          <Text style={styles.countPill}>{friends.length}</Text>
+        </View>
         {incomingRequests.length > 0 && (
           <View style={styles.emptyPanel}>
             <Text style={styles.emptyTitle}>Friend requests</Text>
@@ -675,7 +930,7 @@ export default function MultiPlayerScreen() {
                     <Text style={styles.cardMajor}>{profile.major}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.smallButton} onPress={() => handleApproveFriend(profile.id)}>
+                <TouchableOpacity style={styles.smallButton} onPress={() => handleApproveFriend(profile.id)} accessibilityLabel={`Approve ${profile.name}`}>
                   <Text style={styles.smallButtonText}>Approve</Text>
                 </TouchableOpacity>
               </View>
@@ -687,7 +942,10 @@ export default function MultiPlayerScreen() {
           <View style={styles.emptyPanel}>
             <Text style={styles.emptyTitle}>Waiting for approval</Text>
             {pendingRequests.map(profile => (
-              <Text key={profile.id} style={styles.emptyText}>{profile.name} has not approved your request yet.</Text>
+              <View key={profile.id} style={styles.pendingRow}>
+                <ActivityIndicator size="small" color={theme.school ? theme.secondary : theme.primary} />
+                <Text style={styles.emptyText}>{profile.name} has not approved your request yet.</Text>
+              </View>
             ))}
           </View>
         )}
@@ -704,7 +962,8 @@ export default function MultiPlayerScreen() {
                   <Text style={styles.cardMajor}>{profile.major}</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.messageButton} onPress={() => handleMessage(profile)}>
+              <TouchableOpacity style={styles.messageButton} onPress={() => handleMessage(profile)} accessibilityLabel={`Message ${profile.name}`}>
+                <FontAwesome5 name="comment" size={12} color={theme.text} />
                 <Text style={styles.messageButtonText}>Message</Text>
               </TouchableOpacity>
             </View>
@@ -721,15 +980,33 @@ export default function MultiPlayerScreen() {
 
   const renderFeed = () => (
     <View style={styles.cardList}>
-      <View style={styles.roomForm}>
-        <Text style={styles.profileTitle}>Post to feed</Text>
-        <Text style={styles.profileSub}>Ask for help or share a quick study tip.</Text>
-        <TextInput value={helpTopic} onChangeText={setHelpTopic} placeholder="What do you need help with?" placeholderTextColor={theme.muted} style={styles.input} />
-        <TextInput value={helpDetails} onChangeText={setHelpDetails} placeholder="Add details or a suggestion" placeholderTextColor={theme.muted} style={[styles.input, styles.multiInput]} multiline />
-        <TouchableOpacity style={styles.saveButton} onPress={handleCreateHelpPost} activeOpacity={0.85}>
-          <Text style={styles.saveButtonText}>Post to feed</Text>
-        </TouchableOpacity>
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>Campus feed</Text>
+          <Text style={styles.sectionHint}>Ask a question, share a tip, or answer a classmate.</Text>
+        </View>
+        <Text style={styles.countPill}>{helpPosts.length}</Text>
       </View>
+      <TouchableOpacity style={[styles.saveButton, styles.compactActionButton]} onPress={() => setShowFeedComposer(current => !current)} activeOpacity={0.85}>
+        <Text style={styles.saveButtonText}>{showFeedComposer ? 'Cancel post' : 'Write post'}</Text>
+      </TouchableOpacity>
+      {showFeedComposer && (
+        <View style={styles.roomForm}>
+          <Text style={styles.profileTitle}>Share a post</Text>
+          <View style={styles.choiceRow}>
+            {FEED_KINDS.map(kind => (
+              <TouchableOpacity key={kind} style={[styles.choiceChip, postKind === kind && styles.choiceChipSelected]} onPress={() => setPostKind(kind)} activeOpacity={0.85}>
+                <Text style={[styles.choiceText, postKind === kind && styles.choiceTextSelected]}>{kind}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TextInput value={helpTopic} onChangeText={setHelpTopic} placeholder="What do you need help with?" placeholderTextColor={theme.muted} style={styles.input} />
+          <TextInput value={helpDetails} onChangeText={setHelpDetails} placeholder="Add details or a suggestion" placeholderTextColor={theme.muted} style={[styles.input, styles.multiInput]} multiline />
+          <TouchableOpacity style={styles.saveButton} onPress={handleCreateHelpPost} activeOpacity={0.85}>
+            <Text style={styles.saveButtonText}>Share post</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {helpPosts.map(post => (
         <View key={post.id} style={styles.feedCard}>
@@ -738,9 +1015,9 @@ export default function MultiPlayerScreen() {
               <Text style={styles.feedKind}>{post.kind}</Text>
               <Text style={styles.cardName}>{post.topic}</Text>
               <Text style={styles.cardMajor}>{post.author} - {post.major}</Text>
-            </View>
-            <Text style={styles.cardMeta}>{post.time}</Text>
           </View>
+          <Text style={styles.cardMeta}>{post.time}</Text>
+        </View>
           <Text style={styles.cardFact}>{post.details}</Text>
           {post.comments.length > 0 && (
             <View style={styles.commentList}>
@@ -757,7 +1034,7 @@ export default function MultiPlayerScreen() {
               placeholderTextColor={theme.muted}
               style={[styles.input, styles.commentInput]}
             />
-            <TouchableOpacity style={styles.smallButton} onPress={() => handleAddComment(post.id)}>
+            <TouchableOpacity style={styles.smallButton} onPress={() => handleAddComment(post.id)} accessibilityLabel={`Send comment on ${post.topic}`}>
               <Text style={styles.smallButtonText}>Send</Text>
             </TouchableOpacity>
           </View>
@@ -902,6 +1179,13 @@ export default function MultiPlayerScreen() {
 
     return (
       <View style={styles.cardList}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Library rooms</Text>
+            <Text style={styles.sectionHint}>Check the room details before joining.</Text>
+          </View>
+          <Text style={styles.countPill}>{studyRooms.length}</Text>
+        </View>
       {!!selectedRoom && (
         <View style={styles.roomDetailCard}>
           <Text style={styles.selectedSchoolLabel}>Review room</Text>
@@ -969,7 +1253,8 @@ export default function MultiPlayerScreen() {
             )}
           </View>
 
-          <TouchableOpacity style={styles.messageRoomButton} onPress={() => handleMessageRoom(selectedRoom)} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.messageRoomButton} onPress={() => handleMessageRoom(selectedRoom)} activeOpacity={0.85} accessibilityLabel={`Message ${selectedRoom.name}`}>
+            <FontAwesome5 name="comment-dots" size={13} color={theme.text} />
             <Text style={styles.messageRoomButtonText}>Message room</Text>
           </TouchableOpacity>
           <View style={styles.confirmRow}>
@@ -984,61 +1269,130 @@ export default function MultiPlayerScreen() {
       )}
 
       <TouchableOpacity style={[styles.saveButton, styles.createRoomButton]} onPress={() => setShowRoomForm(current => !current)} activeOpacity={0.85}>
-        <Text style={styles.saveButtonText}>{showRoomForm ? 'Close room form' : 'Create a room'}</Text>
+        <Text style={styles.saveButtonText}>{showRoomForm ? 'Cancel' : 'Create room'}</Text>
       </TouchableOpacity>
 
       {showRoomForm && (
         <View style={styles.roomForm}>
           <Text style={styles.profileTitle}>Create a study room</Text>
-          <Text style={styles.profileSub}>Set the basics and choose who can join.</Text>
-          <TextInput value={roomName} onChangeText={setRoomName} placeholder="Room name" placeholderTextColor={theme.muted} style={styles.input} />
-          <TextInput value={roomSubject} onChangeText={setRoomSubject} placeholder="Subject or class" placeholderTextColor={theme.muted} style={styles.input} />
-          <TextInput value={roomLocation} onChangeText={setRoomLocation} placeholder="Library room or location" placeholderTextColor={theme.muted} style={styles.input} />
-          <TextInput value={roomTime} onChangeText={setRoomTime} placeholder="Meeting time" placeholderTextColor={theme.muted} style={styles.input} />
-          <TextInput value={roomDuration} onChangeText={setRoomDuration} placeholder="How long will you be there?" placeholderTextColor={theme.muted} style={styles.input} />
+          <Text style={styles.profileSub}>Add the study goal, time, location, and privacy settings.</Text>
+          {renderField({
+            value: roomName,
+            onChangeText: text => {
+              setRoomName(text);
+              clearRoomError('roomName');
+            },
+            placeholder: 'Room name',
+            error: roomErrors.roomName,
+            maxLength: 50,
+          })}
+          {renderField({
+            value: roomSubject,
+            onChangeText: text => {
+              setRoomSubject(text);
+              clearRoomError('roomSubject');
+            },
+            placeholder: 'Subject or class',
+            error: roomErrors.roomSubject,
+            maxLength: 70,
+          })}
+          {renderField({
+            value: roomLocation,
+            onChangeText: text => {
+              setRoomLocation(text);
+              clearRoomError('roomLocation');
+            },
+            placeholder: 'Library room or location',
+            error: roomErrors.roomLocation,
+            maxLength: 70,
+          })}
+          {renderField({
+            value: roomTime,
+            onChangeText: text => {
+              setRoomTime(text);
+              clearRoomError('roomTime');
+            },
+            placeholder: 'Meeting time',
+            error: roomErrors.roomTime,
+            maxLength: 60,
+          })}
+          {renderField({
+            value: roomDuration,
+            onChangeText: text => {
+              setRoomDuration(text);
+              clearRoomError('roomDuration');
+            },
+            placeholder: 'Session length',
+            error: roomErrors.roomDuration,
+            maxLength: 40,
+          })}
           <View style={styles.twoColumn}>
-            <TextInput value={roomCapacity} onChangeText={setRoomCapacity} placeholder="Capacity" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} keyboardType="number-pad" />
-            <TextInput value={roomVibe} onChangeText={setRoomVibe} placeholder="Vibe" placeholderTextColor={theme.muted} style={[styles.input, styles.halfInput]} />
+            {renderField({
+              value: roomCapacity,
+              onChangeText: text => {
+                setRoomCapacity(text.replace(/[^\d]/g, ''));
+                clearRoomError('roomCapacity');
+              },
+              placeholder: 'Capacity',
+              error: roomErrors.roomCapacity,
+              maxLength: 2,
+              keyboardType: 'number-pad',
+              containerStyle: styles.halfInput,
+            })}
+            {renderField({
+              value: roomVibe,
+              onChangeText: text => {
+                setRoomVibe(text);
+                clearRoomError('roomVibe');
+              },
+              placeholder: 'Vibe',
+              error: roomErrors.roomVibe,
+              maxLength: 80,
+              containerStyle: styles.halfInput,
+            })}
           </View>
 
-          <Text style={styles.sectionLabel}>Privacy settings</Text>
+          <Text style={styles.sectionLabel}>Privacy</Text>
           <TouchableOpacity style={[styles.privacyRow, approvalRequired && styles.privacyRowActive]} onPress={() => setApprovalRequired(current => !current)} activeOpacity={0.85}>
             <View style={[styles.toggleDot, approvalRequired && styles.toggleDotActive]} />
             <View style={styles.privacyTextWrap}>
-              <Text style={styles.privacyTitle}>Require approval to join</Text>
-              <Text style={styles.privacySub}>Students ask before joining.</Text>
+              <Text style={[styles.privacyTitle, approvalRequired && styles.privacyTitleActive]}>Require approval to join</Text>
+              <Text style={[styles.privacySub, approvalRequired && styles.privacySubActive]}>You approve students before they join.</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.privacyRow, friendsOnly && styles.privacyRowActive]} onPress={() => setFriendsOnly(current => !current)} activeOpacity={0.85}>
             <View style={[styles.toggleDot, friendsOnly && styles.toggleDotActive]} />
             <View style={styles.privacyTextWrap}>
-              <Text style={styles.privacyTitle}>Show to friends only</Text>
-              <Text style={styles.privacySub}>Only friends can see it.</Text>
+              <Text style={[styles.privacyTitle, friendsOnly && styles.privacyTitleActive]}>Show to friends only</Text>
+              <Text style={[styles.privacySub, friendsOnly && styles.privacySubActive]}>Only approved friends can see this room.</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleCreateRoom} activeOpacity={0.85}>
-            <Text style={styles.saveButtonText}>Publish room</Text>
+            <Text style={styles.saveButtonText}>Create room</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {studyRooms.map(room => (
         <View key={room.id} style={styles.roomCard}>
-          <View>
-            <Text style={styles.cardName}>{room.name}</Text>
-          <Text style={styles.cardMajor}>{room.floor} • {room.capacity}</Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.profileHeadingText}>
+              <Text style={styles.cardName}>{room.name}</Text>
+              <Text style={styles.cardMajor}>{room.floor} • {room.capacity}</Text>
+            </View>
+            <Text style={styles.roomTimePill}>{room.duration}</Text>
           </View>
           <Text style={styles.cardFact}>{room.subject} • {room.vibe}</Text>
           {!!room.assignments[0] && (
-            <Text style={styles.roomAssignmentPreview}>Working on: {room.assignments[0].title}</Text>
+            <Text style={styles.roomAssignmentPreview}>Room focus: {room.assignments[0].title}</Text>
           )}
-          <Text style={styles.cardSubtle}>Time: {room.available} - Duration: {room.duration}</Text>
+          <Text style={styles.cardSubtle}>Time: {room.available}</Text>
           {!!room.host && <Text style={styles.cardSubtle}>Hosted by {room.host}</Text>}
           <View style={styles.roomFooter}>
             {room.approvalRequired && <Text style={styles.tag}>Approval needed</Text>}
             {room.friendsOnly && <Text style={styles.tag}>Friends only</Text>}
-            <TouchableOpacity style={styles.smallButton} onPress={() => setSelectedRoom(room)}>
+            <TouchableOpacity style={styles.smallButton} onPress={() => setSelectedRoom(room)} accessibilityLabel={`Review ${room.name}`}>
               <Text style={styles.smallButtonText}>{room.approvalRequired ? 'Request' : 'Join'}</Text>
             </TouchableOpacity>
           </View>
@@ -1052,17 +1406,22 @@ export default function MultiPlayerScreen() {
     <>
       <View style={styles.myProfileCard}>
         <View style={styles.myProfileTop}>
-          <View style={styles.profileHeadingText}>
-            <Text style={styles.selectedSchoolLabel}>Your profile</Text>
-            <Text style={styles.myProfileName}>{profileHidden ? 'Profile hidden' : name}</Text>
-            <Text style={styles.myProfileDetails}>
-              {profileHidden ? 'Other students cannot see you right now.' : `${major} at ${selectedSchool}`}
-            </Text>
+          <View style={styles.profileTitleRow}>
+            <View style={styles.avatarSmall}>
+              <Text style={styles.avatarSmallText}>{(name || 'Y').slice(0, 1)}</Text>
+            </View>
+            <View style={styles.profileHeadingText}>
+              <Text style={styles.myProfileName}>{profileHidden ? 'Profile hidden' : name}</Text>
+              <Text style={styles.myProfileDetails}>
+                {profileHidden ? 'Hidden from students' : `${major} at ${selectedSchool}`}
+              </Text>
+            </View>
           </View>
           <TouchableOpacity
             style={styles.privacyMiniButton}
             onPress={() => setProfileHidden(current => !current)}
             activeOpacity={0.85}
+            accessibilityLabel={profileHidden ? 'Show your profile' : 'Hide your profile'}
           >
             <Text style={styles.privacyMiniButtonText}>{profileHidden ? 'Show' : 'Hide'}</Text>
           </TouchableOpacity>
@@ -1079,14 +1438,19 @@ export default function MultiPlayerScreen() {
 
       {activeBrowseTab === 'Profiles' && (
         <>
-          <Text style={styles.sectionLabel}>Filter profiles</Text>
-          <View style={styles.choiceRow}>
-            {FILTER_OPTIONS.map(option => (
-              <TouchableOpacity key={option} style={[styles.choiceChip, activeFilter === option && styles.choiceChipSelected]} onPress={() => setActiveFilter(option)}>
-                <Text style={[styles.choiceText, activeFilter === option && styles.choiceTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity style={styles.filterToggle} onPress={() => setShowProfileFilters(current => !current)} activeOpacity={0.85}>
+            <Text style={styles.filterToggleText}>{showProfileFilters ? 'Hide filters' : activeFilter === 'All' ? 'Filter profiles' : `Filter: ${activeFilter}`}</Text>
+            <FontAwesome5 name={showProfileFilters ? 'chevron-up' : 'sliders-h'} size={12} color={theme.text} />
+          </TouchableOpacity>
+          {showProfileFilters && (
+            <View style={styles.choiceRow}>
+              {FILTER_OPTIONS.map(option => (
+                <TouchableOpacity key={option} style={[styles.choiceChip, activeFilter === option && styles.choiceChipSelected]} onPress={() => setActiveFilter(option)}>
+                  <Text style={[styles.choiceText, activeFilter === option && styles.choiceTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </>
       )}
 
@@ -1115,21 +1479,6 @@ export default function MultiPlayerScreen() {
             <FontAwesome5 name="user-graduate" size={24} color={theme.onPrimary} />
           </View>
         </View>
-
-        <View style={styles.heroStats}>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{SAMPLE_PROFILES.length}</Text>
-            <Text style={styles.heroStatLabel}>students</Text>
-          </View>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{studyRooms.length}</Text>
-            <Text style={styles.heroStatLabel}>rooms</Text>
-          </View>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{helpPosts.length}</Text>
-            <Text style={styles.heroStatLabel}>posts</Text>
-          </View>
-        </View>
       </View>
 
       {profileCreated ? (
@@ -1137,22 +1486,22 @@ export default function MultiPlayerScreen() {
       ) : !isSearching ? (
         <View style={styles.startPanel}>
           <Text style={styles.panelTitle}>Start with your school</Text>
-          <Text style={styles.profileSub}>Your theme and classmates unlock after you choose a campus.</Text>
+          <Text style={styles.profileSub}>Choose a school to set your colors and find classmates.</Text>
           <TouchableOpacity style={styles.beginButton} onPress={() => setIsSearching(true)} activeOpacity={0.82}>
             <FontAwesome5 name="search-location" size={16} color={theme.school ? theme.background : theme.onPrimary} />
-            <Text style={styles.beginButtonText}>Search university</Text>
+            <Text style={styles.beginButtonText}>Find your school</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Search for your university</Text>
+          <Text style={styles.panelTitle}>Find your school</Text>
           <TextInput
             value={schoolSearch}
             onChangeText={text => {
               setSchoolSearch(text);
               setSelectedSchool('');
             }}
-            placeholder="Type your school name"
+            placeholder="School name"
             placeholderTextColor={theme.muted}
             style={styles.input}
             autoCapitalize="words"
@@ -1191,8 +1540,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   hero: {
     backgroundColor: theme.surface,
     borderRadius: 24,
-    padding: 20,
-    marginBottom: 18,
+    padding: 18,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: theme.border,
     shadowColor: theme.primary,
@@ -1204,12 +1553,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
   heroCopy: { flex: 1 },
   kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '900', letterSpacing: 0.8, marginBottom: 6, textTransform: 'uppercase' },
-  heroIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primary, borderWidth: 1, borderColor: theme.school ? theme.secondary : theme.primary },
-  heroStats: { flexDirection: 'row', gap: 8, marginTop: 18 },
-  heroStat: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 16, paddingVertical: 10, alignItems: 'center' },
-  heroStatValue: { color: theme.text, fontSize: 18, fontWeight: '900' },
-  heroStatLabel: { color: theme.muted, fontSize: 11, fontWeight: '800', marginTop: 2 },
-  heading: { color: theme.text, fontSize: 32, fontWeight: '900', marginBottom: 8 },
+  heroIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primary, borderWidth: 1, borderColor: theme.school ? theme.secondary : theme.primary },
+  heading: { color: theme.text, fontSize: 30, fontWeight: '900', marginBottom: 6 },
   description: { color: theme.muted, fontSize: 15, lineHeight: 22 },
   startPanel: { backgroundColor: theme.surface, borderRadius: 22, borderWidth: 1, borderColor: theme.border, padding: 16 },
   beginButton: {
@@ -1241,6 +1586,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 12,
   },
+  fieldWrap: { marginBottom: 12 },
+  fieldInput: { marginBottom: 0 },
+  inputError: { borderColor: '#EF4444', borderWidth: 1.5 },
+  fieldMetaRow: { minHeight: 17, marginTop: 5 },
+  helperText: { color: theme.muted, fontSize: 11, fontWeight: '700', textAlign: 'right' },
+  errorText: { color: '#EF4444', fontSize: 12, fontWeight: '800', lineHeight: 16 },
   multiInput: { minHeight: 82, textAlignVertical: 'top' },
   twoColumn: { flexDirection: 'row', gap: 10 },
   halfInput: { flex: 1 },
@@ -1286,24 +1637,33 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  compactActionButton: { marginTop: 0 },
   createRoomButton: { marginTop: 0 },
   saveButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 15, fontWeight: '800', textAlign: 'center' },
-  myProfileCard: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 12 },
+  myProfileCard: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 10 },
   myProfileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  myProfileName: { color: theme.text, fontSize: 20, fontWeight: '900', marginBottom: 4 },
+  avatarSmall: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
+  avatarSmallText: { color: theme.text, fontSize: 15, fontWeight: '900' },
+  myProfileName: { color: theme.text, fontSize: 16, fontWeight: '900', marginBottom: 2 },
   myProfileDetails: { color: theme.muted, fontSize: 13, lineHeight: 18 },
   privacyMiniButton: { alignSelf: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
   privacyMiniButtonText: { color: theme.text, fontSize: 12, fontWeight: '900' },
-  tabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 6, marginBottom: 14 },
+  tabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 6, marginBottom: 10 },
   browseTab: { flexGrow: 1, flexBasis: '47%', borderRadius: 13, paddingVertical: 10, alignItems: 'center', backgroundColor: 'transparent' },
   browseTabActive: { backgroundColor: theme.school ? theme.secondary : theme.primary },
   browseTabText: { color: theme.muted, fontSize: 12, fontWeight: '900', textAlign: 'center' },
   browseTabTextActive: { color: theme.school ? theme.background : theme.onPrimary },
   cardList: { gap: 10 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginTop: 2, marginBottom: 2 },
+  sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '900', marginBottom: 3 },
+  sectionHint: { color: theme.muted, fontSize: 13, lineHeight: 18, maxWidth: 260 },
+  countPill: { minWidth: 34, textAlign: 'center', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, fontWeight: '900' },
+  filterToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surface, borderRadius: 15, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 13, paddingVertical: 12, marginBottom: 10 },
+  filterToggleText: { color: theme.text, fontSize: 13, fontWeight: '900' },
   profileCard: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14 },
   friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14 },
   avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
-  avatarText: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
+  avatarText: { color: theme.text, fontSize: 18, fontWeight: '900' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   profileTitleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   profileHeadingText: { flex: 1 },
@@ -1313,18 +1673,23 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cardMajor: { color: theme.school ? theme.secondary : theme.accent, fontSize: 13, fontWeight: '900', marginTop: 3 },
   cardFact: { color: theme.muted, fontSize: 13, lineHeight: 19, marginTop: 10 },
   cardSubtle: { color: theme.muted, fontSize: 12, lineHeight: 18, marginTop: 3 },
-  iconButton: { minWidth: 38, height: 38, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 8 },
+  iconButton: { minWidth: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 8 },
   iconButtonActive: { backgroundColor: theme.school ? theme.secondary : theme.primary, borderColor: theme.school ? theme.secondary : theme.primary },
   iconButtonText: { color: theme.text, fontSize: 18, fontWeight: '900', lineHeight: 22 },
-  messageButton: { backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
+  messageButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 9 },
   messageButtonText: { color: theme.text, fontSize: 12, fontWeight: '900' },
-  blockButton: { alignSelf: 'flex-start', marginTop: 10, paddingVertical: 4 },
+  metaChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
+  metaChip: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 999, borderWidth: 1, borderColor: theme.border, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '800' },
+  cardFooterActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 },
+  approvalHint: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17, fontWeight: '700' },
+  blockButton: { alignSelf: 'flex-start', borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 11, paddingVertical: 8 },
   blockButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '800' },
   tag: { color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 999, borderWidth: 1, borderColor: theme.school ? theme.secondary : theme.primary, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '900' },
   emptyPanel: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 16, gap: 10 },
   emptyTitle: { color: theme.text, fontSize: 16, fontWeight: '900', marginBottom: 2 },
   emptyText: { color: theme.muted, fontSize: 14, lineHeight: 20 },
   requestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  pendingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   feedCard: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 15 },
   feedKind: { alignSelf: 'flex-start', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 4, fontSize: 11, fontWeight: '900', marginBottom: 8 },
   commentList: { gap: 6, marginTop: 12 },
@@ -1357,7 +1722,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   removeButton: { borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 8 },
   removeButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '900' },
   closeRoomButton: { alignItems: 'center', borderRadius: 14, backgroundColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13, marginTop: 4 },
-  closeRoomButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '900' },
+  closeRoomButtonText: { color: theme.onPrimary, fontSize: 14, fontWeight: '900' },
   partyFocusButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14 },
   partyFocusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 15, fontWeight: '900' },
   leavePartyButton: { alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13 },
@@ -1365,10 +1730,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 10 },
   privacyRowActive: { backgroundColor: theme.school ? theme.secondary : theme.primary, borderColor: theme.school ? theme.secondary : theme.primary },
   toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#94A3B8' },
-  toggleDotActive: { backgroundColor: theme.school ? theme.secondary : theme.primary, borderColor: theme.border },
+  toggleDotActive: { backgroundColor: theme.school ? theme.background : theme.onPrimary, borderColor: theme.school ? theme.background : theme.onPrimary },
   privacyTextWrap: { flex: 1 },
   privacyTitle: { color: theme.text, fontSize: 14, fontWeight: '900', marginBottom: 3 },
+  privacyTitleActive: { color: theme.school ? theme.background : theme.onPrimary },
   privacySub: { color: theme.muted, fontSize: 12, lineHeight: 17 },
+  privacySubActive: { color: theme.school ? theme.background : theme.onPrimary, opacity: 0.82 },
   roomDetailCard: { backgroundColor: theme.surface, borderRadius: 22, borderWidth: 1, borderColor: theme.border, padding: 16 },
   roomDetailTitle: { color: theme.text, fontSize: 22, fontWeight: '900', marginBottom: 4 },
   roomInfoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14, marginBottom: 8 },
@@ -1377,7 +1744,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   roomInfoValue: { color: theme.text, fontSize: 13, fontWeight: '800', lineHeight: 18 },
   memberList: { gap: 10, marginBottom: 14 },
   memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 10 },
-  messageRoomButton: { backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 16, paddingVertical: 13, marginBottom: 10 },
+  messageRoomButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 16, paddingVertical: 13, marginBottom: 10 },
   messageRoomButtonText: { color: theme.text, fontSize: 14, fontWeight: '900', textAlign: 'center' },
   confirmRow: { flexDirection: 'row', gap: 10 },
   cancelButton: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 16, paddingVertical: 13 },
@@ -1385,6 +1752,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   confirmButton: { flex: 1, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13 },
   confirmButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '900', textAlign: 'center' },
   roomCard: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14 },
+  roomTimePill: { alignSelf: 'flex-start', color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 999, borderWidth: 1, borderColor: theme.border, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '900' },
   roomAssignmentPreview: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 12, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, fontWeight: '800', marginTop: 10 },
   roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   smallButton: { backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },

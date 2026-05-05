@@ -36,7 +36,7 @@ export default function AddTaskScreen() {
 
   const handleSave = () => {
     if (!assignmentName.trim() || !className.trim() || !dueDate.trim()) {
-      Alert.alert('Missing fields', 'Please fill in assignment name, class, and due date.');
+      Alert.alert('Add the basics', 'Add an assignment name, class, and due date before saving.');
       return;
     }
     const parsed = new Date(dueDate.trim());
@@ -83,7 +83,7 @@ export default function AddTaskScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Text style={styles.backArrow}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.heading}>New Assignment</Text>
+          <Text style={styles.heading}>Add assignment</Text>
         </View>
 
         <Text style={styles.label}>Class</Text>
@@ -96,7 +96,7 @@ export default function AddTaskScreen() {
         </TouchableOpacity>
         <TextInput
           style={[inputStyle('className'), styles.classManualInput]}
-          placeholder="Or type manually"
+          placeholder="Or type your class"
           placeholderTextColor="#333"
           value={className}
           onChangeText={setClassName}
@@ -104,10 +104,10 @@ export default function AddTaskScreen() {
           onBlur={() => setFocused(null)}
         />
 
-        <Text style={styles.label}>Assignment Name</Text>
+        <Text style={styles.label}>Assignment name</Text>
         <TextInput
           style={inputStyle('assignmentName')}
-          placeholder="e.g. Essay on Chapter 5"
+          placeholder="Example: Chapter 5 essay"
           placeholderTextColor="#444"
           value={assignmentName}
           onChangeText={setAssignmentName}
@@ -115,10 +115,10 @@ export default function AddTaskScreen() {
           onBlur={() => setFocused(null)}
         />
 
-        <Text style={styles.label}>Due Date</Text>
+        <Text style={styles.label}>Due date</Text>
         <TextInput
           style={inputStyle('dueDate')}
-          placeholder="e.g. May 10, 2026"
+          placeholder="Example: May 10, 2026"
           placeholderTextColor="#444"
           value={dueDate}
           onChangeText={setDueDate}
@@ -131,7 +131,7 @@ export default function AddTaskScreen() {
         </Text>
         <TextInput
           style={[inputStyle('description'), styles.textArea]}
-          placeholder="What does this assignment involve?"
+          placeholder="What do you need to do?"
           placeholderTextColor="#444"
           value={description}
           onChangeText={setDescription}
@@ -142,7 +142,7 @@ export default function AddTaskScreen() {
           onBlur={() => setFocused(null)}
         />
 
-        <Text style={styles.label}>Estimated Time</Text>
+        <Text style={styles.label}>Estimated time</Text>
         <View style={styles.hoursRow}>
           <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(-0.5)}>
             <Text style={styles.adjBtnText}>−</Text>
@@ -171,7 +171,7 @@ export default function AddTaskScreen() {
         </View>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Assignment</Text>
+          <Text style={styles.saveButtonText}>Save assignment</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -192,7 +192,7 @@ export default function AddTaskScreen() {
               <View style={styles.modalBackBtn} />
             )}
             <Text style={styles.modalTitle}>
-              {selectedSubject ? selectedSubject.label : 'Choose a Subject'}
+              {selectedSubject ? selectedSubject.label : 'Choose a subject'}
             </Text>
             <TouchableOpacity onPress={() => setPickerVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Text style={styles.modalClose}>✕</Text>
@@ -202,7 +202,7 @@ export default function AddTaskScreen() {
           {!selectedSubject ? (
             // Subject grid
             <ScrollView contentContainerStyle={styles.subjectGrid}>
-              <Text style={styles.pickerHint}>Based on UC & CSU course catalogs</Text>
+              <Text style={styles.pickerHint}>Sample UC and CSU course list</Text>
               <View style={styles.subjectCards}>
                 {SUBJECTS.map(subject => (
                   <TouchableOpacity
@@ -221,7 +221,7 @@ export default function AddTaskScreen() {
           ) : (
             // Course list for selected subject
             <ScrollView contentContainerStyle={styles.courseList}>
-              <Text style={styles.pickerHint}>Tap a course to auto-fill</Text>
+              <Text style={styles.pickerHint}>Tap a course to fill the class field</Text>
               {selectedSubject.courses.map(course => (
                 <TouchableOpacity
                   key={course.code}

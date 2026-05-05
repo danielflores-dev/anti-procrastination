@@ -41,9 +41,9 @@ function hourColor(h: number) {
 }
 
 function hourLabel(h: number) {
-  if (h < 2) return 'Light';
-  if (h < 5) return 'Moderate';
-  return 'Heavy';
+  if (h < 2) return 'Quick';
+  if (h < 5) return 'Medium';
+  return 'Long';
 }
 
 function daysUntil(dueDateRaw: string) {
@@ -210,7 +210,7 @@ export default function CalendarScreen() {
       `Remove ${task.assignmentName} from your schedule?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteTask(task.id) },
+        { text: 'Delete assignment', style: 'destructive', onPress: () => deleteTask(task.id) },
       ],
     );
   };
@@ -219,7 +219,7 @@ export default function CalendarScreen() {
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.kicker}>Campus plan</Text>
       <Text style={styles.heading}>Schedule</Text>
-      <Text style={styles.headingSub}>Pick a day to see what needs attention.</Text>
+      <Text style={styles.headingSub}>Pick a day to see assignments, classes, and events.</Text>
 
       <View style={styles.actionRow}>
         <TouchableOpacity style={styles.scheduleAction} onPress={() => openScheduleForm('class')}>
@@ -243,38 +243,38 @@ export default function CalendarScreen() {
           <TextInput
             value={itemDate}
             onChangeText={setItemDate}
-            placeholder="Date as YYYY-MM-DD"
+            placeholder="Date, like 2026-05-10"
             placeholderTextColor={theme.muted}
             style={styles.input}
           />
           <TextInput
             value={itemTime}
             onChangeText={setItemTime}
-            placeholder="Time"
+            placeholder="Time, like 2:30 PM"
             placeholderTextColor={theme.muted}
             style={styles.input}
           />
           <TextInput
             value={itemLocation}
             onChangeText={setItemLocation}
-            placeholder="Location"
+            placeholder="Location, like Library 2A"
             placeholderTextColor={theme.muted}
             style={styles.input}
           />
           <TextInput
             value={itemNotes}
             onChangeText={setItemNotes}
-            placeholder="Notes"
+            placeholder="Notes, optional"
             placeholderTextColor={theme.muted}
             style={[styles.input, styles.notesInput]}
             multiline
           />
           <View style={styles.formButtons}>
             <TouchableOpacity style={styles.cancelScheduleButton} onPress={() => setFormType(null)}>
-              <Text style={styles.cancelScheduleText}>Close</Text>
+              <Text style={styles.cancelScheduleText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveScheduleButton} onPress={addScheduleItem}>
-              <Text style={styles.saveScheduleText}>Save {formType}</Text>
+              <Text style={styles.saveScheduleText}>{formType === 'class' ? 'Save class' : 'Save event'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -378,7 +378,7 @@ export default function CalendarScreen() {
           </Text>
 
           {selectedDueTasks.length === 0 && selectedStudyTasks.length === 0 && selectedScheduleItems.length === 0 ? (
-            <Text style={styles.nothingText}>Nothing here. Add a class, event, or assignment when you need it.</Text>
+            <Text style={styles.nothingText}>Nothing planned for this day. Add a class, event, or assignment when you need it.</Text>
           ) : (
             <>
               {selectedScheduleItems.length > 0 && (
@@ -411,7 +411,7 @@ export default function CalendarScreen() {
               )}
               {selectedStudyTasks.length > 0 && (
                 <>
-                  <Text style={styles.dayPanelSection}>Study session</Text>
+                  <Text style={styles.dayPanelSection}>Planned study</Text>
                   {selectedStudyTasks.map(task => (
                     <TaskCard
                       key={task.id}

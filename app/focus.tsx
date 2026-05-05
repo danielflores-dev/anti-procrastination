@@ -231,9 +231,9 @@ export default function FocusScreen() {
   if (!focusTask) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={{ color: theme.text }}>Assignment not found.</Text>
+          <Text style={{ color: theme.text }}>We could not find this assignment.</Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: theme.primary, marginTop: 16 }}>Go back</Text>
+          <Text style={{ color: theme.primary, marginTop: 16 }}>Back to assignments</Text>
         </TouchableOpacity>
       </View>
     );
@@ -268,7 +268,7 @@ export default function FocusScreen() {
           <View style={[styles.partyBadge, { borderColor: color }]}>
             <Text style={styles.partyBadgeText}>{partyRoom ?? 'Study party'}</Text>
             <Text style={[styles.partyBadgeMeta, { color }]}>
-              {partyCount} students - {coinMultiplier.toFixed(1)}x coins
+              {partyCount} students, {coinMultiplier.toFixed(1)}x coins
             </Text>
             {partyNameList.length > 0 && (
               <Text style={styles.partyNames} numberOfLines={1}>{partyNameList.join(' + ')}</Text>
@@ -294,7 +294,7 @@ export default function FocusScreen() {
           {formatTime(elapsed)}
         </Text>
         <Text style={styles.goal}>
-          {goalReached ? "Today's goal reached!" : `Goal: ${formatTime(targetSeconds)}`}
+        {goalReached ? "Today's goal is done" : `Goal: ${formatTime(targetSeconds)}`}
         </Text>
       </View>
 
@@ -322,7 +322,7 @@ export default function FocusScreen() {
       </View>
 
       <TouchableOpacity style={styles.stopBtn} onPress={handleStop}>
-        <Text style={styles.stopText}>End Session</Text>
+        <Text style={styles.stopText}>End session</Text>
       </TouchableOpacity>
 
       {showRecap && (
@@ -331,13 +331,13 @@ export default function FocusScreen() {
             <Text style={styles.recapKicker}>Session recap</Text>
             <Text style={styles.recapTitle}>{focusTask.assignmentName}</Text>
             <Text style={styles.recapSub}>
-              {goalReached ? 'Nice work, you reached the goal.' : 'Good progress. You can adjust the goal if it felt off.'}
+              {goalReached ? 'Nice work, you reached today\'s goal.' : 'Good progress. Adjust the goal if the time felt off.'}
             </Text>
 
             <View style={styles.recapGrid}>
               <View style={styles.recapStat}>
                 <Text style={styles.recapStatValue}>{formatTime(elapsed)}</Text>
-                <Text style={styles.recapStatLabel}>focused</Text>
+                <Text style={styles.recapStatLabel}>focus time</Text>
               </View>
               <View style={styles.recapStat}>
                 <Text style={styles.recapStatValue}>{sessionCoins}</Text>
@@ -345,25 +345,25 @@ export default function FocusScreen() {
               </View>
               <View style={styles.recapStat}>
                 <Text style={styles.recapStatValue}>{progressPercent}%</Text>
-                <Text style={styles.recapStatLabel}>goal</Text>
+                <Text style={styles.recapStatLabel}>goal done</Text>
               </View>
               <View style={styles.recapStat}>
                 <Text style={styles.recapStatValue}>{coinMultiplier.toFixed(1)}x</Text>
-                <Text style={styles.recapStatLabel}>boost</Text>
+                <Text style={styles.recapStatLabel}>coin boost</Text>
               </View>
             </View>
 
             <View style={styles.recapNote}>
               <Text style={styles.recapNoteText}>
                 {focusMinutes < 10
-                  ? 'Try one more short focus round if you still have energy.'
+                  ? 'Try one more short session if you still have energy.'
                   : goalReached
                     ? 'This assignment looks on track for today.'
-                    : 'If this took longer than expected, bump the daily goal up a little.'}
+                    : 'If this took longer than expected, raise the daily goal a little.'}
               </Text>
             </View>
 
-            <Text style={styles.adjustLabel}>Adjust daily study time</Text>
+            <Text style={styles.adjustLabel}>Adjust daily goal</Text>
             <View style={styles.adjustRow}>
               <TouchableOpacity
                 style={styles.adjustButton}
@@ -387,7 +387,7 @@ export default function FocusScreen() {
               <Text style={styles.recapPrimaryText}>Keep studying</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.recapSecondary} onPress={finishSession}>
-              <Text style={styles.recapSecondaryText}>Save recap and finish</Text>
+              <Text style={styles.recapSecondaryText}>Save and finish</Text>
             </TouchableOpacity>
           </View>
         </View>

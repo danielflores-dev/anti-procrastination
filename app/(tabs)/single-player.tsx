@@ -130,7 +130,7 @@ export default function SinglePlayerScreen() {
         <View>
           <Text style={styles.kicker}>Solo study</Text>
           <Text style={styles.greeting}>Assignments</Text>
-          <Text style={styles.date}>Plan the work, then start a focus session.</Text>
+          <Text style={styles.date}>Pick one assignment, then start a focus session.</Text>
         </View>
         <View style={styles.countPill}>
           <Text style={styles.countPillText}>{tasks.length}</Text>
@@ -140,7 +140,7 @@ export default function SinglePlayerScreen() {
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{totalHours}h</Text>
-          <Text style={styles.statLabel}>total</Text>
+          <Text style={styles.statLabel}>hours</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
@@ -158,7 +158,7 @@ export default function SinglePlayerScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>+</Text>
           <Text style={styles.emptyTitle}>Add your first assignment</Text>
-          <Text style={styles.emptySub}>Use Auto-add for an estimate or create one yourself.</Text>
+          <Text style={styles.emptySub}>Estimate one from a photo, or add the details yourself.</Text>
         </View>
       ) : (
         <FlatList
@@ -181,7 +181,7 @@ export default function SinglePlayerScreen() {
 
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.autoBtn} onPress={() => router.push('/auto-add')}>
-          <Text style={styles.autoBtnText}>Auto-add assignment</Text>
+          <Text style={styles.autoBtnText}>Estimate from photo</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.fab} onPress={() => router.push('/add-task')}>
           <Text style={styles.fabIcon}>+</Text>

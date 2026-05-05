@@ -1,7 +1,8 @@
 import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function getGreeting(): string {
@@ -72,37 +73,37 @@ function buildBadges(sessions: StudySession[], tasks: Task[], streak: number): B
     {
       id: 'first-focus',
       name: 'First Focus',
-      detail: 'Finish your first focus session.',
+      detail: 'Finish one focus session.',
       unlocked: sessions.length > 0,
     },
     {
       id: 'three-day-streak',
       name: '3 Day Streak',
-      detail: 'Study three days in a row.',
+      detail: 'Focus three days in a row.',
       unlocked: streak >= 3,
     },
     {
       id: 'group-study',
       name: 'Group Study',
-      detail: 'Complete a party focus session.',
+      detail: 'Finish a study room session.',
       unlocked: hasGroupSession,
     },
     {
       id: 'coin-builder',
       name: 'Coin Builder',
-      detail: 'Earn 25 coins from studying.',
+      detail: 'Earn 25 coins from focus time.',
       unlocked: totalCoins >= 25,
     },
     {
       id: 'assignment-closer',
       name: 'Assignment Closer',
-      detail: 'Mark an assignment as done.',
+      detail: 'Finish one assignment.',
       unlocked: completedCount > 0,
     },
     {
       id: 'deep-work',
       name: 'Deep Work',
-      detail: 'Log 60 total focus minutes.',
+      detail: 'Reach 60 focus minutes.',
       unlocked: totalMinutes >= 60,
     },
   ];
@@ -126,22 +127,22 @@ function buildSmartSuggestions(tasks: Task[], sessions: ReturnType<typeof useTas
         (recentlyStudied ? 10 : 0);
 
       const title = dueSoon
-        ? days === 0 ? 'Start this now' : 'Do this next'
+        ? days === 0 ? 'Start this today' : 'Do this next'
         : recentlyStudied
           ? 'Keep the momentum'
           : heavy
-            ? 'Break this into a focus round'
+            ? 'Break this up'
             : 'Good quick win';
 
       const reason = dueSoon
         ? days === 0
-          ? 'It is due today, so even a short focus session helps.'
-          : `It is due in ${days} day${days === 1 ? '' : 's'} and still needs attention.`
+          ? 'It is due today. A short focus session still helps.'
+          : `Due in ${days} day${days === 1 ? '' : 's'}, and it still needs time.`
         : recentlyStudied
-          ? 'You worked on this recently, so it is easier to continue now.'
+          ? 'You worked on this recently, so it should be easier to restart.'
           : heavy
-            ? `${task.estimatedHours}h estimated. Starting early keeps it from getting stressful.`
-            : 'It is manageable and can build momentum.';
+            ? `${task.estimatedHours}h estimated. Starting now keeps it from piling up.`
+            : 'This is a good quick win.';
 
       return {
         task,
@@ -160,6 +161,7 @@ export default function HomeScreen() {
   const { tasks, sessions } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const [showOnboarding, setShowOnboarding] = useState(true);
 
   const totalHours = tasks.reduce((sum, t) => sum + t.estimatedHours, 0);
   const urgentCount = tasks.filter(t => daysUntil(t.dueDateRaw) <= 2).length;
@@ -169,6 +171,28 @@ export default function HomeScreen() {
   const streak = getStudyStreak(sessions);
   const badges = buildBadges(sessions, tasks, streak);
   const nextBadge = badges.find(badge => !badge.unlocked);
+  const firstStepLabel = theme.school ? 'Add assignment' : 'Find school';
+  const firstStepRoute = theme.school ? '/auto-add' : '/(tabs)/multi-player';
+  const onboardingSteps = [
+    {
+      id: 'school',
+      title: theme.school ? 'School is set' : 'Pick your school',
+      detail: theme.school ? `${theme.name} colors are active.` : 'Choose your campus so the app matches your school.',
+      icon: 'university',
+    },
+    {
+      id: 'assignment',
+      title: 'Add one assignment',
+      detail: 'Use a sample estimate or add it yourself. One assignment is enough to start.',
+      icon: 'clipboard-list',
+    },
+    {
+      id: 'focus',
+      title: 'Start focus',
+      detail: 'Focus sessions earn coins, streaks, and badges as you work.',
+      icon: 'play',
+    },
+  ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.dashboardContent}>
@@ -191,7 +215,7 @@ export default function HomeScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{totalHours}h</Text>
-            <Text style={styles.statLabel}>total</Text>
+            <Text style={styles.statLabel}>hours</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
@@ -206,14 +230,54 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {tasks.length === 0 && (
+      {tasks.length === 0 && showOnboarding && (
+        <View style={styles.onboardingPanel}>
+          <View style={styles.onboardingHeader}>
+            <View>
+              <Text style={styles.kicker}>Start here</Text>
+              <Text style={styles.onboardingTitle}>Set up your study flow</Text>
+            </View>
+            <TouchableOpacity style={styles.skipButton} onPress={() => setShowOnboarding(false)} activeOpacity={0.85}>
+              <Text style={styles.skipButtonText}>Skip</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.onboardingSub}>
+            In under a minute, you can pick your school, add one assignment, and start your first focus session.
+          </Text>
+
+          <View style={styles.onboardingSteps}>
+            {onboardingSteps.map((step, index) => (
+              <View key={step.id} style={styles.onboardingStep}>
+                <View style={styles.stepIconWrap}>
+                  <FontAwesome5 name={step.icon} size={14} color={theme.school ? theme.background : theme.onPrimary} />
+                </View>
+                <View style={styles.onboardingStepText}>
+                  <Text style={styles.onboardingStepTitle}>{index + 1}. {step.title}</Text>
+                  <Text style={styles.onboardingStepDetail}>{step.detail}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.onboardingActions}>
+            <TouchableOpacity style={styles.onboardingPrimary} onPress={() => router.push(firstStepRoute)} activeOpacity={0.85}>
+              <Text style={styles.onboardingPrimaryText}>{firstStepLabel}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.onboardingSecondary} onPress={() => router.push('/add-task')} activeOpacity={0.85}>
+              <Text style={styles.onboardingSecondaryText}>Add manually</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {tasks.length === 0 && !showOnboarding && (
         <View style={styles.suggestionPanel}>
           <Text style={styles.sectionTitle}>Start simple</Text>
           <Text style={styles.suggestionReason}>
-            Add one assignment and the app will help estimate time, plan focus sessions, and track progress.
+            Add one assignment. We will help estimate time, plan focus sessions, and track progress.
           </Text>
           <TouchableOpacity style={styles.suggestionAction} onPress={() => router.push('/auto-add')} activeOpacity={0.85}>
-            <Text style={styles.suggestionActionText}>Auto-add assignment</Text>
+            <Text style={styles.suggestionActionText}>Estimate an assignment</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -244,21 +308,23 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <View style={styles.homeActions}>
-        <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/single-player')}>
-          <Text style={styles.primaryHomeActionText}>{tasks.length > 0 ? 'Open assignments' : 'Add assignments'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/multi-player')}>
-          <Text style={styles.primaryHomeActionText}>Find study groups</Text>
-        </TouchableOpacity>
-      </View>
+      {(tasks.length > 0 || !showOnboarding) && (
+        <View style={styles.homeActions}>
+          <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/single-player')}>
+            <Text style={styles.primaryHomeActionText}>{tasks.length > 0 ? 'View assignments' : 'Add an assignment'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/multi-player')}>
+            <Text style={styles.primaryHomeActionText}>Find a study group</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.badgePanel}>
         <View style={styles.badgeHeader}>
           <View>
             <Text style={styles.sectionTitle}>Streaks and badges</Text>
             <Text style={styles.suggestionHint}>
-              {streak > 0 ? `${streak} day study streak` : 'Finish a session to start a streak'}
+              {streak > 0 ? `${streak} day focus streak` : 'Finish a session to start a streak'}
             </Text>
           </View>
           <View style={styles.streakBadge}>
@@ -390,6 +456,124 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   statDivider: {
     width: 1,
     backgroundColor: theme.border,
+  },
+  onboardingPanel: {
+    backgroundColor: theme.surface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginHorizontal: 20,
+    marginBottom: 18,
+    padding: 16,
+    shadowColor: theme.school ? theme.secondary : theme.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  onboardingHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 8,
+  },
+  onboardingTitle: {
+    color: theme.text,
+    fontSize: 22,
+    fontWeight: '900',
+    lineHeight: 27,
+  },
+  onboardingSub: {
+    color: theme.muted,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  skipButton: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  skipButtonText: {
+    color: theme.text,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  onboardingSteps: {
+    gap: 9,
+    marginBottom: 14,
+  },
+  onboardingStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 11,
+  },
+  stepIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
+  },
+  onboardingStepText: {
+    flex: 1,
+  },
+  onboardingStepTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '900',
+    marginBottom: 3,
+  },
+  onboardingStepDetail: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  onboardingActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  onboardingPrimary: {
+    flex: 1,
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: theme.school ? theme.secondary : theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  onboardingPrimaryText: {
+    color: theme.school ? theme.background : theme.onPrimary,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  onboardingSecondary: {
+    flex: 1,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  onboardingSecondaryText: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '900',
   },
   list: {
     flex: 1,
