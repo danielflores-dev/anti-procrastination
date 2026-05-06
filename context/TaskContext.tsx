@@ -46,7 +46,7 @@ export type StudySession = {
 type TaskContextType = {
   tasks: Task[];
   sessions: StudySession[];
-  addTask: (task: Omit<Task, 'id'>) => void;
+  addTask: (task: Omit<Task, 'id'>) => string;
   deleteTask: (id: string) => void;
   addStudySession: (session: Omit<StudySession, 'id' | 'createdAt'>) => void;
   updateProgress: (id: string, progress: TaskProgress) => void;
@@ -58,7 +58,7 @@ type TaskContextType = {
 const TaskContext = createContext<TaskContextType>({
   tasks: [],
   sessions: [],
-  addTask: () => {},
+  addTask: () => '',
   deleteTask: () => {},
   addStudySession: () => {},
   updateProgress: () => {},
@@ -125,13 +125,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [sessions, setSessions] = useState<StudySession[]>([]);
 
   const addTask = (task: Omit<Task, 'id'>) => {
+    const id = Date.now().toString();
     setTasks(prev => [...prev, {
       ...task,
       progress: task.progress ?? 'Not started',
       steps: task.steps ?? generateAssignmentSteps(task),
       studyPlan: task.studyPlan ?? generateStudyPlan(task),
-      id: Date.now().toString(),
+      id,
     }]);
+    return id;
   };
 
   const deleteTask = (id: string) => {

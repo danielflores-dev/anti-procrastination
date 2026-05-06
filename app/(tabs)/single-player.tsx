@@ -155,27 +155,38 @@ export default function SinglePlayerScreen() {
 
       {tasks.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>+</Text>
-          <Text style={styles.emptyTitle}>Add your first assignment</Text>
-          <Text style={styles.emptySub}>Estimate one from a photo, or add the details yourself.</Text>
+          <View style={styles.emptyLine} />
+          <Text style={styles.emptyTitle}>No assignments yet</Text>
+          <Text style={styles.emptySub}>Drop in one real task. The next screen can estimate the time and send you straight to focus.</Text>
+          <View style={styles.emptyPreview}>
+            <Text style={styles.emptyPreviewLabel}>Example</Text>
+            <Text style={styles.emptyPreviewTitle}>Read chapter 4 before lab</Text>
+            <Text style={styles.emptyPreviewMeta}>45m estimate - study tonight</Text>
+          </View>
         </View>
       ) : (
-        <FlatList
-          data={tasks}
-          keyExtractor={item => item.id}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <AssignmentCard
-              task={item}
-              styles={styles}
-              onFocus={() => router.push(`/focus?id=${item.id}`)}
-              onProgress={() => updateProgress(item.id, nextProgress(item.progress))}
-              onToggleStep={stepId => toggleTaskStep(item.id, stepId)}
-            />
-          )}
-        />
+        <View style={styles.queueArea}>
+          <View style={styles.queueHeader}>
+            <Text style={styles.queueTitle}>Focus queue</Text>
+            <Text style={styles.queueHint}>Top task first</Text>
+          </View>
+          <FlatList
+            data={tasks}
+            keyExtractor={item => item.id}
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <AssignmentCard
+                task={item}
+                styles={styles}
+                onFocus={() => router.push(`/focus?id=${item.id}`)}
+                onProgress={() => updateProgress(item.id, nextProgress(item.progress))}
+                onToggleStep={stepId => toggleTaskStep(item.id, stepId)}
+              />
+            )}
+          />
+        </View>
       )}
 
       <View style={styles.bottomBar}>
@@ -193,38 +204,41 @@ export default function SinglePlayerScreen() {
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background, paddingTop: 36 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 16 },
-  kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '900', letterSpacing: 0.8, marginBottom: 5, textTransform: 'uppercase' },
-  greeting: { fontSize: 28, fontWeight: '900', color: theme.text },
+  kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
+  greeting: { fontSize: 26, fontWeight: '700', color: theme.text },
   date: { fontSize: 13, color: theme.muted, marginTop: 4, fontWeight: '600', lineHeight: 18 },
   countPill: { backgroundColor: theme.surfaceAlt, borderRadius: 18, minWidth: 40, height: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: theme.border },
-  countPillText: { color: theme.text, fontSize: 16, fontWeight: '900' },
-  statsRow: { flexDirection: 'row', backgroundColor: theme.surface, marginHorizontal: 20, borderRadius: 18, paddingVertical: 14, marginBottom: 14, borderWidth: 1, borderColor: theme.border },
+  countPillText: { color: theme.text, fontSize: 16, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', marginHorizontal: 20, paddingVertical: 10, marginBottom: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border },
   statItem: { flex: 1, alignItems: 'center' },
-  statValue: { color: theme.text, fontSize: 20, fontWeight: '800' },
+  statValue: { color: theme.text, fontSize: 20, fontWeight: '700' },
   statUrgent: { color: '#EF4444' },
   statLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   statDivider: { width: 1, backgroundColor: theme.border },
+  queueArea: { flex: 1 },
+  queueHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10 },
+  queueTitle: { color: theme.text, fontSize: 18, fontWeight: '700' },
+  queueHint: { color: theme.muted, fontSize: 12, fontWeight: '700' },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 20, paddingBottom: 108 },
   card: {
     backgroundColor: theme.surface,
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderWidth: 0,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   cardTitles: { flex: 1, marginRight: 10 },
-  cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 3 },
+  cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   cardClass: { color: theme.muted, fontSize: 13, fontWeight: '600' },
   hourPill: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  hourPillText: { fontSize: 13, fontWeight: '800' },
+  hourPillText: { fontSize: 13, fontWeight: '700' },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border },
   metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 },
   workloadDot: { width: 8, height: 8, borderRadius: 4 },
   cardDue: { color: theme.muted, fontSize: 12, fontWeight: '600' },
-  cardDays: { fontSize: 12, fontWeight: '800' },
+  cardDays: { fontSize: 12, fontWeight: '700' },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   focusButton: {
     flex: 1,
@@ -238,32 +252,36 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  focusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '900' },
+  focusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
   progressButton: { borderRadius: 14, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surfaceAlt, paddingHorizontal: 12, paddingVertical: 13 },
-  progressButtonText: { fontSize: 12, fontWeight: '900' },
+  progressButtonText: { fontSize: 12, fontWeight: '700' },
   breakdownBox: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 12, padding: 12 },
   breakdownHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  sectionMiniTitle: { color: theme.text, fontSize: 13, fontWeight: '900' },
-  breakdownCount: { color: theme.muted, fontSize: 12, fontWeight: '800' },
+  sectionMiniTitle: { color: theme.text, fontSize: 13, fontWeight: '700' },
+  breakdownCount: { color: theme.muted, fontSize: 12, fontWeight: '700' },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 6 },
   stepCheck: { width: 22, height: 22, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface },
   stepCheckDone: { backgroundColor: '#22C55E', borderColor: '#22C55E' },
-  stepCheckText: { color: '#ffffff', fontSize: 13, fontWeight: '900' },
+  stepCheckText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
   stepText: { flex: 1, color: theme.text, fontSize: 13, fontWeight: '700' },
   stepTextDone: { color: theme.muted, textDecorationLine: 'line-through' },
   planBox: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 10, padding: 12, gap: 8 },
   planRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  planDate: { width: 66, color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '900' },
+  planDate: { width: 66, color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '700' },
   planTextWrap: { flex: 1 },
   planFocus: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 17 },
   planMinutes: { color: theme.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
-  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 80 },
-  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.primary, color: '#fff', textAlign: 'center', lineHeight: 54, fontSize: 30, fontWeight: '300', marginBottom: 16 },
-  emptyTitle: { color: theme.text, fontSize: 20, fontWeight: '800', marginBottom: 8 },
-  emptySub: { color: theme.muted, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyState: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingBottom: 92 },
+  emptyLine: { width: 46, height: 4, borderRadius: 999, backgroundColor: theme.school ? theme.secondary : theme.primary, marginBottom: 18 },
+  emptyTitle: { color: theme.text, fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  emptySub: { color: theme.muted, fontSize: 15, lineHeight: 22, maxWidth: 310 },
+  emptyPreview: { marginTop: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 14 },
+  emptyPreviewLabel: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 6 },
+  emptyPreviewTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  emptyPreviewMeta: { color: theme.muted, fontSize: 13, fontWeight: '700' },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 24, paddingTop: 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border },
   autoBtn: { flex: 1, marginRight: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, alignItems: 'center' },
-  autoBtnText: { color: theme.text, fontSize: 14, fontWeight: '900' },
+  autoBtnText: { color: theme.text, fontSize: 14, fontWeight: '700' },
   fab: { width: 56, height: 56, borderRadius: 20, backgroundColor: theme.school ? theme.secondary : theme.primary, alignItems: 'center', justifyContent: 'center', shadowColor: theme.school ? theme.secondary : theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 },
-  fabIcon: { color: '#ffffff', fontSize: 30, fontWeight: '300', lineHeight: 34, marginTop: -2 },
+  fabIcon: { color: '#ffffff', fontSize: 26, fontWeight: '300', lineHeight: 34, marginTop: -2 },
 });

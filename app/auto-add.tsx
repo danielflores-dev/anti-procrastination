@@ -1,5 +1,6 @@
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
+import { ThemeButton, ThemeCard } from '@/components/ui/design-system';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
@@ -121,7 +122,7 @@ export default function AutoAddScreen() {
   const saveAssignment = () => {
     if (!result) return;
     const dueDateRaw = dueDate.toISOString();
-    addTask({
+    const taskId = addTask({
       assignmentName: result.assignmentName,
       className: result.className,
       description: result.reasoning,
@@ -131,7 +132,7 @@ export default function AutoAddScreen() {
       hoursPerDay: computeHoursPerDay(adjustedHours, dueDateRaw),
     });
 
-    router.replace('/(tabs)/calendar');
+    router.replace(`/focus?id=${taskId}`);
   };
 
   const adjustHours = (delta: number) => {
@@ -183,12 +184,12 @@ export default function AutoAddScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.heading}>Estimate assignment</Text>
+        <Text style={styles.heading}>Add first assignment</Text>
       </View>
 
       {step === 'pick' && (
         <>
-          <Text style={styles.sub}>Upload an assignment. We will estimate the study time, then you can adjust it before saving.</Text>
+          <Text style={styles.sub}>Upload an assignment or use the sample. We will estimate the time, then send you straight into focus.</Text>
 
           {Platform.OS === 'web' && (
             <DropView
@@ -205,24 +206,20 @@ export default function AutoAddScreen() {
           )}
 
           {Platform.OS !== 'web' && (
-            <TouchableOpacity style={styles.primaryButton} onPress={() => pickImage(true)}>
-              <Text style={styles.primaryButtonIcon}>📷</Text>
-              <Text style={styles.primaryButtonText}>Take photo</Text>
-            </TouchableOpacity>
+            <ThemeButton size="lg" style={styles.actionGap} onPress={() => pickImage(true)}>
+              Take photo
+            </ThemeButton>
           )}
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => pickImage(false)}>
-            <Text style={styles.secondaryButtonIcon}>🖼️</Text>
-            <Text style={styles.secondaryButtonText}>Choose photo</Text>
-          </TouchableOpacity>
+          <ThemeButton size="lg" variant="secondary" style={styles.actionGap} onPress={() => pickImage(false)}>
+            Choose photo
+          </ThemeButton>
 
-          <TouchableOpacity style={styles.sampleButton} onPress={() => analyzeImage()}>
-            <Text style={styles.sampleButtonText}>Try sample assignment</Text>
-          </TouchableOpacity>
+          <ThemeButton size="lg" variant="secondary" style={styles.actionGap} onPress={() => analyzeImage()}>
+            Try sample assignment
+          </ThemeButton>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
+          <ThemeButton variant="ghost" onPress={() => router.back()}>Cancel</ThemeButton>
         </>
       )}
 
@@ -232,23 +229,23 @@ export default function AutoAddScreen() {
             <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="cover" />
           )}
 
-          <View style={styles.card}>
+          <ThemeCard style={styles.card}>
             <Text style={styles.cardLabel}>Assignment</Text>
             <Text style={styles.cardValue}>{result.assignmentName}</Text>
-          </View>
-          <View style={styles.card}>
+          </ThemeCard>
+          <ThemeCard style={styles.card}>
             <Text style={styles.cardLabel}>Class</Text>
             <Text style={styles.cardValue}>{result.className}</Text>
-          </View>
-          <View style={styles.estimateHero}>
+          </ThemeCard>
+          <ThemeCard variant="elevated" style={styles.estimateHero}>
             <Text style={styles.cardLabel}>Estimated time</Text>
             <Text style={styles.estimateHours}>{result.estimatedHours}h</Text>
             <Text style={styles.estimateSub}>{result.workload} workload</Text>
-          </View>
-          <View style={styles.card}>
+          </ThemeCard>
+          <ThemeCard style={styles.card}>
             <Text style={styles.cardLabel}>Why this time?</Text>
             <Text style={styles.cardReasoning}>{result.reasoning}</Text>
-          </View>
+          </ThemeCard>
 
           <Text style={styles.sectionTitle}>Adjust time</Text>
           <View style={styles.timeAdjuster}>
@@ -262,12 +259,9 @@ export default function AutoAddScreen() {
           </View>
 
           <Text style={styles.sectionTitle}>Due date</Text>
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={styles.dateButtonText}>{dueDate.toLocaleDateString()}</Text>
-          </TouchableOpacity>
+          <ThemeButton variant="secondary" onPress={() => setShowDatePicker(true)}>
+            {dueDate.toLocaleDateString()}
+          </ThemeButton>
 
           {showDatePicker && (
             <DateTimePicker
@@ -283,12 +277,10 @@ export default function AutoAddScreen() {
             />
           )}
 
-          <TouchableOpacity style={[styles.primaryButton, { marginTop: 24 }]} onPress={saveAssignment}>
-            <Text style={styles.primaryButtonText}>Save assignment</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
+          <ThemeButton size="lg" style={styles.saveAction} onPress={saveAssignment}>
+            Save and start focus
+          </ThemeButton>
+          <ThemeButton variant="ghost" onPress={() => router.back()}>Cancel</ThemeButton>
         </>
       )}
     </ScrollView>
@@ -354,12 +346,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#252525',
   },
   cardLabel: {
     color: '#666',
@@ -380,12 +367,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   estimateHero: {
-    backgroundColor: '#6C63FF22',
-    borderRadius: 16,
     padding: 18,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#6C63FF66',
     alignItems: 'center',
   },
   estimateHours: {
@@ -438,19 +421,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: -1,
   },
-  dateButton: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#252525',
-  },
-  dateButtonText: {
-    color: '#6C63FF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  actionGap: { marginBottom: 12 },
+  saveAction: { marginTop: 24, marginBottom: 12 },
   dropZone: {
     borderWidth: 2,
     borderColor: '#2a2a2a',
@@ -480,73 +452,5 @@ const styles = StyleSheet.create({
     color: '#555',
     fontSize: 13,
   },
-  primaryButton: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 12,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  primaryButtonIcon: {
-    fontSize: 20,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2a2a2a',
-  },
-  secondaryButtonIcon: {
-    fontSize: 20,
-  },
-  secondaryButtonText: {
-    color: '#6C63FF',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  sampleButton: {
-    backgroundColor: '#6C63FF22',
-    borderRadius: 14,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#6C63FF66',
-  },
-  sampleButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cancelButton: {
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  cancelButtonText: {
-    color: '#555',
-    fontSize: 16,
-  },
 });
+

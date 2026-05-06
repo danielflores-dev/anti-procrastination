@@ -218,6 +218,23 @@ export default function CalendarScreen() {
       <Text style={styles.heading}>Schedule</Text>
       <Text style={styles.headingSub}>Pick a day to see assignments, classes, and events.</Text>
 
+      <View style={styles.plannerStrip}>
+        <View>
+          <Text style={styles.plannerLabel}>This month</Text>
+          <Text style={styles.plannerValue}>{MONTH_NAMES[viewMonth]}</Text>
+        </View>
+        <View style={styles.plannerDivider} />
+        <View>
+          <Text style={styles.plannerLabel}>Classes</Text>
+          <Text style={styles.plannerValue}>{scheduleItems.filter(item => item.type === 'class').length}</Text>
+        </View>
+        <View style={styles.plannerDivider} />
+        <View>
+          <Text style={styles.plannerLabel}>Events</Text>
+          <Text style={styles.plannerValue}>{scheduleItems.filter(item => item.type === 'event').length}</Text>
+        </View>
+      </View>
+
       <View style={styles.actionRow}>
         <ThemeButton fullWidth size="lg" onPress={() => openScheduleForm('class')}>Add class</ThemeButton>
         <ThemeButton fullWidth size="lg" variant="secondary" onPress={() => openScheduleForm('event')}>Add event</ThemeButton>
@@ -267,11 +284,11 @@ export default function CalendarScreen() {
       {/* Month navigator */}
       <View style={styles.monthNav}>
         <TouchableOpacity style={styles.navBtn} onPress={prevMonth}>
-          <Text style={styles.navArrow}>‹</Text>
+          <Text style={styles.navArrow}>{'<'}</Text>
         </TouchableOpacity>
         <Text style={styles.monthTitle}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
         <TouchableOpacity style={styles.navBtn} onPress={nextMonth}>
-          <Text style={styles.navArrow}>›</Text>
+          <Text style={styles.navArrow}>{'>'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -369,13 +386,13 @@ export default function CalendarScreen() {
                 <>
                   <Text style={styles.dayPanelSection}>Classes and events</Text>
                   {selectedScheduleItems.map(item => (
-                    <ThemeCard key={item.id} variant="alt" style={[styles.scheduleItemCard, item.type === 'class' ? styles.classItemCard : styles.eventItemCard]}>
+                    <View key={item.id} style={[styles.scheduleItemCard, item.type === 'class' ? styles.classItemCard : styles.eventItemCard]}>
                       <Text style={styles.scheduleItemType}>{item.type === 'class' ? 'Class' : 'Event'}</Text>
                       <Text style={styles.scheduleItemTitle}>{item.title}</Text>
                       {!!item.time && <Text style={styles.scheduleItemMeta}>{item.time}</Text>}
                       {!!item.location && <Text style={styles.scheduleItemMeta}>{item.location}</Text>}
                       {!!item.notes && <Text style={styles.scheduleItemNotes}>{item.notes}</Text>}
-                    </ThemeCard>
+                    </View>
                   ))}
                 </>
               )}
@@ -418,17 +435,21 @@ export default function CalendarScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.background },
-  container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 60 },
-  kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '900', letterSpacing: 0.8, marginBottom: 5, textTransform: 'uppercase' },
-  heading: { fontSize: 28, fontWeight: '900', color: theme.text, marginBottom: 4 },
+  container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 76 },
+  kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
+  heading: { fontSize: 26, fontWeight: '700', color: theme.text, marginBottom: 4 },
   headingSub: { color: theme.muted, fontSize: 13, fontWeight: '600', marginBottom: 18, lineHeight: 18 },
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  plannerStrip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 18 },
+  plannerLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 3 },
+  plannerValue: { color: theme.text, fontSize: 15, fontWeight: '700' },
+  plannerDivider: { width: 1, height: 32, backgroundColor: theme.border },
+  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 28 },
   scheduleAction: { flex: 1, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', shadowColor: theme.school ? theme.secondary : theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.22, shadowRadius: 8, elevation: 4 },
-  scheduleActionText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '900' },
+  scheduleActionText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
   scheduleActionSecondary: { flex: 1, backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1, borderColor: theme.border, paddingVertical: 14, alignItems: 'center' },
-  scheduleActionSecondaryText: { color: theme.text, fontSize: 14, fontWeight: '900' },
+  scheduleActionSecondaryText: { color: theme.text, fontSize: 14, fontWeight: '700' },
   scheduleForm: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 16 },
-  formTitle: { color: theme.text, fontSize: 17, fontWeight: '800', marginBottom: 10 },
+  formTitle: { color: theme.text, fontSize: 17, fontWeight: '700', marginBottom: 10 },
   fieldGap: { marginBottom: 10 },
   input: {
     backgroundColor: theme.surfaceAlt,
@@ -444,18 +465,18 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   notesInput: { minHeight: 74, textAlignVertical: 'top' },
   formButtons: { flexDirection: 'row', gap: 10 },
   cancelScheduleButton: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingVertical: 11, alignItems: 'center' },
-  cancelScheduleText: { color: theme.text, fontSize: 14, fontWeight: '800' },
+  cancelScheduleText: { color: theme.text, fontSize: 14, fontWeight: '700' },
   saveScheduleButton: { flex: 1, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
-  saveScheduleText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '800' },
+  saveScheduleText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
 
   // Month nav
-  monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingHorizontal: 2 },
   navBtn: { padding: 8 },
-  navArrow: { fontSize: 28, color: theme.primary, fontWeight: '300' },
+  navArrow: { fontSize: 26, color: theme.primary, fontWeight: '300' },
   monthTitle: { fontSize: 18, fontWeight: '700', color: theme.text },
 
   // Calendar box
-  calendarBox: { backgroundColor: theme.surface, borderRadius: 18, overflow: 'hidden', marginBottom: 12, borderWidth: 1, borderColor: theme.border, padding: 0 },
+  calendarBox: { backgroundColor: 'transparent', borderRadius: 18, overflow: 'hidden', marginBottom: 12, borderWidth: 1, borderColor: theme.border, padding: 0 },
   dowRow: { flexDirection: 'row', backgroundColor: theme.surfaceAlt, paddingVertical: 8 },
   dowText: { flex: 1, textAlign: 'center', color: theme.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   weekRow: { flexDirection: 'row' },
@@ -474,8 +495,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cellToday: { backgroundColor: theme.surfaceAlt },
   cellSelected: { backgroundColor: theme.primary },
   cellDay: { fontSize: 14, color: theme.text, fontWeight: '500', marginBottom: 4 },
-  cellDayToday: { color: theme.primary, fontWeight: '800' },
-  cellDaySelected: { color: theme.onPrimary, fontWeight: '800' },
+  cellDayToday: { color: theme.primary, fontWeight: '700' },
+  cellDaySelected: { color: theme.onPrimary, fontWeight: '700' },
 
   // Dots
   dotsRow: { flexDirection: 'row', gap: 2, flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 2 },
@@ -491,30 +512,30 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   legendText: { color: theme.muted, fontSize: 11 },
 
   // Day panel
-  dayPanel: { marginTop: 4, backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14 },
-  dayPanelTitle: { color: theme.text, fontSize: 17, fontWeight: '800', marginBottom: 12 },
+  dayPanel: { marginTop: 16, backgroundColor: 'transparent', borderRadius: 0, borderWidth: 0, padding: 0 },
+  dayPanelTitle: { color: theme.text, fontSize: 17, fontWeight: '700', marginBottom: 12 },
   dayPanelSection: {
-    color: theme.muted, fontSize: 11, fontWeight: '800',
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
+    color: theme.muted, fontSize: 11, fontWeight: '700',
+    textTransform: 'uppercase', letterSpacing: 0.35, marginBottom: 8,
   },
   nothingText: { color: theme.muted, fontSize: 14, textAlign: 'center', marginVertical: 18 },
-  scheduleItemCard: { backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 10 },
-  classItemCard: { borderColor: theme.secondary },
-  eventItemCard: { borderColor: '#EC4899' },
-  scheduleItemType: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 },
-  scheduleItemTitle: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  scheduleItemCard: { borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 12, marginBottom: 0 },
+  classItemCard: {},
+  eventItemCard: {},
+  scheduleItemType: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
+  scheduleItemTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   scheduleItemMeta: { color: theme.muted, fontSize: 13, lineHeight: 18 },
   scheduleItemNotes: { color: theme.muted, fontSize: 13, lineHeight: 18, marginTop: 6 },
 
   // Task card
-  card: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 12 },
+  card: { backgroundColor: theme.surface, borderRadius: 16, borderWidth: 0, padding: 14, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   cardTitles: { flex: 1, marginRight: 12 },
-  cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 2 },
+  cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 2 },
   cardClass: { color: theme.muted, fontSize: 13 },
   cardDescription: { color: theme.muted, fontSize: 13, lineHeight: 19, marginBottom: 10 },
   workloadBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
-  workloadLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  workloadLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.35 },
   workloadHours: { fontSize: 13, fontWeight: '600', marginTop: 1 },
   daysLeft: { fontSize: 13, fontWeight: '600' },
   simpleTaskMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 2 },
@@ -523,16 +544,16 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   simpleTaskText: { color: theme.muted, fontSize: 13, fontWeight: '700' },
   taskActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   focusBtn: { flex: 1, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
-  focusBtnText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '900' },
+  focusBtnText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
   deleteBtn: { paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: '#EF4444', paddingVertical: 12, alignItems: 'center' },
-  deleteBtnText: { color: '#EF4444', fontSize: 14, fontWeight: '800' },
+  deleteBtnText: { color: '#EF4444', fontSize: 14, fontWeight: '700' },
   divider: { height: 1, backgroundColor: '#2e2e2e', marginBottom: 14 },
-  sectionLabel: { color: '#666', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+  sectionLabel: { color: '#666', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.35, marginBottom: 10 },
   adjusterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   adjBtn: { backgroundColor: '#2e2e2e', width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  adjBtnText: { color: '#fff', fontSize: 22, fontWeight: '300' },
+  adjBtnText: { color: '#fff', fontSize: 20, fontWeight: '300' },
   hoursCenter: { alignItems: 'center' },
-  hoursNumber: { fontSize: 32, fontWeight: 'bold' },
+  hoursNumber: { fontSize: 32, fontWeight: '700' },
   hoursSubtext: { color: '#666', fontSize: 12, marginTop: 2 },
   statusBar: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10 },
   statusText: { fontSize: 12, fontWeight: '600', lineHeight: 17 },

@@ -1,5 +1,6 @@
 import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { ThemeButton } from '@/components/ui/design-system';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -171,19 +172,19 @@ export default function HomeScreen() {
   const streak = getStudyStreak(sessions);
   const badges = buildBadges(sessions, tasks, streak);
   const nextBadge = badges.find(badge => !badge.unlocked);
-  const firstStepLabel = theme.school ? 'Add assignment' : 'Find school';
+  const firstStepLabel = theme.school ? 'Add assignment' : 'Pick school';
   const firstStepRoute = theme.school ? '/auto-add' : '/(tabs)/multi-player';
   const onboardingSteps = [
     {
       id: 'school',
       title: theme.school ? 'School is set' : 'Pick your school',
-      detail: theme.school ? `${theme.name} colors are active.` : 'Choose your campus so the app matches your school.',
+              detail: theme.school ? `${theme.name} colors are active.` : 'Choose your campus first. It only takes a few taps.',
       icon: 'university',
     },
     {
       id: 'assignment',
       title: 'Add one assignment',
-      detail: 'Use a sample estimate or add it yourself. One assignment is enough to start.',
+      detail: 'Use the sample estimate or add it yourself. You will go straight to focus.',
       icon: 'clipboard-list',
     },
     {
@@ -208,6 +209,23 @@ export default function HomeScreen() {
             <Text style={styles.countPillText}>{tasks.length}</Text>
           </View>
         )}
+      </View>
+
+      <View style={styles.todayPath}>
+        <View style={styles.todayPathItem}>
+          <Text style={styles.todayPathLabel}>Plan</Text>
+          <Text style={styles.todayPathText}>{tasks.length > 0 ? `${tasks.length} tasks ready` : 'Pick school'}</Text>
+        </View>
+        <View style={styles.todayPathLine} />
+        <View style={styles.todayPathItem}>
+          <Text style={styles.todayPathLabel}>Focus</Text>
+          <Text style={styles.todayPathText}>{totalHours > 0 ? `${totalHours}h planned` : 'Add task'}</Text>
+        </View>
+        <View style={styles.todayPathLine} />
+        <View style={styles.todayPathItem}>
+          <Text style={styles.todayPathLabel}>Reward</Text>
+          <Text style={styles.todayPathText}>{streak > 0 ? `${streak} day streak` : 'Earn coins'}</Text>
+        </View>
       </View>
 
       {/* Stats strip */}
@@ -237,12 +255,10 @@ export default function HomeScreen() {
               <Text style={styles.kicker}>Start here</Text>
               <Text style={styles.onboardingTitle}>Set up your study flow</Text>
             </View>
-            <TouchableOpacity style={styles.skipButton} onPress={() => setShowOnboarding(false)} activeOpacity={0.85}>
-              <Text style={styles.skipButtonText}>Skip</Text>
-            </TouchableOpacity>
+            <ThemeButton size="sm" variant="secondary" onPress={() => setShowOnboarding(false)}>Skip</ThemeButton>
           </View>
           <Text style={styles.onboardingSub}>
-            In under a minute, you can pick your school, add one assignment, and start your first focus session.
+            Pick your school, add one assignment, then land on the focus timer.
           </Text>
 
           <View style={styles.onboardingSteps}>
@@ -260,12 +276,8 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.onboardingActions}>
-            <TouchableOpacity style={styles.onboardingPrimary} onPress={() => router.push(firstStepRoute)} activeOpacity={0.85}>
-              <Text style={styles.onboardingPrimaryText}>{firstStepLabel}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.onboardingSecondary} onPress={() => router.push('/add-task')} activeOpacity={0.85}>
-              <Text style={styles.onboardingSecondaryText}>Add manually</Text>
-            </TouchableOpacity>
+            <ThemeButton fullWidth size="lg" onPress={() => router.push(firstStepRoute)}>{firstStepLabel}</ThemeButton>
+            <ThemeButton fullWidth size="lg" variant="secondary" onPress={() => router.push('/add-task')}>Add manually</ThemeButton>
           </View>
         </View>
       )}
@@ -276,9 +288,9 @@ export default function HomeScreen() {
           <Text style={styles.suggestionReason}>
             Add one assignment. We will help estimate time, plan focus sessions, and track progress.
           </Text>
-          <TouchableOpacity style={styles.suggestionAction} onPress={() => router.push('/auto-add')} activeOpacity={0.85}>
-            <Text style={styles.suggestionActionText}>Estimate an assignment</Text>
-          </TouchableOpacity>
+          <ThemeButton style={styles.suggestionAction} onPress={() => router.push('/auto-add')}>
+            Estimate an assignment
+          </ThemeButton>
         </View>
       )}
 
@@ -310,12 +322,12 @@ export default function HomeScreen() {
 
       {(tasks.length > 0 || !showOnboarding) && (
         <View style={styles.homeActions}>
-          <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/single-player')}>
-            <Text style={styles.primaryHomeActionText}>{tasks.length > 0 ? 'View assignments' : 'Add an assignment'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.primaryHomeAction} onPress={() => router.push('/(tabs)/multi-player')}>
-            <Text style={styles.primaryHomeActionText}>Find a study group</Text>
-          </TouchableOpacity>
+          <ThemeButton size="lg" onPress={() => router.push('/(tabs)/single-player')}>
+            {tasks.length > 0 ? 'View assignments' : 'Add an assignment'}
+          </ThemeButton>
+          <ThemeButton size="lg" onPress={() => router.push('/(tabs)/multi-player')}>
+            Find a study group
+          </ThemeButton>
         </View>
       )}
 
@@ -390,14 +402,14 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   kicker: {
     color: theme.school ? theme.secondary : theme.accent,
     fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontWeight: '700',
+    letterSpacing: 0.35,
     marginBottom: 5,
     textTransform: 'uppercase',
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: 26,
+    fontWeight: '700',
     color: theme.text,
   },
   date: {
@@ -422,14 +434,41 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  todayPath: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  todayPathItem: {
+    flex: 1,
+  },
+  todayPathLabel: {
+    color: theme.school ? theme.secondary : theme.accent,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  todayPathText: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  todayPathLine: {
+    width: 22,
+    height: 1,
+    backgroundColor: theme.border,
+    marginHorizontal: 8,
+  },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: theme.surface,
     marginHorizontal: 20,
-    borderRadius: 18,
-    paddingVertical: 14,
-    marginBottom: 16,
-    borderWidth: 1,
+    paddingVertical: 10,
+    marginBottom: 24,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: theme.border,
   },
   statItem: {
@@ -440,8 +479,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     color: theme.text,
     fontSize: 20,
     fontWeight: '700',
-    letterSpacing: -0.5,
-  },
+    },
   statUrgent: {
     color: '#EF4444',
   },
@@ -451,25 +489,16 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontWeight: '500',
     marginTop: 2,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.35,
   },
   statDivider: {
     width: 1,
     backgroundColor: theme.border,
   },
   onboardingPanel: {
-    backgroundColor: theme.surface,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: theme.border,
     marginHorizontal: 20,
-    marginBottom: 18,
-    padding: 16,
-    shadowColor: theme.school ? theme.secondary : theme.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 6,
+    marginBottom: 28,
+    paddingTop: 4,
   },
   onboardingHeader: {
     flexDirection: 'row',
@@ -480,15 +509,15 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   onboardingTitle: {
     color: theme.text,
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 20,
+    fontWeight: '700',
     lineHeight: 27,
   },
   onboardingSub: {
     color: theme.muted,
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 14,
+    marginBottom: 18,
   },
   skipButton: {
     backgroundColor: theme.surfaceAlt,
@@ -501,26 +530,24 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   skipButtonText: {
     color: theme.text,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   onboardingSteps: {
-    gap: 9,
-    marginBottom: 14,
+    gap: 0,
+    marginBottom: 18,
   },
   onboardingStep: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    backgroundColor: theme.surfaceAlt,
-    borderRadius: 16,
-    borderWidth: 1,
+    alignItems: 'flex-start',
+    gap: 12,
+    borderBottomWidth: 1,
     borderColor: theme.border,
-    padding: 11,
+    paddingVertical: 13,
   },
   stepIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.school ? theme.secondary : theme.primary,
@@ -531,7 +558,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   onboardingStepTitle: {
     color: theme.text,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
     marginBottom: 3,
   },
   onboardingStepDetail: {
@@ -559,7 +586,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   onboardingPrimaryText: {
     color: theme.school ? theme.background : theme.onPrimary,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   onboardingSecondary: {
     flex: 1,
@@ -573,7 +600,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   onboardingSecondaryText: {
     color: theme.text,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   list: {
     flex: 1,
@@ -609,7 +636,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     color: theme.text,
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: -0.2,
     marginBottom: 3,
   },
   cardClass: {
@@ -657,7 +683,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   progressPillText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   progressButton: {
     borderRadius: 10,
@@ -670,7 +696,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   progressButtonText: {
     color: theme.text,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   breakdownBox: {
     backgroundColor: theme.surfaceAlt,
@@ -689,12 +715,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   breakdownTitle: {
     color: theme.text,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   breakdownCount: {
     color: theme.muted,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   stepRow: {
     flexDirection: 'row',
@@ -719,7 +745,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   stepCheckText: {
     color: '#ffffff',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   stepText: {
     flex: 1,
@@ -749,7 +775,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     width: 66,
     color: theme.school ? theme.secondary : theme.accent,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   planTextWrap: {
     flex: 1,
@@ -767,13 +793,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     marginTop: 2,
   },
   badgePanel: {
-    backgroundColor: theme.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
     marginHorizontal: 20,
-    marginBottom: 18,
-    padding: 16,
+    marginBottom: 26,
+    paddingTop: 2,
   },
   badgeHeader: {
     flexDirection: 'row',
@@ -793,29 +815,28 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   streakValue: {
     color: theme.school ? theme.background : theme.onPrimary,
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: '700',
     lineHeight: 22,
   },
   streakLabel: {
     color: theme.school ? theme.background : theme.onPrimary,
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     textTransform: 'uppercase',
     marginTop: 2,
   },
   badgeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   badgeCard: {
     width: '48%',
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
-    padding: 10,
-    minHeight: 78,
+    borderRadius: 14,
+    paddingHorizontal: 11,
+    paddingVertical: 12,
+    minHeight: 70,
   },
   badgeCardLocked: {
     borderColor: theme.border,
@@ -824,7 +845,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   badgeName: {
     color: theme.text,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
     marginBottom: 5,
   },
   badgeNameLocked: {
@@ -837,19 +858,17 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     lineHeight: 15,
   },
   nextBadgeCallout: {
-    backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: theme.border,
-    padding: 11,
-    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    paddingTop: 12,
+    marginTop: 12,
   },
   nextBadgeTitle: {
     color: theme.school ? theme.secondary : theme.accent,
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
     marginBottom: 4,
   },
   nextBadgeText: {
@@ -859,13 +878,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     lineHeight: 18,
   },
   suggestionPanel: {
-    backgroundColor: theme.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
     marginHorizontal: 20,
-    marginBottom: 18,
-    padding: 16,
+    marginBottom: 26,
   },
   suggestionHeader: {
     marginBottom: 10,
@@ -878,11 +892,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   suggestionCard: {
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderRadius: 18,
     padding: 12,
-    marginTop: 8,
+    marginTop: 10,
   },
   suggestionText: {
     marginBottom: 10,
@@ -890,15 +902,15 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   suggestionTitle: {
     color: theme.school ? theme.secondary : theme.accent,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
     marginBottom: 5,
   },
   suggestionTask: {
     color: theme.text,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 4,
   },
   suggestionReason: {
@@ -922,21 +934,16 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   suggestionActionText: {
     color: theme.school ? theme.background : theme.onPrimary,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   historyPanel: {
-    backgroundColor: theme.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
     marginHorizontal: 20,
     marginBottom: 18,
-    padding: 14,
   },
   sectionTitle: {
     color: theme.text,
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: 10,
   },
   sessionRow: {
@@ -965,7 +972,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   sessionPercent: {
     color: theme.primary,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   homeActions: {
     gap: 10,
@@ -986,7 +993,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   primaryHomeActionText: {
     color: theme.school ? theme.background : theme.onPrimary,
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   secondaryHomeAction: {
     backgroundColor: theme.surface,
@@ -999,7 +1006,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   secondaryHomeActionText: {
     color: theme.text,
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   emptyState: {
     flex: 1,
@@ -1016,8 +1023,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 8,
-    letterSpacing: -0.3,
-  },
+    },
   emptySub: {
     color: theme.muted,
     fontSize: 14,
@@ -1068,7 +1074,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   fabIcon: {
     color: '#ffffff',
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: '300',
     lineHeight: 34,
     marginTop: -2,

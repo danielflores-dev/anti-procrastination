@@ -47,8 +47,8 @@ export function ThemeButton({
           borderColor: actionColor,
           shadowColor: actionColor,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.22,
-          shadowRadius: 8,
+          shadowOpacity: theme.school ? 0.14 : 0.22,
+          shadowRadius: theme.school ? 6 : 8,
           elevation: 4,
         }
       : variant === 'danger'
@@ -199,7 +199,7 @@ const buttonStyles = StyleSheet.create({
   md: { paddingHorizontal: 14, paddingVertical: 12 },
   lg: { paddingHorizontal: 18, paddingVertical: 15, borderRadius: 16 },
   fullWidth: { flex: 1 },
-  text: { fontSize: 14, fontWeight: '900', textAlign: 'center' },
+  text: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
   textSm: { fontSize: 12 },
 });
 
@@ -226,7 +226,7 @@ const chipStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: { fontSize: 12, fontWeight: '900' },
+  text: { fontSize: 12, fontWeight: '700' },
 });
 
 const fieldStyles = StyleSheet.create({
@@ -243,7 +243,7 @@ const fieldStyles = StyleSheet.create({
   },
   meta: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     lineHeight: 16,
     marginTop: 5,
   },

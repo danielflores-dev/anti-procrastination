@@ -1,4 +1,5 @@
 import { SUBJECTS } from '@/constants/courseData';
+import { ThemeButton, ThemeChip, ThemeField } from '@/components/ui/design-system';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import { useRouter } from 'expo-router';
@@ -9,7 +10,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -41,7 +41,7 @@ export default function AddTaskScreen() {
     }
     const parsed = new Date(dueDate.trim());
     const dueDateRaw = isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
-    addTask({
+    const taskId = addTask({
       assignmentName: assignmentName.trim(),
       className: className.trim(),
       description: description.trim(),
@@ -50,19 +50,12 @@ export default function AddTaskScreen() {
       estimatedHours,
       hoursPerDay: computeHoursPerDay(estimatedHours, dueDateRaw),
     });
-    router.replace('/(tabs)/calendar');
+    router.replace(`/focus?id=${taskId}`);
   };
 
   const adjustHours = (delta: number) => {
     setEstimatedHours(h => Math.max(0.5, Math.round((h + delta) * 2) / 2));
   };
-
-  const inputStyle = (field: string) => [
-    styles.input,
-    { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text },
-    focused === field && styles.inputFocused,
-    focused === field && { borderColor: theme.primary },
-  ];
 
   const openPicker = () => {
     setSelectedSubjectId(null);
@@ -94,45 +87,42 @@ export default function AddTaskScreen() {
           </Text>
           <Text style={styles.classPickerChevron}>›</Text>
         </TouchableOpacity>
-        <TextInput
-          style={[inputStyle('className'), styles.classManualInput]}
+        <ThemeField
+          inputStyle={styles.classManualInput}
           placeholder="Or type your class"
-          placeholderTextColor="#333"
           value={className}
           onChangeText={setClassName}
           onFocus={() => setFocused('className')}
           onBlur={() => setFocused(null)}
+          style={focused === 'className' && { borderColor: theme.primary }}
         />
 
         <Text style={styles.label}>Assignment name</Text>
-        <TextInput
-          style={inputStyle('assignmentName')}
+        <ThemeField
           placeholder="Example: Chapter 5 essay"
-          placeholderTextColor="#444"
           value={assignmentName}
           onChangeText={setAssignmentName}
           onFocus={() => setFocused('assignmentName')}
           onBlur={() => setFocused(null)}
+          style={focused === 'assignmentName' && { borderColor: theme.primary }}
         />
 
         <Text style={styles.label}>Due date</Text>
-        <TextInput
-          style={inputStyle('dueDate')}
+        <ThemeField
           placeholder="Example: May 10, 2026"
-          placeholderTextColor="#444"
           value={dueDate}
           onChangeText={setDueDate}
           onFocus={() => setFocused('dueDate')}
           onBlur={() => setFocused(null)}
+          style={focused === 'dueDate' && { borderColor: theme.primary }}
         />
 
         <Text style={styles.label}>
           Description <Text style={styles.optional}>optional</Text>
         </Text>
-        <TextInput
-          style={[inputStyle('description'), styles.textArea]}
+        <ThemeField
+          inputStyle={styles.textArea}
           placeholder="What do you need to do?"
-          placeholderTextColor="#444"
           value={description}
           onChangeText={setDescription}
           multiline
@@ -140,6 +130,7 @@ export default function AddTaskScreen() {
           textAlignVertical="top"
           onFocus={() => setFocused('description')}
           onBlur={() => setFocused(null)}
+          style={focused === 'description' && { borderColor: theme.primary }}
         />
 
         <Text style={styles.label}>Estimated time</Text>
@@ -158,25 +149,17 @@ export default function AddTaskScreen() {
 
         <View style={styles.presetsRow}>
           {HOUR_PRESETS.map(h => (
-            <TouchableOpacity
-              key={h}
-              style={[styles.preset, estimatedHours === h && styles.presetActive]}
-              onPress={() => setEstimatedHours(h)}
-            >
-              <Text style={[styles.presetText, estimatedHours === h && styles.presetTextActive]}>
-                {h}h
-              </Text>
-            </TouchableOpacity>
+            <ThemeChip key={h} selected={estimatedHours === h} onPress={() => setEstimatedHours(h)}>
+              {h}h
+            </ThemeChip>
           ))}
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save assignment</Text>
-        </TouchableOpacity>
+        <ThemeButton size="lg" style={styles.saveButton} onPress={handleSave}>
+          Save and start focus
+        </ThemeButton>
 
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
+        <ThemeButton variant="ghost" onPress={() => router.back()}>Cancel</ThemeButton>
       </ScrollView>
 
       {/* Course Picker Modal */}
@@ -283,20 +266,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: 0,
   },
-  input: {
-    backgroundColor: '#1a1a1a',
-    color: '#ffffff',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    marginBottom: 24,
-    borderWidth: 1.5,
-    borderColor: '#252525',
-  },
-  inputFocused: {
-    borderColor: '#6C63FF',
-    backgroundColor: '#1e1a2e',
-  },
   textArea: {
     minHeight: 90,
     lineHeight: 22,
@@ -366,36 +335,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 32,
   },
-  preset: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: '#252525',
-  },
-  presetActive: {
-    backgroundColor: '#6C63FF22',
-    borderColor: '#6C63FF',
-  },
-  presetText: { color: '#555', fontSize: 13, fontWeight: '600' },
-  presetTextActive: { color: '#6C63FF' },
-
   saveButton: {
-    backgroundColor: '#6C63FF',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
+    marginTop: 4,
     marginBottom: 12,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
   },
-  saveButtonText: { color: '#ffffff', fontSize: 17, fontWeight: '700' },
-  cancelButton: { alignItems: 'center', paddingVertical: 12 },
-  cancelButtonText: { color: '#555', fontSize: 16 },
 
   // Modal
   modalContainer: {
