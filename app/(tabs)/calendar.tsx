@@ -1,8 +1,9 @@
 import { Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { ThemeButton, ThemeCard, ThemeField } from '@/components/ui/design-system';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type ScheduleItem = {
   id: string;
@@ -65,7 +66,7 @@ function TaskCard({
   const days = daysUntil(task.dueDateRaw);
 
   return (
-    <View style={styles.card}>
+    <ThemeCard variant="alt" style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.cardTitles}>
           <Text style={styles.cardAssignment}>{task.assignmentName}</Text>
@@ -90,14 +91,10 @@ function TaskCard({
       </View>
 
       <View style={styles.taskActions}>
-        <TouchableOpacity style={styles.focusBtn} onPress={onFocus}>
-          <Text style={styles.focusBtnText}>Start focus</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
-          <Text style={styles.deleteBtnText}>Delete</Text>
-        </TouchableOpacity>
+        <ThemeButton fullWidth onPress={onFocus}>Start focus</ThemeButton>
+        <ThemeButton variant="danger" onPress={onDelete}>Delete</ThemeButton>
       </View>
-    </View>
+    </ThemeCard>
   );
 }
 // Main screen ──────────────────────────────────────────────────────────────
@@ -222,62 +219,49 @@ export default function CalendarScreen() {
       <Text style={styles.headingSub}>Pick a day to see assignments, classes, and events.</Text>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.scheduleAction} onPress={() => openScheduleForm('class')}>
-          <Text style={styles.scheduleActionText}>Add class</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.scheduleActionSecondary} onPress={() => openScheduleForm('event')}>
-          <Text style={styles.scheduleActionSecondaryText}>Add event</Text>
-        </TouchableOpacity>
+        <ThemeButton fullWidth size="lg" onPress={() => openScheduleForm('class')}>Add class</ThemeButton>
+        <ThemeButton fullWidth size="lg" variant="secondary" onPress={() => openScheduleForm('event')}>Add event</ThemeButton>
       </View>
 
       {!!formType && (
-        <View style={styles.scheduleForm}>
+        <ThemeCard style={styles.scheduleForm}>
           <Text style={styles.formTitle}>{formType === 'class' ? 'Add class' : 'Add event'}</Text>
-          <TextInput
+          <ThemeField
             value={itemTitle}
             onChangeText={setItemTitle}
             placeholder={formType === 'class' ? 'Class name' : 'Event name'}
-            placeholderTextColor={theme.muted}
-            style={styles.input}
+            containerStyle={styles.fieldGap}
           />
-          <TextInput
+          <ThemeField
             value={itemDate}
             onChangeText={setItemDate}
             placeholder="Date, like 2026-05-10"
-            placeholderTextColor={theme.muted}
-            style={styles.input}
+            containerStyle={styles.fieldGap}
           />
-          <TextInput
+          <ThemeField
             value={itemTime}
             onChangeText={setItemTime}
             placeholder="Time, like 2:30 PM"
-            placeholderTextColor={theme.muted}
-            style={styles.input}
+            containerStyle={styles.fieldGap}
           />
-          <TextInput
+          <ThemeField
             value={itemLocation}
             onChangeText={setItemLocation}
             placeholder="Location, like Library 2A"
-            placeholderTextColor={theme.muted}
-            style={styles.input}
+            containerStyle={styles.fieldGap}
           />
-          <TextInput
+          <ThemeField
             value={itemNotes}
             onChangeText={setItemNotes}
             placeholder="Notes, optional"
-            placeholderTextColor={theme.muted}
-            style={[styles.input, styles.notesInput]}
+            containerStyle={styles.fieldGap}
             multiline
           />
           <View style={styles.formButtons}>
-            <TouchableOpacity style={styles.cancelScheduleButton} onPress={() => setFormType(null)}>
-              <Text style={styles.cancelScheduleText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveScheduleButton} onPress={addScheduleItem}>
-              <Text style={styles.saveScheduleText}>{formType === 'class' ? 'Save class' : 'Save event'}</Text>
-            </TouchableOpacity>
+            <ThemeButton fullWidth variant="secondary" onPress={() => setFormType(null)}>Cancel</ThemeButton>
+            <ThemeButton fullWidth onPress={addScheduleItem}>{formType === 'class' ? 'Save class' : 'Save event'}</ThemeButton>
           </View>
-        </View>
+        </ThemeCard>
       )}
 
       {/* Month navigator */}
@@ -292,7 +276,7 @@ export default function CalendarScreen() {
       </View>
 
       {/* Calendar grid */}
-      <View style={styles.calendarBox}>
+      <ThemeCard style={styles.calendarBox}>
         {/* Day-of-week header */}
         <View style={styles.dowRow}>
           {DOW.map(d => <Text key={d} style={styles.dowText}>{d}</Text>)}
@@ -346,7 +330,7 @@ export default function CalendarScreen() {
             })}
           </View>
         ))}
-      </View>
+      </ThemeCard>
 
       {/* Legend */}
       <View style={styles.legend}>
@@ -370,7 +354,7 @@ export default function CalendarScreen() {
 
       {/* Selected day panel */}
       {selectedKey && (
-        <View style={styles.dayPanel}>
+        <ThemeCard style={styles.dayPanel}>
           <Text style={styles.dayPanelTitle}>
             {new Date(selectedKey + 'T12:00:00').toLocaleDateString(undefined, {
               weekday: 'long', month: 'long', day: 'numeric',
@@ -385,13 +369,13 @@ export default function CalendarScreen() {
                 <>
                   <Text style={styles.dayPanelSection}>Classes and events</Text>
                   {selectedScheduleItems.map(item => (
-                    <View key={item.id} style={[styles.scheduleItemCard, item.type === 'class' ? styles.classItemCard : styles.eventItemCard]}>
+                    <ThemeCard key={item.id} variant="alt" style={[styles.scheduleItemCard, item.type === 'class' ? styles.classItemCard : styles.eventItemCard]}>
                       <Text style={styles.scheduleItemType}>{item.type === 'class' ? 'Class' : 'Event'}</Text>
                       <Text style={styles.scheduleItemTitle}>{item.title}</Text>
                       {!!item.time && <Text style={styles.scheduleItemMeta}>{item.time}</Text>}
                       {!!item.location && <Text style={styles.scheduleItemMeta}>{item.location}</Text>}
                       {!!item.notes && <Text style={styles.scheduleItemNotes}>{item.notes}</Text>}
-                    </View>
+                    </ThemeCard>
                   ))}
                 </>
               )}
@@ -425,7 +409,7 @@ export default function CalendarScreen() {
               )}
             </>
           )}
-        </View>
+        </ThemeCard>
       )}
     </ScrollView>
   );
@@ -445,6 +429,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   scheduleActionSecondaryText: { color: theme.text, fontSize: 14, fontWeight: '900' },
   scheduleForm: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 16 },
   formTitle: { color: theme.text, fontSize: 17, fontWeight: '800', marginBottom: 10 },
+  fieldGap: { marginBottom: 10 },
   input: {
     backgroundColor: theme.surfaceAlt,
     borderRadius: 12,
@@ -470,7 +455,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   monthTitle: { fontSize: 18, fontWeight: '700', color: theme.text },
 
   // Calendar box
-  calendarBox: { backgroundColor: theme.surface, borderRadius: 18, overflow: 'hidden', marginBottom: 12, borderWidth: 1, borderColor: theme.border },
+  calendarBox: { backgroundColor: theme.surface, borderRadius: 18, overflow: 'hidden', marginBottom: 12, borderWidth: 1, borderColor: theme.border, padding: 0 },
   dowRow: { flexDirection: 'row', backgroundColor: theme.surfaceAlt, paddingVertical: 8 },
   dowText: { flex: 1, textAlign: 'center', color: theme.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   weekRow: { flexDirection: 'row' },

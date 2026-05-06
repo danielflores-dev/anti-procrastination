@@ -1,57 +1,33 @@
-
-> antiprocrastination@1.0.0 web
-> expo start --web --port 8082
-
 env: load .env.local
 env: export EXPO_PUBLIC_ANTHROPIC_API_KEY
 Starting project at C:\Users\dorit\OneDrive\Desktop\AntiProcrastination
 React Compiler enabled
 Starting Metro Bundler
-The following packages should be updated for best compatibility with the installed expo version:
-  expo@54.0.33 - expected version: ~54.0.34
-  expo-file-system@19.0.21 - expected version: ~19.0.22
-  expo-image-picker@17.0.10 - expected version: ~17.0.11
-  expo-linking@8.0.11 - expected version: ~8.0.12
-  expo-web-browser@15.0.10 - expected version: ~15.0.11
-Your project may not work correctly until you install the expected versions of the packages.
 Waiting on http://localhost:8082
 Logs for your project will appear below.
-λ Bundled 1435ms node_modules\expo-router\node\render.js (876 modules)
-"shadow*" style props are deprecated. Use "boxShadow".
-Web Bundled 2762ms node_modules\expo-router\entry.js (865 modules)
-Web node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.3% (862/865)
-Web Bundled 1075ms node_modules\expo-router\entry.js (866 modules)
-λ Bundled 32ms node_modules\expo-router\node\render.js (1 module)
+λ Bundled 1632ms node_modules\expo-router\node\render.js (877 modules)
+Web Bundled 2773ms node_modules\expo-router\entry.js (866 modules)
+Web node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 51.5% (402/560)
+Web Bundled 252ms node_modules\expo-router\entry.js (809 modules)
  LOG  [web] Logs will appear in the browser console
-"shadow*" style props are deprecated. Use "boxShadow".
-Web Bundled 598ms node_modules\expo-router\entry.js (1 module)
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 17ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 287ms node_modules\expo-router\entry.js (1 module)
 Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
 λ Bundled 23ms node_modules\expo-router\node\render.js (1 module)
-"shadow*" style props are deprecated. Use "boxShadow".
-Web Bundled 295ms node_modules\expo-router\entry.js (1 module)
-Web Bundled 27ms node_modules\expo-router\entry.js (1 module)
- LOG  [web] Logs will appear in the browser console
-Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
-Web Bundled 764ms node_modules\expo-router\entry.js (1 module)
-λ Bundled 916ms node_modules\expo-router\node\render.js (1 module)
-"shadow*" style props are deprecated. Use "boxShadow".
-Web Bundled 24ms node_modules\expo-router\entry.js (1 module)
- LOG  [web] Logs will appear in the browser console
-Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
-Web Bundled 231ms node_modules\expo-router\entry.js (1 module)
-"shadow*" style props are deprecated. Use "boxShadow".
-λ Bundled 252ms node_modules\expo-router\node\render.js (1 module)
-Web Bundled 36ms node_modules\expo-router\entry.js (1 module)
- LOG  [web] Logs will appear in the browser console
-Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
-Web Bundled 270ms node_modules\expo-router\entry.js (1 module)
-"shadow*" style props are deprecated. Use "boxShadow".
-λ Bundled 306ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 310ms node_modules\expo-router\entry.js (1 module)
 Web Bundled 28ms node_modules\expo-router\entry.js (1 module)
  LOG  [web] Logs will appear in the browser console
-Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
-"shadow*" style props are deprecated. Use "boxShadow".
+λ Bundled 17ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 276ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 27ms node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
 λ Bundled 16ms node_modules\expo-router\node\render.js (1 module)
-Web Bundled 212ms node_modules\expo-router\entry.js (1 module)
-Web Bundled 24ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 238ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 30ms node_modules\expo-router\entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 120ms node_modules\expo-router\node\render.js (1 module)
+Web Bundled 511ms node_modules\expo-router\entry.js (1 module)
+Web Bundled 220ms node_modules\expo-router\entry.js (1 module)
  LOG  [web] Logs will appear in the browser console

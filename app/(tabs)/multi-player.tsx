@@ -1,4 +1,5 @@
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { ThemeButton, ThemeChip, ThemeField } from '@/components/ui/design-system';
 import { useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -686,27 +687,19 @@ export default function MultiPlayerScreen() {
     keyboardType?: TextInputKeyboardType;
     containerStyle?: StyleProp<ViewStyle>;
   }) => (
-    <View style={[styles.fieldWrap, containerStyle]}>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={theme.muted}
-        style={[styles.input, styles.fieldInput, multiline && styles.multiInput, !!error && styles.inputError]}
-        multiline={multiline}
-        keyboardType={keyboardType}
-        maxLength={maxLength}
-        accessibilityLabel={placeholder}
-        accessibilityHint={error ?? `${maxLength} characters maximum`}
-      />
-      <View style={styles.fieldMetaRow}>
-        {!!error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : (
-          <Text style={styles.helperText}>{maxLength - value.length} left</Text>
-        )}
-      </View>
-    </View>
+    <ThemeField
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      error={error}
+      helper={`${maxLength - value.length} left`}
+      multiline={multiline}
+      keyboardType={keyboardType}
+      maxLength={maxLength}
+      accessibilityLabel={placeholder}
+      accessibilityHint={error ?? `${maxLength} characters maximum`}
+      containerStyle={[styles.fieldWrap, containerStyle]}
+    />
   );
 
   const renderProfileSetup = () => (
@@ -813,24 +806,22 @@ export default function MultiPlayerScreen() {
       <Text style={styles.sectionLabel}>Preferred meeting style</Text>
       <View style={styles.choiceRow}>
         {MEETING_OPTIONS.map(option => (
-          <TouchableOpacity key={option} style={[styles.choiceChip, meetingPreference === option && styles.choiceChipSelected]} onPress={() => setMeetingPreference(option)}>
-            <Text style={[styles.choiceText, meetingPreference === option && styles.choiceTextSelected]}>{option}</Text>
-          </TouchableOpacity>
+          <ThemeChip key={option} selected={meetingPreference === option} onPress={() => setMeetingPreference(option)}>
+            {option}
+          </ThemeChip>
         ))}
       </View>
 
       <Text style={styles.sectionLabel}>Study goal</Text>
       <View style={styles.choiceRow}>
         {STUDY_OPTIONS.map(option => (
-          <TouchableOpacity key={option} style={[styles.choiceChip, studyFocus === option && styles.choiceChipSelected]} onPress={() => setStudyFocus(option)}>
-            <Text style={[styles.choiceText, studyFocus === option && styles.choiceTextSelected]}>{option}</Text>
-          </TouchableOpacity>
+          <ThemeChip key={option} selected={studyFocus === option} onPress={() => setStudyFocus(option)}>
+            {option}
+          </ThemeChip>
         ))}
       </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile} activeOpacity={0.85}>
-        <Text style={styles.saveButtonText}>Create profile</Text>
-      </TouchableOpacity>
+      <ThemeButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Create profile</ThemeButton>
     </View>
   );
 

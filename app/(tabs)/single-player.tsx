@@ -1,5 +1,6 @@
 import { Task, TaskProgress, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { ThemeButton, ThemeCard } from '@/components/ui/design-system';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -49,7 +50,7 @@ function AssignmentCard({
   const doneSteps = steps.filter(step => step.done).length;
 
   return (
-    <View style={styles.card}>
+    <ThemeCard style={styles.card}>
       <View style={styles.cardTop}>
         <View style={styles.cardTitles}>
           <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
@@ -71,12 +72,10 @@ function AssignmentCard({
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.focusButton} onPress={onFocus}>
-          <Text style={styles.focusButtonText}>Start focus</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.progressButton} onPress={onProgress}>
-          <Text style={[styles.progressButtonText, { color: statusColor }]}>{progress}</Text>
-        </TouchableOpacity>
+        <ThemeButton fullWidth onPress={onFocus}>Start focus</ThemeButton>
+        <ThemeButton variant="secondary" onPress={onProgress} textStyle={{ color: statusColor }}>
+          {progress}
+        </ThemeButton>
       </View>
 
       {steps.length > 0 && (
@@ -110,7 +109,7 @@ function AssignmentCard({
           ))}
         </View>
       )}
-    </View>
+    </ThemeCard>
   );
 }
 
@@ -180,10 +179,10 @@ export default function SinglePlayerScreen() {
       )}
 
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.autoBtn} onPress={() => router.push('/auto-add')}>
-          <Text style={styles.autoBtnText}>Estimate from photo</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} onPress={() => router.push('/add-task')}>
+        <ThemeButton fullWidth size="lg" variant="secondary" style={styles.autoBtn} onPress={() => router.push('/auto-add')}>
+          Estimate from photo
+        </ThemeButton>
+        <TouchableOpacity style={styles.fab} onPress={() => router.push('/add-task')} activeOpacity={0.85}>
           <Text style={styles.fabIcon}>+</Text>
         </TouchableOpacity>
       </View>
