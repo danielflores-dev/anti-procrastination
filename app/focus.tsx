@@ -1,6 +1,7 @@
 import { useCoins } from '@/context/CoinContext';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useTasks } from '@/context/TaskContext';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ThemeButton } from '@/components/ui/design-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -123,6 +124,7 @@ export default function FocusScreen() {
   const { tasks, addStudySession, updateHoursPerDay, updateProgress } = useTasks();
   const { theme } = useSchoolTheme();
   const { coins, addCoins } = useCoins();
+  const reducedMotion = useReducedMotion();
   const task = tasks.find(t => t.id === id);
   const focusTask = task ?? (
     assignmentName
@@ -146,6 +148,7 @@ export default function FocusScreen() {
   const [lastCoinAmount, setLastCoinAmount] = useState(1);
   const [showRecap, setShowRecap] = useState(false);
   const [sessionGoalHours, setSessionGoalHours] = useState<number | null>(null);
+  const recapAnim = useRef(new Animated.Value(0)).current;
   const toastKey = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevCoinCount = useRef(0);
@@ -197,6 +200,21 @@ export default function FocusScreen() {
     setSessionGoalHours(current => current ?? focusTask?.hoursPerDay ?? 1);
     setShowRecap(true);
   };
+
+  useEffect(() => {
+    if (!showRecap) return;
+    if (reducedMotion) {
+      recapAnim.setValue(1);
+      return;
+    }
+    recapAnim.setValue(0);
+    Animated.timing(recapAnim, {
+      toValue: 1,
+      duration: 220,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }, [recapAnim, reducedMotion, showRecap]);
 
   const applyGoalUpdate = () => {
     if (task && sessionGoalHours) updateHoursPerDay(task.id, sessionGoalHours);
@@ -328,13 +346,35 @@ export default function FocusScreen() {
       </TouchableOpacity>
 
       {showRecap && (
-        <View style={styles.recapOverlay}>
+        <Animated.View style={[styles.recapOverlay, { opacity: recapAnim }]}>
           <ScrollView
             style={styles.recapScroll}
             contentContainerStyle={styles.recapScrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={[styles.recapCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Animated.View
+              style={[
+                styles.recapCard,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.border,
+                  transform: [
+                    {
+                      translateY: recapAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [18, 0],
+                      }),
+                    },
+                    {
+                      scale: recapAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.98, 1],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
               <View style={styles.recapHeader}>
                 <Text style={[styles.recapKicker, { color: theme.school ? theme.secondary : theme.accent }]}>Session recap</Text>
                 <Text style={[styles.recapTitle, { color: theme.text }]}>{goalReached ? 'Goal complete' : 'Progress saved'}</Text>
@@ -401,9 +441,9 @@ export default function FocusScreen() {
                 <ThemeButton size="lg" onPress={finishSession}>Save and finish</ThemeButton>
                 <ThemeButton size="lg" variant="secondary" onPress={keepStudying}>Keep studying</ThemeButton>
               </View>
-            </View>
+            </Animated.View>
           </ScrollView>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -446,7 +486,7 @@ const styles = StyleSheet.create({
   controls: { marginBottom: 24 },
   playBtn: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   playIcon: { fontSize: 15, fontWeight: '900' },
-  stopBtn: { position: 'absolute', bottom: 52 },
+  stopBtn: { position: 'absolute', bottom: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 18 },
   stopText: { color: '#444', fontSize: 15, fontWeight: '600' },
   recapOverlay: {
     ...StyleSheet.absoluteFillObject,

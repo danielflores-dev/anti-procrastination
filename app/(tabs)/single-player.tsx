@@ -1,6 +1,6 @@
 import { Task, TaskProgress, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { ThemeButton, ThemeCard } from '@/components/ui/design-system';
+import { ThemeButton } from '@/components/ui/design-system';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -50,7 +50,8 @@ function AssignmentCard({
   const doneSteps = steps.filter(step => step.done).length;
 
   return (
-    <ThemeCard style={styles.card}>
+    <View style={styles.card}>
+      <View style={[styles.queueRail, { backgroundColor: workloadColor }]} />
       <View style={styles.cardTop}>
         <View style={styles.cardTitles}>
           <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
@@ -109,7 +110,7 @@ function AssignmentCard({
           ))}
         </View>
       )}
-    </ThemeCard>
+    </View>
   );
 }
 
@@ -127,9 +128,9 @@ export default function SinglePlayerScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.kicker}>Solo study</Text>
+          <Text style={styles.kicker}>Work</Text>
           <Text style={styles.greeting}>Assignments</Text>
-          <Text style={styles.date}>Pick one assignment, then start a focus session.</Text>
+          <Text style={styles.date}>Add work, pick one task, then start focus.</Text>
         </View>
         <View style={styles.countPill}>
           <Text style={styles.countPillText}>{tasks.length}</Text>
@@ -155,13 +156,15 @@ export default function SinglePlayerScreen() {
 
       {tasks.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyLine} />
-          <Text style={styles.emptyTitle}>No assignments yet</Text>
-          <Text style={styles.emptySub}>Drop in one real task. The next screen can estimate the time and send you straight to focus.</Text>
+          <View style={styles.emptyIcon}>
+            <Text style={styles.emptyIconText}>1</Text>
+          </View>
+          <Text style={styles.emptyTitle}>Start with one assignment</Text>
+          <Text style={styles.emptySub}>Add a real task and the app will estimate the time, split it into steps, and send you to focus.</Text>
           <View style={styles.emptyPreview}>
-            <Text style={styles.emptyPreviewLabel}>Example</Text>
+            <Text style={styles.emptyPreviewLabel}>What it becomes</Text>
             <Text style={styles.emptyPreviewTitle}>Read chapter 4 before lab</Text>
-            <Text style={styles.emptyPreviewMeta}>45m estimate - study tonight</Text>
+            <Text style={styles.emptyPreviewMeta}>45m estimate, 3 focus steps, study tonight</Text>
           </View>
         </View>
       ) : (
@@ -222,11 +225,24 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   list: { flex: 1 },
   listContent: { paddingHorizontal: 20, paddingBottom: 108 },
   card: {
+    position: 'relative',
     backgroundColor: theme.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 0,
+    paddingVertical: 16,
+    paddingLeft: 18,
+    paddingRight: 2,
+    marginBottom: 0,
     borderWidth: 0,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  queueRail: {
+    position: 'absolute',
+    left: 0,
+    top: 18,
+    bottom: 18,
+    width: 4,
+    borderRadius: 999,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   cardTitles: { flex: 1, marginRight: 10 },
@@ -272,7 +288,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   planFocus: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 17 },
   planMinutes: { color: theme.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
   emptyState: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingBottom: 92 },
-  emptyLine: { width: 46, height: 4, borderRadius: 999, backgroundColor: theme.school ? theme.secondary : theme.primary, marginBottom: 18 },
+  emptyIcon: { width: 58, height: 58, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, marginBottom: 18 },
+  emptyIconText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 22, fontWeight: '700' },
   emptyTitle: { color: theme.text, fontSize: 20, fontWeight: '700', marginBottom: 8 },
   emptySub: { color: theme.muted, fontSize: 15, lineHeight: 22, maxWidth: 310 },
   emptyPreview: { marginTop: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 14 },

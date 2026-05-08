@@ -1,11 +1,46 @@
 import { useCoins } from '@/context/CoinContext';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Alert } from 'react-native';
+import { type ComponentProps, useEffect, useRef } from 'react';
+import { Animated, Easing } from 'react-native';
 
-const MULTIPLAYER_HELP =
-  'Find your school, make a profile, and join study rooms with students in your major or nearby fields.';
+type TabIconName = ComponentProps<typeof FontAwesome5>['name'];
+
+function TabIcon({ name, color, focused }: { name: TabIconName; color: string; focused: boolean }) {
+  const scale = useRef(new Animated.Value(focused ? 1.08 : 1)).current;
+  const lift = useRef(new Animated.Value(focused ? -2 : 0)).current;
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reducedMotion) {
+      scale.setValue(1);
+      lift.setValue(0);
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(scale, {
+        toValue: focused ? 1.08 : 1,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(lift, {
+        toValue: focused ? -2 : 0,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [focused, lift, reducedMotion, scale]);
+
+  return (
+    <Animated.View style={{ transform: [{ translateY: lift }, { scale }] }}>
+      <FontAwesome5 name={name} size={20} color={color} />
+    </Animated.View>
+  );
+}
 
 export default function TabsLayout() {
   const { coins } = useCoins();
@@ -20,9 +55,9 @@ export default function TabsLayout() {
           backgroundColor: theme.tabBar,
           borderTopColor: theme.border,
           borderTopWidth: 1,
-          height: 70,
-          paddingBottom: 12,
-          paddingTop: 6,
+          height: 76,
+          paddingBottom: 14,
+          paddingTop: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.4,
@@ -38,40 +73,35 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="home" size={20} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="home" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="single-player"
         options={{
-          title: 'Single',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="tasks" size={20} color={color} />,
+          title: 'Work',
+          tabBarIcon: ({ color, focused }) => <TabIcon name="tasks" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="multi-player"
-        listeners={{
-          tabPress: () => {
-            Alert.alert('Study groups', MULTIPLAYER_HELP);
-          },
-        }}
         options={{
-          title: 'Multi-player',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="user-friends" size={20} color={color} />,
+          title: 'Groups',
+          tabBarIcon: ({ color, focused }) => <TabIcon name="user-friends" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Schedule',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={20} color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="calendar-alt" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="shop"
         options={{
-          title: 'Shop',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="coins" size={20} color={color} />,
+          title: 'Rewards',
+          tabBarIcon: ({ color, focused }) => <TabIcon name="coins" color={color} focused={focused} />,
           tabBarBadge: coins > 0 ? coins : undefined,
           tabBarBadgeStyle: { backgroundColor: theme.secondary, color: theme.school ? '#111' : theme.text, fontSize: 10, fontWeight: '700' },
         }}

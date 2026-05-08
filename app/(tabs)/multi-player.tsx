@@ -1,13 +1,16 @@
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { ThemeButton, ThemeChip, ThemeField } from '@/components/ui/design-system';
 import { useTasks } from '@/context/TaskContext';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { type ComponentProps, useMemo, useState } from 'react';
+import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Image,
   ScrollView,
   StyleSheet,
@@ -74,6 +77,54 @@ type RoomField = 'roomName' | 'roomSubject' | 'roomLocation' | 'roomTime' | 'roo
 type FieldErrors<T extends string> = Partial<Record<T, string>>;
 type TextInputKeyboardType = ComponentProps<typeof TextInput>['keyboardType'];
 
+function MotionNotice({
+  message,
+  accentColor,
+  textColor,
+}: {
+  message: string | null;
+  accentColor: string;
+  textColor: string;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(10)).current;
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!message) return;
+    if (reducedMotion) {
+      translateY.setValue(0);
+      opacity.setValue(1);
+      return;
+    }
+    translateY.setValue(10);
+    opacity.setValue(0);
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [message, opacity, reducedMotion, translateY]);
+
+  if (!message) return null;
+
+  return (
+    <Animated.View style={[noticeStyles.wrap, { backgroundColor: accentColor, opacity, transform: [{ translateY }] }]}>
+      <FontAwesome5 name="check" size={12} color={textColor} />
+      <Text style={[noticeStyles.text, { color: textColor }]}>{message}</Text>
+    </Animated.View>
+  );
+}
+
 const SCHOOL_OPTIONS = [
   'University of Washington',
   'University of California, Los Angeles',
@@ -93,6 +144,24 @@ const FEED_KINDS: HelpPost['kind'][] = ['Help', 'Suggestion'];
 const MIN_STUDENT_AGE = 13;
 const MAX_STUDENT_AGE = 100;
 const MAX_ROOM_CAPACITY = 20;
+
+const noticeStyles = StyleSheet.create({
+  wrap: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  text: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+});
 
 const cleanText = (value: string, maxLength: number) => value.trim().replace(/\s+/g, ' ').slice(0, maxLength);
 const isPlainNumber = (value: string) => /^\d+$/.test(value.trim());
@@ -265,6 +334,7 @@ export default function MultiPlayerScreen() {
   const [profileErrors, setProfileErrors] = useState<FieldErrors<ProfileField>>({});
   const [meetingPreference, setMeetingPreference] = useState('Either');
   const [studyFocus, setStudyFocus] = useState('Homework');
+  const [showProfileExtras, setShowProfileExtras] = useState(false);
   const [activeBrowseTab, setActiveBrowseTab] = useState<(typeof BROWSE_TABS)[number]>('Library rooms');
   const [activeFilter, setActiveFilter] = useState('All');
   const [showProfileFilters, setShowProfileFilters] = useState(false);
@@ -294,6 +364,14 @@ export default function MultiPlayerScreen() {
   const [helpDetails, setHelpDetails] = useState('');
   const [showFeedComposer, setShowFeedComposer] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [motionNotice, setMotionNotice] = useState<string | null>(null);
+  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!motionNotice) return;
+    const timeout = setTimeout(() => setMotionNotice(null), 1800);
+    return () => clearTimeout(timeout);
+  }, [motionNotice]);
 
   const filteredSchools = useMemo(() => {
     const query = schoolSearch.trim().toLowerCase();
@@ -404,11 +482,9 @@ export default function MultiPlayerScreen() {
 
     if (nextName.length < 2) nextErrors.name = 'Add at least 2 characters.';
     if (nextMajor.length < 2) nextErrors.major = 'Add your major or field.';
-    if (!nextAge) {
-      nextErrors.age = 'Add your age.';
-    } else if (!isPlainNumber(nextAge)) {
+    if (nextAge && !isPlainNumber(nextAge)) {
       nextErrors.age = 'Use numbers only.';
-    } else {
+    } else if (nextAge) {
       const parsedAge = Number(nextAge);
       if (parsedAge < MIN_STUDENT_AGE || parsedAge > MAX_STUDENT_AGE) {
         nextErrors.age = `Use an age from ${MIN_STUDENT_AGE} to ${MAX_STUDENT_AGE}.`;
@@ -438,7 +514,7 @@ export default function MultiPlayerScreen() {
   const handleAddFriend = (profile: StudentProfile) => {
     if (friendIds.includes(profile.id) || pendingFriendIds.includes(profile.id)) return;
     setPendingFriendIds(current => [...current, profile.id]);
-    Alert.alert('Friend request sent', `${profile.name} needs to approve before they appear in your friends list.`);
+    setMotionNotice(`Friend request sent to ${profile.name}`);
   };
 
   const handleApproveFriend = (profileId: string) => {
@@ -548,27 +624,34 @@ export default function MultiPlayerScreen() {
   };
 
   const handleConfirmJoin = (room: StudyRoom) => {
+    setJoiningRoomId(room.id);
     if (room.approvalRequired) {
-      setStudyRooms(current => current.map(item => (
-        item.id === room.id
-          ? { ...item, pendingJoinIds: item.pendingJoinIds.includes('you') ? item.pendingJoinIds : [...item.pendingJoinIds, 'you'] }
-          : item
-      )));
-      Alert.alert('Request sent', `You can join ${room.name} after the host approves you.`);
-      setSelectedRoom(null);
+      setMotionNotice(`Request sent to ${room.name}`);
+      setTimeout(() => {
+        setStudyRooms(current => current.map(item => (
+          item.id === room.id
+            ? { ...item, pendingJoinIds: item.pendingJoinIds.includes('you') ? item.pendingJoinIds : [...item.pendingJoinIds, 'you'] }
+            : item
+        )));
+        setSelectedRoom(null);
+        setJoiningRoomId(null);
+      }, 180);
       return;
     }
 
-    const joinedRoom = {
-      ...room,
-      memberIds: room.memberIds.includes('you') ? room.memberIds : ['you', ...room.memberIds],
-    };
-    setStudyRooms(current => current.map(item => item.id === room.id ? joinedRoom : item));
-    setActivePartyRoom(joinedRoom);
-    setPartyTaskId(joinedRoom.assignments[0]?.id ?? (tasks[0] ? `task-${tasks[0].id}` : null));
-    setActiveBrowseTab('Library rooms');
-    setSelectedRoom(null);
-    Alert.alert('Joined party', `You are now connected with ${room.name}. Pick an assignment to focus together.`);
+    setMotionNotice(`Joined ${room.name}`);
+    setTimeout(() => {
+      const joinedRoom = {
+        ...room,
+        memberIds: room.memberIds.includes('you') ? room.memberIds : ['you', ...room.memberIds],
+      };
+      setStudyRooms(current => current.map(item => item.id === room.id ? joinedRoom : item));
+      setActivePartyRoom(joinedRoom);
+      setPartyTaskId(joinedRoom.assignments[0]?.id ?? (tasks[0] ? `task-${tasks[0].id}` : null));
+      setActiveBrowseTab('Library rooms');
+      setSelectedRoom(null);
+      setJoiningRoomId(null);
+    }, 180);
   };
 
   const handleStartPartyFocus = () => {
@@ -709,6 +792,39 @@ export default function MultiPlayerScreen() {
     />
   );
 
+  const renderEmptyPanel = ({
+    icon,
+    title,
+    body,
+    steps,
+    action,
+  }: {
+    icon: ComponentProps<typeof FontAwesome5>['name'];
+    title: string;
+    body: string;
+    steps?: string[];
+    action?: ReactNode;
+  }) => (
+    <View style={[styles.emptyPanel, styles.emptyPanelFeatured]}>
+      <View style={styles.emptyIconBubble}>
+        <FontAwesome5 name={icon} size={18} color={theme.school ? theme.background : theme.onPrimary} />
+      </View>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyText}>{body}</Text>
+      {!!steps?.length && (
+        <View style={styles.emptyStepList}>
+          {steps.map((step, index) => (
+            <View key={step} style={styles.emptyStep}>
+              <Text style={styles.emptyStepNumber}>{index + 1}</Text>
+              <Text style={styles.emptyStepText}>{step}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {action}
+    </View>
+  );
+
   const renderProfileSetup = () => (
     <View style={styles.profileSection}>
       <View style={styles.selectedSchool}>
@@ -716,16 +832,37 @@ export default function MultiPlayerScreen() {
         <Text style={styles.selectedSchoolText}>{selectedSchool}</Text>
       </View>
 
-      <View style={styles.firstFocusCard}>
-        <View style={styles.firstFocusText}>
-          <Text style={styles.firstFocusTitle}>Ready for your first focus?</Text>
-          <Text style={styles.firstFocusSub}>Add one assignment now. You can finish your profile later.</Text>
+      <View style={styles.profileStarter}>
+        <View style={styles.profileStarterTop}>
+          <View style={styles.profileProgressPill}>
+            <Text style={styles.profileProgressText}>2 min</Text>
+          </View>
+          <Text style={styles.profileStarterNote}>Just enough for classmates to know who they are studying with.</Text>
         </View>
-        <ThemeButton size="sm" onPress={() => router.push('/auto-add')}>Add assignment</ThemeButton>
+        <Text style={styles.profileTitle}>Make your study intro</Text>
+        <Text style={styles.profileSub}>Name, major, and how you like to study. You can add the rest later.</Text>
       </View>
 
-      <Text style={styles.profileTitle}>Create your profile</Text>
-      <Text style={styles.profileSub}>Optional for now. Add these details when you want classmates to find you.</Text>
+      <View style={styles.profilePreviewCard}>
+        <View style={styles.profilePreviewTop}>
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} style={styles.previewImage} />
+          ) : (
+            <View style={styles.previewAvatar}>
+              <Text style={styles.previewAvatarText}>{(name.trim() || 'You').slice(0, 1)}</Text>
+            </View>
+          )}
+          <View style={styles.profileHeadingText}>
+            <Text style={styles.previewName}>{name.trim() || 'Your name'}</Text>
+            <Text style={styles.previewMeta}>{major.trim() || 'Your major'} at {selectedSchool}</Text>
+          </View>
+        </View>
+        <View style={styles.previewChipRow}>
+          <Text style={styles.metaChip}>{studyFocus}</Text>
+          <Text style={styles.metaChip}>{meetingPreference}</Text>
+          {!!availability.trim() && <Text style={styles.metaChip}>{availability.trim()}</Text>}
+        </View>
+      </View>
 
       <TouchableOpacity style={styles.photoButton} onPress={pickProfileImage} activeOpacity={0.85}>
         {profileImage ? (
@@ -736,8 +873,8 @@ export default function MultiPlayerScreen() {
           </View>
         )}
         <View style={styles.photoTextWrap}>
-          <Text style={styles.photoTitle}>Profile picture</Text>
-          <Text style={styles.photoSub}>Add a clear face photo</Text>
+          <Text style={styles.photoTitle}>Add a photo</Text>
+          <Text style={styles.photoSub}>Optional, but it helps people recognize you</Text>
         </View>
       </TouchableOpacity>
 
@@ -761,64 +898,8 @@ export default function MultiPlayerScreen() {
         error: profileErrors.major,
         maxLength: 60,
       })}
-      <View style={styles.twoColumn}>
-        {renderField({
-          value: age,
-          onChangeText: text => {
-            setAge(text.replace(/[^\d]/g, ''));
-            clearProfileError('age');
-          },
-          placeholder: 'Age',
-          error: profileErrors.age,
-          maxLength: 3,
-          keyboardType: 'number-pad',
-          containerStyle: styles.halfInput,
-        })}
-        {renderField({
-          value: year,
-          onChangeText: text => {
-            setYear(text);
-            clearProfileError('year');
-          },
-          placeholder: 'Year',
-          error: profileErrors.year,
-          maxLength: 30,
-          containerStyle: styles.halfInput,
-        })}
-      </View>
-      {renderField({
-        value: coolFact,
-        onChangeText: text => {
-          setCoolFact(text);
-          clearProfileError('coolFact');
-        },
-        placeholder: 'Cool fact about you',
-        error: profileErrors.coolFact,
-        maxLength: 140,
-        multiline: true,
-      })}
-      {renderField({
-        value: studyGoal,
-        onChangeText: text => {
-          setStudyGoal(text);
-          clearProfileError('studyGoal');
-        },
-        placeholder: 'Study goal',
-        error: profileErrors.studyGoal,
-        maxLength: 80,
-      })}
-      {renderField({
-        value: availability,
-        onChangeText: text => {
-          setAvailability(text);
-          clearProfileError('availability');
-        },
-        placeholder: 'When are you free?',
-        error: profileErrors.availability,
-        maxLength: 80,
-      })}
 
-      <Text style={styles.sectionLabel}>Preferred meeting style</Text>
+      <Text style={styles.sectionLabel}>How do you want to meet?</Text>
       <View style={styles.choiceRow}>
         {MEETING_OPTIONS.map(option => (
           <ThemeChip key={option} selected={meetingPreference === option} onPress={() => setMeetingPreference(option)}>
@@ -827,7 +908,7 @@ export default function MultiPlayerScreen() {
         ))}
       </View>
 
-      <Text style={styles.sectionLabel}>Study goal</Text>
+      <Text style={styles.sectionLabel}>What are you usually working on?</Text>
       <View style={styles.choiceRow}>
         {STUDY_OPTIONS.map(option => (
           <ThemeChip key={option} selected={studyFocus === option} onPress={() => setStudyFocus(option)}>
@@ -836,7 +917,73 @@ export default function MultiPlayerScreen() {
         ))}
       </View>
 
-      <ThemeButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Create profile</ThemeButton>
+      <TouchableOpacity style={styles.profileExtrasToggle} onPress={() => setShowProfileExtras(current => !current)} activeOpacity={0.85}>
+        <Text style={styles.profileExtrasText}>{showProfileExtras ? 'Hide extra details' : 'Add more about me'}</Text>
+        <FontAwesome5 name={showProfileExtras ? 'chevron-up' : 'chevron-down'} size={12} color={theme.text} />
+      </TouchableOpacity>
+
+      {showProfileExtras && (
+        <View style={styles.profileExtras}>
+          <View style={styles.twoColumn}>
+            {renderField({
+              value: age,
+              onChangeText: text => {
+                setAge(text.replace(/[^\d]/g, ''));
+                clearProfileError('age');
+              },
+              placeholder: 'Age',
+              error: profileErrors.age,
+              maxLength: 3,
+              keyboardType: 'number-pad',
+              containerStyle: styles.halfInput,
+            })}
+            {renderField({
+              value: year,
+              onChangeText: text => {
+                setYear(text);
+                clearProfileError('year');
+              },
+              placeholder: 'Year',
+              error: profileErrors.year,
+              maxLength: 30,
+              containerStyle: styles.halfInput,
+            })}
+          </View>
+          {renderField({
+            value: availability,
+            onChangeText: text => {
+              setAvailability(text);
+              clearProfileError('availability');
+            },
+            placeholder: 'When are you free?',
+            error: profileErrors.availability,
+            maxLength: 80,
+          })}
+          {renderField({
+            value: studyGoal,
+            onChangeText: text => {
+              setStudyGoal(text);
+              clearProfileError('studyGoal');
+            },
+            placeholder: 'Current study goal',
+            error: profileErrors.studyGoal,
+            maxLength: 80,
+          })}
+          {renderField({
+            value: coolFact,
+            onChangeText: text => {
+              setCoolFact(text);
+              clearProfileError('coolFact');
+            },
+            placeholder: 'Fun fact about you',
+            error: profileErrors.coolFact,
+            maxLength: 140,
+            multiline: true,
+          })}
+        </View>
+      )}
+
+      <ThemeButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Start finding classmates</ThemeButton>
     </View>
   );
 
@@ -888,6 +1035,7 @@ export default function MultiPlayerScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+            <Text style={styles.cardFact}>{profile.fact}</Text>
             <View style={styles.metaChipRow}>
               <Text style={styles.metaChip}>{profile.year}</Text>
               <Text style={styles.metaChip}>{profile.focus}</Text>
@@ -903,7 +1051,17 @@ export default function MultiPlayerScreen() {
           </View>
         );
       })}
-      {filteredProfiles.length === 0 && <Text style={styles.emptyText}>No matches for that filter yet.</Text>}
+      {filteredProfiles.length === 0 && renderEmptyPanel({
+        icon: 'search',
+        title: 'No classmates match this filter',
+        body: 'Try a wider filter or check back after more students create profiles.',
+        steps: ['Switch to All', 'Search by major or study goal', 'Invite a classmate to make a profile'],
+        action: (
+          <ThemeButton variant="secondary" onPress={() => setActiveFilter('All')}>
+            Show all profiles
+          </ThemeButton>
+        ),
+      })}
     </View>
   );
 
@@ -975,10 +1133,17 @@ export default function MultiPlayerScreen() {
             </View>
           ))
         ) : (
-          <View style={styles.emptyPanel}>
-            <Text style={styles.emptyTitle}>No friends yet</Text>
-            <Text style={styles.emptyText}>Tap + on a profile to send a friend request.</Text>
-          </View>
+          renderEmptyPanel({
+            icon: 'user-plus',
+            title: 'Build your study circle',
+            body: 'Friends show up after they approve your request. Start with one person you would actually study with.',
+            steps: ['Open Profiles', 'Tap + on someone who matches your class or goal', 'They appear here after approving'],
+            action: (
+              <ThemeButton variant="secondary" onPress={() => setActiveBrowseTab('Profiles')}>
+                Browse profiles
+              </ThemeButton>
+            ),
+          })
         )}
       </View>
     );
@@ -1044,6 +1209,17 @@ export default function MultiPlayerScreen() {
           </View>
         </View>
       ))}
+      {helpPosts.length === 0 && renderEmptyPanel({
+        icon: 'comments',
+        title: 'Start the first campus thread',
+        body: 'Ask for help, share a study tip, or post what room you are working in.',
+        steps: ['Choose Help or Suggestion', 'Keep the topic short', 'Add enough detail for someone to reply'],
+        action: (
+          <ThemeButton variant="secondary" onPress={() => setShowFeedComposer(true)}>
+            Write first post
+          </ThemeButton>
+        ),
+      })}
     </View>
   );
 
@@ -1101,7 +1277,12 @@ export default function MultiPlayerScreen() {
             ))}
           </View>
         ) : (
-          <Text style={styles.emptyText}>No group assignments have been added yet.</Text>
+          renderEmptyPanel({
+            icon: 'tasks',
+            title: 'No room focus yet',
+            body: 'Add a shared assignment so everyone knows what the study session is for.',
+            steps: ['Name the exam, homework, or project', 'Set a goal time', 'Start party focus when people are ready'],
+          })
         )}
 
         {isHost && (
@@ -1133,7 +1314,7 @@ export default function MultiPlayerScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No pending requests.</Text>
+              <Text style={styles.emptyText}>No one is waiting right now.</Text>
             )}
 
             <Text style={styles.sectionLabel}>Members</Text>
@@ -1247,8 +1428,8 @@ export default function MultiPlayerScreen() {
             </ThemeButton>
             <View style={styles.confirmRow}>
               <ThemeButton fullWidth variant="secondary" onPress={() => setSelectedRoom(null)}>Back</ThemeButton>
-              <ThemeButton fullWidth onPress={() => handleConfirmJoin(selectedRoom)}>
-                {selectedRoom.approvalRequired ? 'Confirm request' : 'Confirm join'}
+              <ThemeButton fullWidth disabled={joiningRoomId === selectedRoom.id} onPress={() => handleConfirmJoin(selectedRoom)}>
+                {joiningRoomId === selectedRoom.id ? 'Connecting...' : selectedRoom.approvalRequired ? 'Confirm request' : 'Confirm join'}
               </ThemeButton>
             </View>
           </View>
@@ -1396,6 +1577,17 @@ export default function MultiPlayerScreen() {
             </View>
           </TouchableOpacity>
         ))}
+        {studyRooms.length === 0 && !showRoomForm && renderEmptyPanel({
+          icon: 'door-open',
+          title: 'No study rooms yet',
+          body: 'Create the first room so classmates know where, when, and what you are studying.',
+          steps: ['Add the class or goal', 'Pick a time and library spot', 'Choose approval or friends-only privacy'],
+          action: (
+            <ThemeButton variant="secondary" onPress={() => setShowRoomForm(true)}>
+              Create first room
+            </ThemeButton>
+          ),
+        })}
       </View>
     );
   };
@@ -1430,13 +1622,18 @@ export default function MultiPlayerScreen() {
         </View>
       </View>
 
-      <View style={styles.tabRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabScroller}
+        contentContainerStyle={styles.tabRow}
+      >
         {BROWSE_TABS.map(tab => (
           <TouchableOpacity key={tab} style={[styles.browseTab, activeBrowseTab === tab && styles.browseTabActive]} onPress={() => setActiveBrowseTab(tab)}>
             <Text style={[styles.browseTabText, activeBrowseTab === tab && styles.browseTabTextActive]}>{tab}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {activeBrowseTab === 'Profiles' && (
         <>
@@ -1466,39 +1663,50 @@ export default function MultiPlayerScreen() {
     </>
     );
   };
+  const isProfileSetup = !profileCreated && isSearching && !!selectedSchool;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <View style={styles.hero}>
+      <View style={[styles.hero, isProfileSetup && styles.heroCompact]}>
         <View style={styles.heroTop}>
           <View style={styles.heroCopy}>
             <Text style={styles.kicker}>Campus hub</Text>
             <Text style={styles.heading}>Study Groups</Text>
-            <Text style={styles.description}>
-              Find classmates, rooms, and help without the noise.
-            </Text>
+            {!isProfileSetup && (
+              <Text style={styles.description}>
+                Find classmates, rooms, and help without the noise.
+              </Text>
+            )}
           </View>
           <View style={styles.heroIcon}>
             <FontAwesome5 name="user-graduate" size={24} color={theme.onPrimary} />
           </View>
         </View>
-        <View style={styles.lobbySignals}>
-          <View>
-            <Text style={styles.lobbySignalValue}>3</Text>
-            <Text style={styles.lobbySignalLabel}>rooms</Text>
+        {!isProfileSetup && (
+          <View style={styles.lobbySignals}>
+            <View>
+              <Text style={styles.lobbySignalValue}>3</Text>
+              <Text style={styles.lobbySignalLabel}>rooms</Text>
+            </View>
+            <View style={styles.lobbySignalDivider} />
+            <View>
+              <Text style={styles.lobbySignalValue}>2</Text>
+              <Text style={styles.lobbySignalLabel}>friends</Text>
+            </View>
+            <View style={styles.lobbySignalDivider} />
+            <View>
+              <Text style={styles.lobbySignalValue}>Live</Text>
+              <Text style={styles.lobbySignalLabel}>campus lobby</Text>
+            </View>
           </View>
-          <View style={styles.lobbySignalDivider} />
-          <View>
-            <Text style={styles.lobbySignalValue}>2</Text>
-            <Text style={styles.lobbySignalLabel}>friends</Text>
-          </View>
-          <View style={styles.lobbySignalDivider} />
-          <View>
-            <Text style={styles.lobbySignalValue}>Live</Text>
-            <Text style={styles.lobbySignalLabel}>campus lobby</Text>
-          </View>
-        </View>
+        )}
       </View>
+
+      <MotionNotice
+        message={motionNotice}
+        accentColor={theme.school ? theme.secondary : theme.primary}
+        textColor={theme.school ? theme.background : theme.onPrimary}
+      />
 
       {profileCreated ? (
         renderBrowse()
@@ -1513,22 +1721,23 @@ export default function MultiPlayerScreen() {
         </View>
       ) : (
         <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Find your school</Text>
-          <TextInput
-            value={schoolSearch}
-            onChangeText={text => {
-              setSchoolSearch(text);
-              setSelectedSchool('');
-            }}
-            placeholder="School name"
-            placeholderTextColor={theme.muted}
-            style={styles.input}
-            autoCapitalize="words"
-            autoCorrect={false}
-          />
-
-          {!selectedSchool && (
+          {selectedSchool ? (
+            renderProfileSetup()
+          ) : (
             <>
+              <Text style={styles.panelTitle}>Find your school</Text>
+              <TextInput
+                value={schoolSearch}
+                onChangeText={text => {
+                  setSchoolSearch(text);
+                  setSelectedSchool('');
+                }}
+                placeholder="School name"
+                placeholderTextColor={theme.muted}
+                style={styles.input}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
               <Text style={styles.sectionLabel}>Suggested schools</Text>
               <View style={styles.schoolList}>
                 {filteredSchools.length > 0 ? (
@@ -1545,8 +1754,6 @@ export default function MultiPlayerScreen() {
               </View>
             </>
           )}
-
-          {!!selectedSchool && renderProfileSetup()}
         </View>
       )}
     </ScrollView>
@@ -1555,11 +1762,12 @@ export default function MultiPlayerScreen() {
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.background },
-  container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 42 },
+  container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 118 },
   hero: {
     paddingTop: 4,
     marginBottom: 24,
   },
+  heroCompact: { marginBottom: 14 },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
   heroCopy: { flex: 1 },
   kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '700', letterSpacing: 0.35, marginBottom: 6, textTransform: 'uppercase' },
@@ -1625,6 +1833,19 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   selectedSchool: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 18 },
   selectedSchoolLabel: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', marginBottom: 3, textTransform: 'uppercase' },
   selectedSchoolText: { color: theme.text, fontSize: 15, fontWeight: '700' },
+  profileStarter: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 16, marginBottom: 16 },
+  profileStarterTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  profileProgressPill: { borderRadius: 999, backgroundColor: theme.school ? theme.secondary : theme.primary, paddingHorizontal: 10, paddingVertical: 6 },
+  profileProgressText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 12, fontWeight: '700' },
+  profileStarterNote: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17, fontWeight: '600' },
+  profilePreviewCard: { backgroundColor: theme.surfaceAlt, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 14 },
+  profilePreviewTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  previewAvatar: { width: 54, height: 54, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primary },
+  previewAvatarText: { color: theme.text, fontSize: 23, fontWeight: '700' },
+  previewImage: { width: 54, height: 54, borderRadius: 20 },
+  previewName: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  previewMeta: { color: theme.muted, fontSize: 13, lineHeight: 18 },
+  previewChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
   firstFocusCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 18 },
   firstFocusText: { flex: 1 },
   firstFocusTitle: { color: theme.text, fontSize: 15, fontWeight: '700', marginBottom: 3 },
@@ -1643,6 +1864,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   choiceChipSelected: { backgroundColor: theme.school ? theme.secondary : theme.primary, borderColor: theme.school ? theme.secondary : theme.primary },
   choiceText: { color: theme.muted, fontSize: 13, fontWeight: '700' },
   choiceTextSelected: { color: theme.school ? theme.background : theme.onPrimary },
+  profileExtrasToggle: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.surfaceAlt, borderRadius: 15, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 13, marginBottom: 12 },
+  profileExtrasText: { color: theme.text, fontSize: 13, fontWeight: '700' },
+  profileExtras: { marginBottom: 4 },
   saveButton: {
     backgroundColor: theme.school ? theme.secondary : theme.primary,
     borderRadius: 16,
@@ -1664,10 +1888,11 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   avatarSmallText: { color: theme.text, fontSize: 15, fontWeight: '700' },
   myProfileName: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 2 },
   myProfileDetails: { color: theme.muted, fontSize: 13, lineHeight: 18 },
-  privacyMiniButton: { alignSelf: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
+  privacyMiniButton: { minHeight: 44, alignSelf: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
   privacyMiniButtonText: { color: theme.text, fontSize: 12, fontWeight: '700' },
-  tabRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 8, marginBottom: 22 },
-  browseTab: { flexGrow: 0, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 9, alignItems: 'center', backgroundColor: theme.surfaceAlt },
+  tabScroller: { marginBottom: 22, marginHorizontal: -18, paddingHorizontal: 18 },
+  tabRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 8, paddingRight: 18 },
+  browseTab: { minHeight: 44, flexGrow: 0, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
   browseTabActive: { backgroundColor: theme.school ? theme.secondary : theme.primary },
   browseTabText: { color: theme.muted, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   browseTabTextActive: { color: theme.school ? theme.background : theme.onPrimary },
@@ -1678,8 +1903,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   countPill: { minWidth: 34, textAlign: 'center', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, fontWeight: '700' },
   filterToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 15, paddingHorizontal: 13, paddingVertical: 12, marginBottom: 10 },
   filterToggleText: { color: theme.text, fontSize: 13, fontWeight: '700' },
-  profileCard: { backgroundColor: theme.surface, borderRadius: 18, padding: 14 },
-  friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: theme.surface, borderRadius: 18, padding: 14 },
+  profileCard: { borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 15 },
+  friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 13 },
   avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
   avatarText: { color: theme.text, fontSize: 18, fontWeight: '700' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
@@ -1700,15 +1925,21 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   metaChip: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 999, borderWidth: 1, borderColor: theme.border, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '700' },
   cardFooterActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 },
   approvalHint: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17, fontWeight: '700' },
-  blockButton: { alignSelf: 'flex-start', borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 11, paddingVertical: 8 },
+  blockButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 11, paddingVertical: 8 },
   blockButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '700' },
   tag: { color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 999, borderWidth: 1, borderColor: theme.school ? theme.secondary : theme.primary, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: '700' },
   emptyPanel: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 16, gap: 10 },
+  emptyPanelFeatured: { padding: 18 },
+  emptyIconBubble: { width: 48, height: 48, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, marginBottom: 2 },
   emptyTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 2 },
   emptyText: { color: theme.muted, fontSize: 14, lineHeight: 20 },
+  emptyStepList: { gap: 8, marginTop: 4, marginBottom: 4 },
+  emptyStep: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  emptyStepNumber: { width: 22, height: 22, borderRadius: 8, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: theme.text, backgroundColor: theme.surfaceAlt, fontSize: 12, fontWeight: '700' },
+  emptyStepText: { flex: 1, color: theme.text, fontSize: 13, lineHeight: 18, fontWeight: '700' },
   requestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   pendingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  feedCard: { backgroundColor: theme.surface, borderRadius: 18, padding: 15 },
+  feedCard: { backgroundColor: theme.surfaceAlt, borderRadius: 6, borderWidth: 1, borderColor: theme.border, padding: 15 },
   feedKind: { alignSelf: 'flex-start', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 4, fontSize: 11, fontWeight: '700', marginBottom: 8 },
   commentList: { gap: 6, marginTop: 12 },
   commentText: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 10, fontSize: 13, lineHeight: 18 },
@@ -1737,9 +1968,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   hostSub: { color: theme.muted, fontSize: 13, lineHeight: 18, marginTop: -6 },
   hostRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surface, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 10 },
   hostActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  denyButton: { backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
+  denyButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
   denyButtonText: { color: theme.text, fontSize: 12, fontWeight: '700' },
-  removeButton: { borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 8 },
+  removeButton: { minHeight: 44, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 8 },
   removeButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '700' },
   closeRoomButton: { alignItems: 'center', borderRadius: 14, backgroundColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13, marginTop: 4 },
   closeRoomButtonText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700' },
@@ -1778,6 +2009,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   roomAssignmentPreview: { color: theme.text, fontSize: 13, fontWeight: '700', marginTop: 10 },
   roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   roomOpenText: { marginLeft: 'auto', color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '700' },
-  smallButton: { backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  smallButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
   smallButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 12, fontWeight: '700' },
 });

@@ -195,7 +195,7 @@ const buttonStyles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  sm: { paddingHorizontal: 12, paddingVertical: 8, minHeight: 36 },
+  sm: { paddingHorizontal: 12, paddingVertical: 8, minHeight: 44 },
   md: { paddingHorizontal: 14, paddingVertical: 12 },
   lg: { paddingHorizontal: 18, paddingVertical: 15, borderRadius: 16 },
   fullWidth: { flex: 1 },
@@ -219,6 +219,7 @@ const cardStyles = StyleSheet.create({
 
 const chipStyles = StyleSheet.create({
   base: {
+    minHeight: 44,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 12,

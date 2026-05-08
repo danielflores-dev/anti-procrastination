@@ -435,7 +435,7 @@ export default function CalendarScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.background },
-  container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 76 },
+  container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 118 },
   kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
   heading: { fontSize: 26, fontWeight: '700', color: theme.text, marginBottom: 4 },
   headingSub: { color: theme.muted, fontSize: 13, fontWeight: '600', marginBottom: 18, lineHeight: 18 },
@@ -444,9 +444,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   plannerValue: { color: theme.text, fontSize: 15, fontWeight: '700' },
   plannerDivider: { width: 1, height: 32, backgroundColor: theme.border },
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 28 },
-  scheduleAction: { flex: 1, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', shadowColor: theme.school ? theme.secondary : theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.22, shadowRadius: 8, elevation: 4 },
+  scheduleAction: { minHeight: 50, flex: 1, justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', shadowColor: theme.school ? theme.secondary : theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.22, shadowRadius: 8, elevation: 4 },
   scheduleActionText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
-  scheduleActionSecondary: { flex: 1, backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1, borderColor: theme.border, paddingVertical: 14, alignItems: 'center' },
+  scheduleActionSecondary: { minHeight: 50, flex: 1, justifyContent: 'center', backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1, borderColor: theme.border, paddingVertical: 14, alignItems: 'center' },
   scheduleActionSecondaryText: { color: theme.text, fontSize: 14, fontWeight: '700' },
   scheduleForm: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 14, marginBottom: 16 },
   formTitle: { color: theme.text, fontSize: 17, fontWeight: '700', marginBottom: 10 },
@@ -464,14 +464,14 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   notesInput: { minHeight: 74, textAlignVertical: 'top' },
   formButtons: { flexDirection: 'row', gap: 10 },
-  cancelScheduleButton: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingVertical: 11, alignItems: 'center' },
+  cancelScheduleButton: { minHeight: 44, flex: 1, justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingVertical: 11, alignItems: 'center' },
   cancelScheduleText: { color: theme.text, fontSize: 14, fontWeight: '700' },
-  saveScheduleButton: { flex: 1, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
+  saveScheduleButton: { minHeight: 44, flex: 1, justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
   saveScheduleText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
 
   // Month nav
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, paddingHorizontal: 2 },
-  navBtn: { padding: 8 },
+  navBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', padding: 8 },
   navArrow: { fontSize: 26, color: theme.primary, fontWeight: '300' },
   monthTitle: { fontSize: 18, fontWeight: '700', color: theme.text },
 

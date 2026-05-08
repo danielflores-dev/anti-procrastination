@@ -130,8 +130,8 @@ export default function ShopScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.kicker}>Rewards</Text>
-          <Text style={styles.heading}>Coin Shop</Text>
+          <Text style={styles.kicker}>Earn rewards</Text>
+          <Text style={styles.heading}>Rewards</Text>
         </View>
         <View style={styles.balanceBadge}>
           <Text style={styles.balanceText}>{coins}</Text>
@@ -151,23 +151,28 @@ export default function ShopScreen() {
 
         return (
           <View key={item.id} style={[styles.card, isOwned && styles.cardOwned]}>
-            <View style={styles.cardTop}>
-              <Text style={styles.itemEmoji}>{item.emoji}</Text>
-              <View style={styles.itemInfo}>
-                <View style={styles.itemTitleRow}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <View style={[styles.tag, { backgroundColor: tagColor + '33' }]}>
-                    <Text style={[styles.tagText, { color: tagColor }]}>{item.tag}</Text>
+            <View style={styles.rewardMain}>
+              <View style={styles.priceColumn}>
+                <Text style={[styles.cost, !canAfford && !isOwned && styles.costUnaffordable]}>
+                  {item.cost}
+                </Text>
+                <Text style={styles.priceLabel}>coins</Text>
+              </View>
+              <View style={styles.cardTop}>
+                <Text style={styles.itemEmoji}>{item.emoji}</Text>
+                <View style={styles.itemInfo}>
+                  <View style={styles.itemTitleRow}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <View style={[styles.tag, { backgroundColor: tagColor + '33' }]}>
+                      <Text style={[styles.tagText, { color: tagColor }]}>{item.tag}</Text>
+                    </View>
                   </View>
+                  <Text style={styles.itemDesc}>{item.description}</Text>
                 </View>
-                <Text style={styles.itemDesc}>{item.description}</Text>
               </View>
             </View>
 
             <View style={styles.cardBottom}>
-              <Text style={[styles.cost, !canAfford && !isOwned && styles.costUnaffordable]}>
-                {item.cost}
-              </Text>
               <TouchableOpacity
                 style={[
                   styles.buyBtn,
@@ -193,7 +198,7 @@ export default function ShopScreen() {
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.background },
-  container: { paddingHorizontal: 20, paddingTop: 44, paddingBottom: 84 },
+  container: { paddingHorizontal: 20, paddingTop: 44, paddingBottom: 118 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
   kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
@@ -216,14 +221,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   shelfLabel: { color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 10 },
 
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     borderTopWidth: 1,
     borderTopColor: theme.border,
     paddingVertical: 14,
   },
   cardOwned: { backgroundColor: theme.surfaceAlt, borderRadius: 16, paddingHorizontal: 12, borderTopWidth: 0, marginBottom: 8 },
+  rewardMain: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   cardTop: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', marginBottom: 0 },
   itemEmoji: { color: theme.muted, fontSize: 20, fontWeight: '700', marginRight: 12, marginTop: 2, width: 44 },
   itemInfo: { flex: 1 },
@@ -233,11 +236,17 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   tagText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.35 },
   itemDesc: { color: theme.muted, fontSize: 13, lineHeight: 19 },
 
-  cardBottom: { alignItems: 'flex-end', gap: 8 },
+  priceColumn: { width: 50, alignItems: 'center' },
+  priceLabel: { color: theme.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginTop: 2 },
+  cardBottom: { alignItems: 'flex-end', gap: 8, marginTop: 10 },
   cost: { color: theme.secondary, fontSize: 15, fontWeight: '700' },
   costUnaffordable: { color: theme.muted },
 
   buyBtn: {
+    minHeight: 44,
+    minWidth: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: theme.primary,
     borderRadius: 999,
     paddingHorizontal: 18,

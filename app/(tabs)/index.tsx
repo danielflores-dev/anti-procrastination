@@ -2,8 +2,8 @@ import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { ThemeButton } from '@/components/ui/design-system';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { type Href, useRouter } from 'expo-router';
+import { type ComponentProps, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function getGreeting(): string {
@@ -162,7 +162,6 @@ export default function HomeScreen() {
   const { tasks, sessions } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [showOnboarding, setShowOnboarding] = useState(true);
 
   const totalHours = tasks.reduce((sum, t) => sum + t.estimatedHours, 0);
   const urgentCount = tasks.filter(t => daysUntil(t.dueDateRaw) <= 2).length;
@@ -172,26 +171,59 @@ export default function HomeScreen() {
   const streak = getStudyStreak(sessions);
   const badges = buildBadges(sessions, tasks, streak);
   const nextBadge = badges.find(badge => !badge.unlocked);
-  const firstStepLabel = theme.school ? 'Add assignment' : 'Pick school';
-  const firstStepRoute = theme.school ? '/auto-add' : '/(tabs)/multi-player';
-  const onboardingSteps = [
+  const loopSteps: {
+    id: string;
+    label: string;
+    title: string;
+    detail: string;
+    icon: ComponentProps<typeof FontAwesome5>['name'];
+    route: Href;
+    done: boolean;
+  }[] = [
     {
       id: 'school',
-      title: theme.school ? 'School is set' : 'Pick your school',
-              detail: theme.school ? `${theme.name} colors are active.` : 'Choose your campus first. It only takes a few taps.',
+      label: 'School',
+      title: theme.school ? theme.name : 'Pick school',
+      detail: theme.school ? 'Campus colors are on.' : 'Set your campus first.',
       icon: 'university',
+      route: '/(tabs)/multi-player',
+      done: !!theme.school,
     },
     {
-      id: 'assignment',
-      title: 'Add one assignment',
-      detail: 'Use the sample estimate or add it yourself. You will go straight to focus.',
+      id: 'work',
+      label: 'Work',
+      title: tasks.length > 0 ? `${tasks.length} ready` : 'Add work',
+      detail: tasks.length > 0 ? 'Your queue is ready.' : 'Add one assignment.',
       icon: 'clipboard-list',
+      route: tasks.length > 0 ? '/(tabs)/single-player' : '/auto-add',
+      done: tasks.length > 0,
     },
     {
       id: 'focus',
-      title: 'Start focus',
-      detail: 'Focus sessions earn coins, streaks, and badges as you work.',
+      label: 'Focus',
+      title: totalHours > 0 ? `${totalHours}h planned` : 'Start focus',
+      detail: tasks.length > 0 ? 'Pick a task and begin.' : 'Focus unlocks after work is added.',
       icon: 'play',
+      route: '/(tabs)/single-player',
+      done: sessions.length > 0,
+    },
+    {
+      id: 'people',
+      label: 'People',
+      title: 'Join people',
+      detail: 'Find classmates or a room.',
+      icon: 'user-friends',
+      route: '/(tabs)/multi-player',
+      done: sessions.some(session => !!session.partyRoom),
+    },
+    {
+      id: 'rewards',
+      label: 'Rewards',
+      title: streak > 0 ? `${streak} day streak` : 'Earn coins',
+      detail: sessions.length > 0 ? 'Spend coins and keep going.' : 'Rewards come from focus.',
+      icon: 'coins',
+      route: '/(tabs)/shop',
+      done: sessions.length > 0,
     },
   ];
 
@@ -211,20 +243,34 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <View style={styles.todayPath}>
-        <View style={styles.todayPathItem}>
-          <Text style={styles.todayPathLabel}>Plan</Text>
-          <Text style={styles.todayPathText}>{tasks.length > 0 ? `${tasks.length} tasks ready` : 'Pick school'}</Text>
+      <View style={styles.coreLoop}>
+        <View style={styles.loopHeader}>
+          <View>
+            <Text style={styles.kicker}>Study loop</Text>
+            <Text style={styles.loopTitle}>Know what to tap next</Text>
+          </View>
+          <Text style={styles.loopHint}>5 steps</Text>
         </View>
-        <View style={styles.todayPathLine} />
-        <View style={styles.todayPathItem}>
-          <Text style={styles.todayPathLabel}>Focus</Text>
-          <Text style={styles.todayPathText}>{totalHours > 0 ? `${totalHours}h planned` : 'Add task'}</Text>
-        </View>
-        <View style={styles.todayPathLine} />
-        <View style={styles.todayPathItem}>
-          <Text style={styles.todayPathLabel}>Reward</Text>
-          <Text style={styles.todayPathText}>{streak > 0 ? `${streak} day streak` : 'Earn coins'}</Text>
+        <View style={styles.loopSteps}>
+          {loopSteps.map((step, index) => (
+            <TouchableOpacity
+              key={step.id}
+              style={[styles.loopStep, step.done && styles.loopStepDone]}
+              onPress={() => router.push(step.route)}
+              activeOpacity={0.85}
+              accessibilityLabel={`${step.label}: ${step.title}`}
+            >
+              <View style={[styles.loopIcon, step.done && styles.loopIconDone]}>
+                <FontAwesome5 name={step.done ? 'check' : step.icon} size={13} color={step.done ? '#22C55E' : (theme.school ? theme.background : theme.onPrimary)} />
+              </View>
+              <View style={styles.loopCopy}>
+                <Text style={styles.loopLabel}>{index + 1}. {step.label}</Text>
+                <Text style={styles.loopStepTitle}>{step.title}</Text>
+                <Text style={styles.loopDetail}>{step.detail}</Text>
+              </View>
+              <FontAwesome5 name="chevron-right" size={11} color={theme.muted} />
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -245,52 +291,6 @@ export default function HomeScreen() {
             <Text style={styles.statValue}>{completedCount}</Text>
             <Text style={styles.statLabel}>done</Text>
           </View>
-        </View>
-      )}
-
-      {tasks.length === 0 && showOnboarding && (
-        <View style={styles.onboardingPanel}>
-          <View style={styles.onboardingHeader}>
-            <View>
-              <Text style={styles.kicker}>Start here</Text>
-              <Text style={styles.onboardingTitle}>Set up your study flow</Text>
-            </View>
-            <ThemeButton size="sm" variant="secondary" onPress={() => setShowOnboarding(false)}>Skip</ThemeButton>
-          </View>
-          <Text style={styles.onboardingSub}>
-            Pick your school, add one assignment, then land on the focus timer.
-          </Text>
-
-          <View style={styles.onboardingSteps}>
-            {onboardingSteps.map((step, index) => (
-              <View key={step.id} style={styles.onboardingStep}>
-                <View style={styles.stepIconWrap}>
-                  <FontAwesome5 name={step.icon} size={14} color={theme.school ? theme.background : theme.onPrimary} />
-                </View>
-                <View style={styles.onboardingStepText}>
-                  <Text style={styles.onboardingStepTitle}>{index + 1}. {step.title}</Text>
-                  <Text style={styles.onboardingStepDetail}>{step.detail}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.onboardingActions}>
-            <ThemeButton fullWidth size="lg" onPress={() => router.push(firstStepRoute)}>{firstStepLabel}</ThemeButton>
-            <ThemeButton fullWidth size="lg" variant="secondary" onPress={() => router.push('/add-task')}>Add manually</ThemeButton>
-          </View>
-        </View>
-      )}
-
-      {tasks.length === 0 && !showOnboarding && (
-        <View style={styles.suggestionPanel}>
-          <Text style={styles.sectionTitle}>Start simple</Text>
-          <Text style={styles.suggestionReason}>
-            Add one assignment. We will help estimate time, plan focus sessions, and track progress.
-          </Text>
-          <ThemeButton style={styles.suggestionAction} onPress={() => router.push('/auto-add')}>
-            Estimate an assignment
-          </ThemeButton>
         </View>
       )}
 
@@ -320,15 +320,15 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {(tasks.length > 0 || !showOnboarding) && (
-        <View style={styles.homeActions}>
-          <ThemeButton size="lg" onPress={() => router.push('/(tabs)/single-player')}>
-            {tasks.length > 0 ? 'View assignments' : 'Add an assignment'}
-          </ThemeButton>
-          <ThemeButton size="lg" onPress={() => router.push('/(tabs)/multi-player')}>
-            Find a study group
-          </ThemeButton>
-        </View>
+      {tasks.length > 0 && (
+          <View style={styles.homeActions}>
+            <ThemeButton size="lg" onPress={() => router.push('/(tabs)/single-player')}>
+            {tasks.length > 0 ? 'Open work' : 'Add work'}
+            </ThemeButton>
+            <ThemeButton size="lg" onPress={() => router.push('/(tabs)/multi-player')}>
+            Join people
+            </ThemeButton>
+          </View>
       )}
 
       <View style={styles.badgePanel}>
@@ -345,11 +345,20 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.badgeGrid}>
-          {badges.map(badge => (
-            <View key={badge.id} style={[styles.badgeCard, !badge.unlocked && styles.badgeCardLocked]}>
-              <Text style={[styles.badgeName, !badge.unlocked && styles.badgeNameLocked]}>{badge.name}</Text>
-              <Text style={styles.badgeDetail}>{badge.unlocked ? 'Unlocked' : badge.detail}</Text>
+        <View style={styles.badgeTrail}>
+          {badges.map((badge, index) => (
+            <View key={badge.id} style={styles.badgeTrailItem}>
+              <View style={[styles.badgeDot, badge.unlocked && styles.badgeDotUnlocked]}>
+                {badge.unlocked ? (
+                  <FontAwesome5 name="check" size={12} color={theme.school ? theme.background : theme.onPrimary} />
+                ) : (
+                  <Text style={styles.badgeDotText}>{index + 1}</Text>
+                )}
+              </View>
+              <View style={styles.badgeTrailText}>
+                <Text style={[styles.badgeName, !badge.unlocked && styles.badgeNameLocked]}>{badge.name}</Text>
+                <Text style={styles.badgeDetail}>{badge.unlocked ? 'Unlocked' : badge.detail}</Text>
+              </View>
             </View>
           ))}
         </View>
@@ -434,33 +443,85 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  todayPath: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  coreLoop: {
     marginHorizontal: 20,
     marginBottom: 24,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: theme.border,
+    paddingVertical: 14,
   },
-  todayPathItem: {
+  loopHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  loopTitle: {
+    color: theme.text,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  loopHint: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  loopSteps: {
+    gap: 9,
+  },
+  loopStep: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    backgroundColor: theme.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  loopStepDone: {
+    backgroundColor: theme.surfaceAlt,
+  },
+  loopIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
+  },
+  loopIconDone: {
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: '#22C55E',
+  },
+  loopCopy: {
     flex: 1,
   },
-  todayPathLabel: {
+  loopLabel: {
     color: theme.school ? theme.secondary : theme.accent,
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.4,
-    marginBottom: 4,
+    letterSpacing: 0.35,
+    marginBottom: 2,
     textTransform: 'uppercase',
   },
-  todayPathText: {
+  loopStepTitle: {
     color: theme.text,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
+    marginBottom: 2,
   },
-  todayPathLine: {
-    width: 22,
-    height: 1,
-    backgroundColor: theme.border,
-    marginHorizontal: 8,
+  loopDetail: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
   },
   statsRow: {
     flexDirection: 'row',
@@ -825,23 +886,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 2,
   },
-  badgeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  badgeCard: {
-    width: '48%',
-    backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
-    paddingHorizontal: 11,
-    paddingVertical: 12,
-    minHeight: 70,
-  },
-  badgeCardLocked: {
-    borderColor: theme.border,
-    opacity: 0.82,
-  },
+  badgeTrail: { borderTopWidth: 1, borderTopColor: theme.border },
+  badgeTrailItem: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: theme.border, paddingVertical: 12 },
+  badgeDot: { width: 32, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border },
+  badgeDotUnlocked: { backgroundColor: theme.school ? theme.secondary : theme.primary, borderColor: theme.school ? theme.secondary : theme.primary },
+  badgeDotText: { color: theme.muted, fontSize: 12, fontWeight: '700' },
+  badgeTrailText: { flex: 1 },
   badgeName: {
     color: theme.text,
     fontSize: 13,
