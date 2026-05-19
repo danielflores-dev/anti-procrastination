@@ -26,9 +26,45 @@ type AIResult = {
   estimatedHours: number;
   reasoning: string;
   workload: string;
+  confidence: string;
+  factors: {
+    label: string;
+    value: string;
+  }[];
 };
 
 const DropView = View as any;
+const SAMPLE_RESULT: AIResult = {
+  assignmentName: 'Chapter 5 Reading Notes',
+  className: 'Biology 101',
+  estimatedHours: 2.5,
+  workload: 'Medium',
+  confidence: 'Good starting point',
+  reasoning: 'Based on the page count, notes, and a short reflection, this should take about two focused sittings. Adjust it if your class usually takes longer.',
+  factors: [
+    { label: 'Reading load', value: '35 pages' },
+    { label: 'Writing', value: '1 page of notes' },
+    { label: 'Wrap-up', value: 'Short reflection' },
+  ],
+};
+
+const ADJUSTMENT_PRESETS = [
+  { label: 'I read fast', delta: -0.5 },
+  { label: 'Need breaks', delta: 0.5 },
+  { label: 'Heavy notes', delta: 1 },
+  { label: 'Reset', delta: 0 },
+];
+
+function formatHours(hours: number) {
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`;
+}
+
+function getFocusPlan(hours: number) {
+  const totalMinutes = Math.round(hours * 60);
+  const sessions = Math.max(1, Math.ceil(totalMinutes / 50));
+  const minutesPerSession = Math.max(15, Math.round(totalMinutes / sessions));
+  return `${sessions} focus session${sessions === 1 ? '' : 's'} of about ${minutesPerSession} min`;
+}
 
 export default function AutoAddScreen() {
   const router = useRouter();
@@ -60,12 +96,10 @@ export default function AutoAddScreen() {
   };
 
   const pickImage = async (useCamera: boolean) => {
-    console.log('[pickImage] starting, useCamera:', useCamera);
     const permission = useCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    console.log('[pickImage] permission status:', permission.status);
     if (!permission.granted) {
       Alert.alert('Photo access needed', 'Allow photo access so we can estimate this assignment.');
       return;
@@ -75,23 +109,18 @@ export default function AutoAddScreen() {
       ? await ImagePicker.launchCameraAsync({ base64: true, quality: 0.7 })
       : await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7 });
 
-    console.log('[pickImage] picker result canceled:', pickerResult.canceled);
     if (!pickerResult.canceled && pickerResult.assets[0]) {
       const asset = pickerResult.assets[0];
-      console.log('[pickImage] image selected, uri:', asset.uri, '| base64 length:', asset.base64?.length ?? 0);
 
       let base64: string;
       if (asset.base64) {
         // Native: picker returns base64 directly when base64: true is set
         base64 = asset.base64;
-        console.log('[pickImage] using base64 from picker, length:', base64.length);
       } else {
         // Web: blob URI — read it manually
         try {
           base64 = await readAsBase64(asset.uri);
-          console.log('[pickImage] blob read succeeded, length:', base64.length);
-        } catch (e: any) {
-          console.error('[pickImage] readAsBase64 failed:', e.message);
+        } catch {
           Alert.alert('Could not read image', 'Try a clearer photo or choose another file.');
           return;
         }
@@ -99,23 +128,14 @@ export default function AutoAddScreen() {
 
       setImageUri(asset.uri);
       await analyzeImage(base64);
-    } else {
-      console.log('[pickImage] picker was canceled or returned no assets');
     }
   };
 
   const analyzeImage = async (_base64?: string) => {
     setStep('analyzing');
     await new Promise(resolve => setTimeout(resolve, 1200));
-    const mock: AIResult = {
-      assignmentName: 'Chapter 5 Reading Notes',
-      className: 'Biology 101',
-      estimatedHours: 2.5,
-      workload: 'Medium',
-      reasoning: 'Sample estimate: 35 pages of reading, one page of notes, and a short reflection. Adjust the time if you work faster or slower.',
-    };
-    setResult(mock);
-    setAdjustedHours(mock.estimatedHours);
+    setResult(SAMPLE_RESULT);
+    setAdjustedHours(SAMPLE_RESULT.estimatedHours);
     setStep('review');
   };
 
@@ -139,11 +159,19 @@ export default function AutoAddScreen() {
     setAdjustedHours(prev => Math.max(0.5, parseFloat((prev + delta).toFixed(1))));
   };
 
+  const applyPreset = (delta: number) => {
+    if (!result) return;
+    if (delta === 0) {
+      setAdjustedHours(result.estimatedHours);
+      return;
+    }
+    adjustHours(delta);
+  };
+
   const handleDrop = (event: any) => {
     event.preventDefault();
     setIsDragOver(false);
     const file: File | undefined = event.nativeEvent?.dataTransfer?.files?.[0];
-    console.log('[handleDrop] dropped file:', file?.name, '| type:', file?.type, '| size:', file?.size);
     if (!file) {
       Alert.alert('No file found', 'Drop an image file of your assignment.');
       return;
@@ -156,12 +184,10 @@ export default function AutoAddScreen() {
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       const base64 = dataUrl.split(',')[1];
-      console.log('[handleDrop] FileReader loaded, base64 length:', base64?.length ?? 0);
       setImageUri(dataUrl);
       analyzeImage(base64);
     };
-    reader.onerror = (e) => {
-      console.error('[handleDrop] FileReader error:', e);
+    reader.onerror = () => {
       Alert.alert('Could not read file', 'Try uploading the image again.');
     };
     reader.readAsDataURL(file);
@@ -172,7 +198,7 @@ export default function AutoAddScreen() {
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
         <Text style={[styles.analyzingText, { color: theme.text }]}>Estimating study time...</Text>
-        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Sample result for now</Text>
+        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Reading the assignment details</Text>
       </View>
     );
   }
@@ -189,7 +215,7 @@ export default function AutoAddScreen() {
 
       {step === 'pick' && (
         <>
-          <Text style={styles.sub}>Upload an assignment or use the sample. We will estimate the time, then send you straight into focus.</Text>
+          <Text style={styles.sub}>Upload the assignment sheet or try the built-in example. You can adjust the time before focus starts.</Text>
 
           {Platform.OS === 'web' && (
             <DropView
@@ -216,7 +242,7 @@ export default function AutoAddScreen() {
           </ThemeButton>
 
           <ThemeButton size="lg" variant="secondary" style={styles.actionGap} onPress={() => analyzeImage()}>
-            Try sample assignment
+            Try example assignment
           </ThemeButton>
 
           <ThemeButton variant="ghost" onPress={() => router.back()}>Cancel</ThemeButton>
@@ -239,24 +265,58 @@ export default function AutoAddScreen() {
           </ThemeCard>
           <ThemeCard variant="elevated" style={styles.estimateHero}>
             <Text style={styles.cardLabel}>Estimated time</Text>
-            <Text style={styles.estimateHours}>{result.estimatedHours}h</Text>
+            <Text style={styles.estimateHours}>{formatHours(result.estimatedHours)}</Text>
             <Text style={styles.estimateSub}>{result.workload} workload</Text>
+            <Text style={styles.confidenceText}>{result.confidence}</Text>
           </ThemeCard>
           <ThemeCard style={styles.card}>
-            <Text style={styles.cardLabel}>Why this time?</Text>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.cardLabel}>Why this time?</Text>
+              <Text style={styles.cardMeta}>Editable</Text>
+            </View>
             <Text style={styles.cardReasoning}>{result.reasoning}</Text>
+            <View style={styles.factorList}>
+              {result.factors.map(factor => (
+                <View key={factor.label} style={styles.factorRow}>
+                  <Text style={styles.factorLabel}>{factor.label}</Text>
+                  <Text style={styles.factorValue}>{factor.value}</Text>
+                </View>
+              ))}
+            </View>
           </ThemeCard>
 
-          <Text style={styles.sectionTitle}>Adjust time</Text>
+          <Text style={styles.sectionTitle}>Your time</Text>
           <View style={styles.timeAdjuster}>
             <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(-0.5)}>
-              <Text style={styles.adjBtnText}>−</Text>
+              <Text style={styles.adjBtnText}>-</Text>
             </TouchableOpacity>
-            <Text style={styles.hoursDisplay}>{adjustedHours}h</Text>
+            <View style={styles.adjustedTimeWrap}>
+              <Text style={styles.hoursDisplay}>{formatHours(adjustedHours)}</Text>
+              <Text style={styles.adjustedSub}>{getFocusPlan(adjustedHours)}</Text>
+            </View>
             <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(0.5)}>
               <Text style={styles.adjBtnText}>+</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={styles.adjustPresetRow}>
+            {ADJUSTMENT_PRESETS.map(preset => (
+              <TouchableOpacity
+                key={preset.label}
+                style={styles.adjustPreset}
+                onPress={() => applyPreset(preset.delta)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.adjustPresetText}>{preset.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <ThemeCard style={styles.planCard}>
+            <Text style={styles.cardLabel}>Focus plan</Text>
+            <Text style={styles.planTitle}>{getFocusPlan(adjustedHours)}</Text>
+            <Text style={styles.planText}>You can change this later if the assignment feels easier or harder than expected.</Text>
+          </ThemeCard>
 
           <Text style={styles.sectionTitle}>Due date</Text>
           <ThemeButton variant="secondary" onPress={() => setShowDatePicker(true)}>
@@ -383,6 +443,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },
+  confidenceText: {
+    color: '#B8B5FF',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  cardMeta: {
+    color: '#888',
+    fontSize: 11,
+    fontWeight: '700',
+  },
   sectionTitle: {
     color: '#777',
     fontSize: 12,
@@ -402,6 +479,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#252525',
   },
+  adjustedTimeWrap: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
   adjBtn: {
     backgroundColor: '#252525',
     width: 48,
@@ -420,6 +502,71 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     letterSpacing: -1,
+  },
+  adjustedSub: {
+    color: '#777',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 3,
+  },
+  factorList: {
+    borderTopWidth: 1,
+    borderTopColor: '#252525',
+    marginTop: 12,
+    paddingTop: 10,
+    gap: 8,
+  },
+  factorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  factorLabel: {
+    color: '#777',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  factorValue: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  adjustPresetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  adjustPreset: {
+    minHeight: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
+  adjustPresetText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  planCard: {
+    marginTop: 14,
+  },
+  planTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 5,
+  },
+  planText: {
+    color: '#aaa',
+    fontSize: 13,
+    lineHeight: 19,
   },
   actionGap: { marginBottom: 12 },
   saveAction: { marginTop: 24, marginBottom: 12 },

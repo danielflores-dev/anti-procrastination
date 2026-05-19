@@ -5,7 +5,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 
 type ShopItem = {
   id: string;
-  emoji: string;
+  initials: string;
   name: string;
   description: string;
   cost: number;
@@ -15,7 +15,7 @@ type ShopItem = {
 const ITEMS: ShopItem[] = [
   {
     id: 'streak_shield',
-    emoji: "SH",
+    initials: 'SS',
     name: 'Streak Shield',
     description: 'Keep your streak safe if you miss one day.',
     cost: 30,
@@ -23,39 +23,39 @@ const ITEMS: ShopItem[] = [
   },
   {
     id: 'double_coins',
-    emoji: "2X",
-    name: 'Coin Surge',
-    description: 'Earn 2x coins in your next focus session.',
+    initials: '2x',
+    name: 'Double Focus',
+    description: 'Double the coins from your next focus session.',
     cost: 50,
     tag: 'Boost',
   },
   {
     id: 'focus_music',
-    emoji: "LO",
-    name: 'Focus Playlist',
-    description: 'Unlock a lo-fi playlist for focus sessions.',
+    initials: 'FM',
+    name: 'Focus Mix',
+    description: 'Save a study playlist to your focus screen.',
     cost: 75,
     tag: 'Focus',
   },
   {
     id: 'dark_theme',
-    emoji: "MO",
+    initials: 'MT',
     name: 'Midnight Theme',
-    description: 'Switch to a darker theme with blue accents.',
+    description: 'Use a quieter theme for late-night studying.',
     cost: 100,
     tag: 'Theme',
   },
   {
     id: 'purple_theme',
-    emoji: "PR",
-    name: 'Neon Purple Theme',
-    description: 'Switch to a bright purple app theme.',
+    initials: 'CT',
+    name: 'Campus Theme',
+    description: 'Save a second color preset for your dashboard.',
     cost: 100,
     tag: 'Theme',
   },
   {
     id: 'skip_pass',
-    emoji: "OK",
+    initials: 'GP',
     name: 'Grace Pass',
     description: 'Mark one assignment complete when you need a reset.',
     cost: 150,
@@ -63,17 +63,17 @@ const ITEMS: ShopItem[] = [
   },
   {
     id: 'custom_ring',
-    emoji: "RG",
-    name: 'Custom Focus Ring',
-    description: 'Unlock a new focus timer ring style.',
+    initials: 'FR',
+    name: 'Focus Ring',
+    description: 'Choose a calmer timer ring style.',
     cost: 200,
     tag: 'Cosmetic',
   },
   {
     id: 'xp_boost',
-    emoji: "XP",
-    name: 'XP Rocket',
-    description: 'Earn 3x coins for one week.',
+    initials: 'WK',
+    name: 'Finals Week Boost',
+    description: 'Earn extra coins during a heavy study week.',
     cost: 300,
     tag: 'Boost',
   },
@@ -117,7 +117,7 @@ export default function ShopScreen() {
             const ok = spendCoins(item.cost);
             if (ok) {
               setOwned(prev => new Set([...prev, item.id]));
-              Alert.alert('Purchased', `${item.name} is now yours. Item effects are coming soon.`);
+              Alert.alert('Purchased', `${item.name} is ready for your next focus session.`);
             }
           },
         },
@@ -139,8 +139,8 @@ export default function ShopScreen() {
         </View>
       </View>
       <View style={styles.shopIntro}>
-        <Text style={styles.sub}>Earn coins from focus sessions. Spend them on useful boosts and small rewards.</Text>
-        <Text style={styles.earn}>2 coins per minute</Text>
+        <Text style={styles.sub}>Focus sessions earn coins. Coins buy boosts. Boosts make the next study session easier.</Text>
+        <Text style={styles.earn}>Add assignment, focus, earn coins, keep streak</Text>
       </View>
 
       <Text style={styles.shelfLabel}>Study boosts</Text>
@@ -159,7 +159,7 @@ export default function ShopScreen() {
                 <Text style={styles.priceLabel}>coins</Text>
               </View>
               <View style={styles.cardTop}>
-                <Text style={styles.itemEmoji}>{item.emoji}</Text>
+                <Text style={styles.itemInitials}>{item.initials}</Text>
                 <View style={styles.itemInfo}>
                   <View style={styles.itemTitleRow}>
                     <Text style={styles.itemName}>{item.name}</Text>
@@ -191,7 +191,7 @@ export default function ShopScreen() {
         );
       })}
 
-      <Text style={styles.footer}>More rewards coming soon.</Text>
+      <Text style={styles.footer}>Rewards rotate as your study streak grows.</Text>
     </ScrollView>
   );
 }
@@ -228,7 +228,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cardOwned: { backgroundColor: theme.surfaceAlt, borderRadius: 16, paddingHorizontal: 12, borderTopWidth: 0, marginBottom: 8 },
   rewardMain: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   cardTop: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', marginBottom: 0 },
-  itemEmoji: { color: theme.muted, fontSize: 20, fontWeight: '700', marginRight: 12, marginTop: 2, width: 44 },
+  itemInitials: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 14, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', fontSize: 14, fontWeight: '800', marginRight: 12, marginTop: 2, width: 44, height: 44, lineHeight: 44 },
   itemInfo: { flex: 1 },
   itemTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' },
   itemName: { color: theme.text, fontSize: 16, fontWeight: '700' },

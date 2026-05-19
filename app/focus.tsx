@@ -88,7 +88,6 @@ function BreathingGlow({ color }: { color: string }) {
   );
 }
 
-// Floating "+1 🪙" toast that fades up and disappears
 function CoinToast({ visible, amount }: { visible: boolean; amount: number }) {
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -412,6 +411,13 @@ export default function FocusScreen() {
                 </Text>
               </View>
 
+              <View style={[styles.nextLoopCard, { borderColor: theme.border }]}>
+                <Text style={[styles.nextLoopKicker, { color: theme.school ? theme.secondary : theme.accent }]}>Next in the loop</Text>
+                <Text style={[styles.nextLoopText, { color: theme.text }]}>
+                  Save to keep your streak moving. Then spend coins or join a study group for a boosted focus session.
+                </Text>
+              </View>
+
               <View style={styles.adjustHeader}>
                 <Text style={[styles.adjustLabel, { color: theme.muted }]}>Daily goal</Text>
                 <Text style={[styles.adjustHint, { color: theme.muted }]}>Change only if today felt off</Text>
@@ -517,6 +523,9 @@ const styles = StyleSheet.create({
   recapMetricLabel: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase' },
   recapNote: { borderRadius: 16, borderWidth: 1, padding: 12, marginBottom: 16 },
   recapNoteText: { fontSize: 13, fontWeight: '700', lineHeight: 19 },
+  nextLoopCard: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 16 },
+  nextLoopKicker: { fontSize: 11, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 5 },
+  nextLoopText: { fontSize: 13, fontWeight: '700', lineHeight: 19 },
   adjustHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 10 },
   adjustLabel: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
   adjustHint: { flex: 1, fontSize: 12, fontWeight: '700', textAlign: 'right' },

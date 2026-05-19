@@ -130,7 +130,7 @@ export default function SinglePlayerScreen() {
         <View>
           <Text style={styles.kicker}>Work</Text>
           <Text style={styles.greeting}>Assignments</Text>
-          <Text style={styles.date}>Add work, pick one task, then start focus.</Text>
+          <Text style={styles.date}>Add one assignment, start focus, earn coins.</Text>
         </View>
         <View style={styles.countPill}>
           <Text style={styles.countPillText}>{tasks.length}</Text>
@@ -154,17 +154,37 @@ export default function SinglePlayerScreen() {
         </View>
       </View>
 
+      <View style={styles.loopHintPanel}>
+        <Text style={styles.loopHintKicker}>Core loop</Text>
+        <Text style={styles.loopHintTitle}>
+          {tasks.length === 0 ? 'Add assignment first' : 'Pick a task and start focus'}
+        </Text>
+        <Text style={styles.loopHintText}>
+          {tasks.length === 0
+            ? 'After it is added, the focus timer turns study time into coins and streak progress.'
+            : 'A saved focus session earns coins, builds your streak, and can become a group session later.'}
+        </Text>
+      </View>
+
       {tasks.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
             <Text style={styles.emptyIconText}>1</Text>
           </View>
-          <Text style={styles.emptyTitle}>Start with one assignment</Text>
-          <Text style={styles.emptySub}>Add a real task and the app will estimate the time, split it into steps, and send you to focus.</Text>
+          <Text style={styles.emptyTitle}>Your focus queue is empty</Text>
+          <Text style={styles.emptySub}>Add one assignment and it becomes a timer, a short plan, and coins when you finish.</Text>
           <View style={styles.emptyPreview}>
-            <Text style={styles.emptyPreviewLabel}>What it becomes</Text>
+            <Text style={styles.emptyPreviewLabel}>Example queue item</Text>
             <Text style={styles.emptyPreviewTitle}>Read chapter 4 before lab</Text>
             <Text style={styles.emptyPreviewMeta}>45m estimate, 3 focus steps, study tonight</Text>
+          </View>
+          <View style={styles.emptyActions}>
+            <ThemeButton size="lg" onPress={() => router.push('/auto-add')}>
+              Try example assignment
+            </ThemeButton>
+            <ThemeButton size="lg" variant="secondary" onPress={() => router.push('/add-task')}>
+              Add manually
+            </ThemeButton>
           </View>
         </View>
       ) : (
@@ -218,6 +238,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   statUrgent: { color: '#EF4444' },
   statLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   statDivider: { width: 1, backgroundColor: theme.border },
+  loopHintPanel: { marginHorizontal: 20, marginBottom: 18, borderRadius: 18, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, padding: 14 },
+  loopHintKicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
+  loopHintTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  loopHintText: { color: theme.muted, fontSize: 13, lineHeight: 18, fontWeight: '600' },
   queueArea: { flex: 1 },
   queueHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10 },
   queueTitle: { color: theme.text, fontSize: 18, fontWeight: '700' },
@@ -296,6 +320,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   emptyPreviewLabel: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 6 },
   emptyPreviewTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   emptyPreviewMeta: { color: theme.muted, fontSize: 13, fontWeight: '700' },
+  emptyActions: { gap: 10, marginTop: 22 },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 24, paddingTop: 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border },
   autoBtn: { flex: 1, marginRight: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, alignItems: 'center' },
   autoBtnText: { color: theme.text, fontSize: 14, fontWeight: '700' },

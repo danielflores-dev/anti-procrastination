@@ -185,7 +185,7 @@ export default function AddTaskScreen() {
           {!selectedSubject ? (
             // Subject grid
             <ScrollView contentContainerStyle={styles.subjectGrid}>
-              <Text style={styles.pickerHint}>Sample UC and CSU course list</Text>
+              <Text style={styles.pickerHint}>Choose a common course, or type your own class.</Text>
               <View style={styles.subjectCards}>
                 {SUBJECTS.map(subject => (
                   <TouchableOpacity

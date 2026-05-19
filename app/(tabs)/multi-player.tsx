@@ -1135,9 +1135,9 @@ export default function MultiPlayerScreen() {
         ) : (
           renderEmptyPanel({
             icon: 'user-plus',
-            title: 'Build your study circle',
-            body: 'Friends show up after they approve your request. Start with one person you would actually study with.',
-            steps: ['Open Profiles', 'Tap + on someone who matches your class or goal', 'They appear here after approving'],
+            title: 'No friends yet',
+            body: 'Friends are classmates who approved your request. Start with one person you would actually study with.',
+            steps: ['Browse profiles', 'Send a request to someone with a matching class or goal', 'They appear here after approving'],
             action: (
               <ThemeButton variant="secondary" onPress={() => setActiveBrowseTab('Profiles')}>
                 Browse profiles
@@ -1211,9 +1211,9 @@ export default function MultiPlayerScreen() {
       ))}
       {helpPosts.length === 0 && renderEmptyPanel({
         icon: 'comments',
-        title: 'Start the first campus thread',
-        body: 'Ask for help, share a study tip, or post what room you are working in.',
-        steps: ['Choose Help or Suggestion', 'Keep the topic short', 'Add enough detail for someone to reply'],
+        title: 'No posts yet',
+        body: 'The feed is for quick study questions and useful campus tips, not random noise.',
+        steps: ['Ask for help with one class or topic', 'Share what you already tried', 'Post a tip if you found a good study spot'],
         action: (
           <ThemeButton variant="secondary" onPress={() => setShowFeedComposer(true)}>
             Write first post
@@ -1442,7 +1442,7 @@ export default function MultiPlayerScreen() {
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>Library rooms</Text>
-            <Text style={styles.sectionHint}>Pick one room to review before joining.</Text>
+            <Text style={styles.sectionHint}>Join a study group to focus together and earn a coin multiplier.</Text>
           </View>
           <Text style={styles.countPill}>{studyRooms.length}</Text>
         </View>
@@ -1580,8 +1580,8 @@ export default function MultiPlayerScreen() {
         {studyRooms.length === 0 && !showRoomForm && renderEmptyPanel({
           icon: 'door-open',
           title: 'No study rooms yet',
-          body: 'Create the first room so classmates know where, when, and what you are studying.',
-          steps: ['Add the class or goal', 'Pick a time and library spot', 'Choose approval or friends-only privacy'],
+          body: 'Rooms are for focused group sessions with a clear goal, time, and place.',
+          steps: ['Add the class or exam goal', 'Pick a library spot and time', 'Choose who can join'],
           action: (
             <ThemeButton variant="secondary" onPress={() => setShowRoomForm(true)}>
               Create first room
@@ -1674,7 +1674,7 @@ export default function MultiPlayerScreen() {
             <Text style={styles.heading}>Study Groups</Text>
             {!isProfileSetup && (
               <Text style={styles.description}>
-                Find classmates, rooms, and help without the noise.
+                Join a room when you want classmates, shared focus, and a coin boost.
               </Text>
             )}
           </View>
@@ -1695,8 +1695,8 @@ export default function MultiPlayerScreen() {
             </View>
             <View style={styles.lobbySignalDivider} />
             <View>
-              <Text style={styles.lobbySignalValue}>Live</Text>
-              <Text style={styles.lobbySignalLabel}>campus lobby</Text>
+              <Text style={styles.lobbySignalValue}>Open</Text>
+              <Text style={styles.lobbySignalLabel}>study groups</Text>
             </View>
           </View>
         )}
@@ -1713,7 +1713,21 @@ export default function MultiPlayerScreen() {
       ) : !isSearching ? (
         <View style={styles.startPanel}>
           <Text style={styles.panelTitle}>Start with your school</Text>
-          <Text style={styles.profileSub}>Choose a school to set your colors and find classmates.</Text>
+          <Text style={styles.profileSub}>Choose a school, make a quick profile, then join a study group when solo focus is not enough.</Text>
+          <View style={styles.startSteps}>
+            <View style={styles.startStep}>
+              <Text style={styles.startStepNumber}>1</Text>
+              <Text style={styles.startStepText}>Pick your campus</Text>
+            </View>
+            <View style={styles.startStep}>
+              <Text style={styles.startStepNumber}>2</Text>
+              <Text style={styles.startStepText}>Make a quick profile</Text>
+            </View>
+            <View style={styles.startStep}>
+              <Text style={styles.startStepNumber}>3</Text>
+              <Text style={styles.startStepText}>Join a room for boosted focus</Text>
+            </View>
+          </View>
           <TouchableOpacity style={styles.beginButton} onPress={() => setIsSearching(true)} activeOpacity={0.82}>
             <FontAwesome5 name="search-location" size={16} color={theme.school ? theme.background : theme.onPrimary} />
             <Text style={styles.beginButtonText}>Find your school</Text>
@@ -1726,6 +1740,7 @@ export default function MultiPlayerScreen() {
           ) : (
             <>
               <Text style={styles.panelTitle}>Find your school</Text>
+              <Text style={styles.profileSub}>Type a few letters or choose one below. Your app colors update after you pick.</Text>
               <TextInput
                 value={schoolSearch}
                 onChangeText={text => {
@@ -1779,6 +1794,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   lobbySignalLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   lobbySignalDivider: { width: 1, height: 32, backgroundColor: theme.border },
   startPanel: { paddingTop: 4 },
+  startSteps: { gap: 9, marginBottom: 16 },
+  startStep: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 9 },
+  startStepNumber: { width: 26, height: 26, borderRadius: 10, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, fontSize: 12, fontWeight: '700' },
+  startStepText: { flex: 1, color: theme.text, fontSize: 14, fontWeight: '700' },
   beginButton: {
     flexDirection: 'row',
     alignItems: 'center',

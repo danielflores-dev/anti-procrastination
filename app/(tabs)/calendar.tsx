@@ -172,6 +172,7 @@ export default function CalendarScreen() {
     ? (studyMap[selectedKey] ?? []).filter(t => !selectedDueTasks.includes(t))
     : [];
   const selectedScheduleItems = selectedKey ? scheduleItems.filter(item => item.dateKey === selectedKey) : [];
+  const scheduleIsEmpty = scheduleItems.length === 0 && tasks.length === 0;
 
   const openScheduleForm = (type: 'class' | 'event') => {
     setFormType(type);
@@ -239,6 +240,24 @@ export default function CalendarScreen() {
         <ThemeButton fullWidth size="lg" onPress={() => openScheduleForm('class')}>Add class</ThemeButton>
         <ThemeButton fullWidth size="lg" variant="secondary" onPress={() => openScheduleForm('event')}>Add event</ThemeButton>
       </View>
+
+      {scheduleIsEmpty && !formType && (
+        <ThemeCard style={styles.emptySchedulePanel}>
+          <View style={styles.emptyScheduleNumber}>
+            <Text style={styles.emptyScheduleNumberText}>1</Text>
+          </View>
+          <View style={styles.emptyScheduleCopy}>
+            <Text style={styles.emptyScheduleTitle}>Your schedule is open</Text>
+            <Text style={styles.emptyScheduleText}>
+              Add classes, events, or assignments so this becomes a simple study map instead of a blank calendar.
+            </Text>
+          </View>
+          <View style={styles.emptyScheduleActions}>
+            <ThemeButton fullWidth onPress={() => openScheduleForm('class')}>Add first class</ThemeButton>
+            <ThemeButton fullWidth variant="secondary" onPress={() => openScheduleForm('event')}>Add event</ThemeButton>
+          </View>
+        </ThemeCard>
+      )}
 
       {!!formType && (
         <ThemeCard style={styles.scheduleForm}>
@@ -379,7 +398,14 @@ export default function CalendarScreen() {
           </Text>
 
           {selectedDueTasks.length === 0 && selectedStudyTasks.length === 0 && selectedScheduleItems.length === 0 ? (
-            <Text style={styles.nothingText}>Nothing planned for this day. Add a class, event, or assignment when you need it.</Text>
+            <View style={styles.emptyDayPanel}>
+              <Text style={styles.emptyDayTitle}>No plans on this day</Text>
+              <Text style={styles.emptyDayText}>Put a class, club meeting, office hours, or study block here when you know what the day looks like.</Text>
+              <View style={styles.emptyDayActions}>
+                <ThemeButton fullWidth variant="secondary" onPress={() => openScheduleForm('class')}>Add class</ThemeButton>
+                <ThemeButton fullWidth variant="secondary" onPress={() => openScheduleForm('event')}>Add event</ThemeButton>
+              </View>
+            </View>
           ) : (
             <>
               {selectedScheduleItems.length > 0 && (
@@ -444,6 +470,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   plannerValue: { color: theme.text, fontSize: 15, fontWeight: '700' },
   plannerDivider: { width: 1, height: 32, backgroundColor: theme.border },
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 28 },
+  emptySchedulePanel: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 16, marginBottom: 18 },
+  emptyScheduleNumber: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, marginBottom: 12 },
+  emptyScheduleNumberText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 18, fontWeight: '700' },
+  emptyScheduleCopy: { marginBottom: 14 },
+  emptyScheduleTitle: { color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 5 },
+  emptyScheduleText: { color: theme.muted, fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  emptyScheduleActions: { gap: 10 },
   scheduleAction: { minHeight: 50, flex: 1, justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', shadowColor: theme.school ? theme.secondary : theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.22, shadowRadius: 8, elevation: 4 },
   scheduleActionText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
   scheduleActionSecondary: { minHeight: 50, flex: 1, justifyContent: 'center', backgroundColor: theme.surface, borderRadius: 16, borderWidth: 1, borderColor: theme.border, paddingVertical: 14, alignItems: 'center' },
@@ -519,6 +552,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.35, marginBottom: 8,
   },
   nothingText: { color: theme.muted, fontSize: 14, textAlign: 'center', marginVertical: 18 },
+  emptyDayPanel: { backgroundColor: theme.surface, borderRadius: 18, borderWidth: 1, borderColor: theme.border, padding: 16 },
+  emptyDayTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 5 },
+  emptyDayText: { color: theme.muted, fontSize: 14, lineHeight: 20, marginBottom: 14 },
+  emptyDayActions: { flexDirection: 'row', gap: 10 },
   scheduleItemCard: { borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 12, marginBottom: 0 },
   classItemCard: {},
   eventItemCard: {},
