@@ -3,8 +3,8 @@ import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
-import { type ComponentProps, useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { type ComponentProps, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -66,6 +66,13 @@ type ActionItem = {
   onPress: () => void;
 };
 
+type ReminderItem = {
+  id: string;
+  label: string;
+  detail: string;
+  sample: string;
+};
+
 function buildBadges(sessions: StudySession[], tasks: Task[], streak: number): Badge[] {
   const totalCoins = sessions.reduce((sum, session) => sum + session.coinsEarned, 0);
   const totalMinutes = Math.round(sessions.reduce((sum, session) => sum + session.focusedSeconds, 0) / 60);
@@ -97,6 +104,7 @@ export default function HomeScreen() {
   const { tasks, sessions } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const [gentleRemindersOn, setGentleRemindersOn] = useState(true);
 
   const nextTask = getNextTask(tasks);
   const openTasks = tasks.filter(task => task.progress !== 'Done');
@@ -108,6 +116,31 @@ export default function HomeScreen() {
   const nextBadge = buildBadges(sessions, tasks, streak).find(badge => !badge.unlocked);
   const primaryAction = nextTask ? 'Start focus' : 'Add assignment';
   const primaryRoute: Href = nextTask ? `/focus?id=${nextTask.id}` : '/auto-add';
+  const reminderItems: ReminderItem[] = [
+    {
+      id: 'assignment',
+      label: 'Planned work',
+      detail: 'A calm heads-up before a focus block.',
+      sample: nextTask
+        ? `You planned ${nextTask.className} for later today.`
+        : 'Want to add one assignment for this week?',
+    },
+    {
+      id: 'small-start',
+      label: 'Small start',
+      detail: 'Suggests a short session when the day is busy.',
+      sample: nextTask
+        ? `Want to do 25 minutes of ${nextTask.assignmentName} before dinner?`
+        : 'Want to do 25 minutes before dinner?',
+    },
+    {
+      id: 'group',
+      label: 'Study group',
+      detail: 'Reminds you before a shared room starts.',
+      sample: 'Your study group starts soon.',
+    },
+  ];
+  const activeReminder = nextTask ? reminderItems[1] : reminderItems[0];
 
   const actions: ActionItem[] = [
     {
@@ -184,6 +217,43 @@ export default function HomeScreen() {
         <View style={styles.metricItem}>
           <Text style={styles.metricValue}>{focusedMinutes}</Text>
           <Text style={styles.metricLabel}>minutes</Text>
+        </View>
+      </View>
+
+      <View style={styles.reminderSection}>
+        <View style={styles.reminderTop}>
+          <View style={styles.reminderIcon}>
+            <FontAwesome5 name="bell" size={13} color={theme.school ? theme.background : theme.onPrimary} />
+          </View>
+          <View style={styles.reminderCopy}>
+            <Text style={styles.sectionTitle}>Gentle reminders</Text>
+            <Text style={styles.sectionHint}>Student-friendly nudges, not noisy alerts.</Text>
+          </View>
+          <Switch
+            value={gentleRemindersOn}
+            onValueChange={setGentleRemindersOn}
+            trackColor={{ false: theme.surfaceAlt, true: theme.school ? theme.secondary : theme.primary }}
+            thumbColor={theme.text}
+            ios_backgroundColor={theme.surfaceAlt}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={[styles.reminderPreview, !gentleRemindersOn && styles.reminderPreviewOff]}
+          activeOpacity={0.85}
+          onPress={() => Alert.alert('Gentle reminder', activeReminder.sample)}
+        >
+          <Text style={styles.reminderPreviewLabel}>Preview</Text>
+          <Text style={styles.reminderPreviewText}>{activeReminder.sample}</Text>
+        </TouchableOpacity>
+
+        <View style={styles.reminderList}>
+          {reminderItems.map(item => (
+            <View key={item.id} style={styles.reminderItem}>
+              <Text style={styles.reminderItemTitle}>{item.label}</Text>
+              <Text style={styles.reminderItemDetail}>{item.detail}</Text>
+            </View>
+          ))}
         </View>
       </View>
 
@@ -420,6 +490,78 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     color: theme.muted,
     fontSize: 12,
     fontWeight: '600',
+  },
+  reminderSection: {
+    marginHorizontal: 20,
+    marginBottom: 22,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    padding: 14,
+  },
+  reminderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    marginBottom: 12,
+  },
+  reminderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.school ? theme.secondary : theme.primary,
+  },
+  reminderCopy: {
+    flex: 1,
+  },
+  reminderPreview: {
+    borderRadius: 16,
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: 13,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  reminderPreviewOff: {
+    opacity: 0.72,
+  },
+  reminderPreviewLabel: {
+    color: theme.school ? theme.secondary : theme.accent,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.35,
+    marginBottom: 5,
+    textTransform: 'uppercase',
+  },
+  reminderPreviewText: {
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 21,
+  },
+  reminderList: {
+    gap: 9,
+  },
+  reminderItem: {
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    paddingTop: 9,
+  },
+  reminderItemTitle: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  reminderItemDetail: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
   },
   progressSection: {
     marginHorizontal: 20,
