@@ -130,7 +130,7 @@ export default function SinglePlayerScreen() {
         <View>
           <Text style={styles.kicker}>Work</Text>
           <Text style={styles.greeting}>Assignments</Text>
-          <Text style={styles.date}>Add one assignment, start focus, earn coins.</Text>
+          <Text style={styles.date}>Pick one task and start.</Text>
         </View>
         <View style={styles.countPill}>
           <Text style={styles.countPillText}>{tasks.length}</Text>
@@ -232,13 +232,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   date: { fontSize: 13, color: theme.muted, marginTop: 4, fontWeight: '600', lineHeight: 18 },
   countPill: { backgroundColor: theme.surfaceAlt, borderRadius: 18, minWidth: 40, height: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: theme.border },
   countPillText: { color: theme.text, fontSize: 16, fontWeight: '700' },
-  statsRow: { flexDirection: 'row', marginHorizontal: 20, paddingVertical: 10, marginBottom: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border },
+  statsRow: { display: 'none' },
   statItem: { flex: 1, alignItems: 'center' },
   statValue: { color: theme.text, fontSize: 20, fontWeight: '700' },
   statUrgent: { color: '#EF4444' },
   statLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   statDivider: { width: 1, backgroundColor: theme.border },
-  loopHintPanel: { marginHorizontal: 20, marginBottom: 18, borderRadius: 18, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, padding: 14 },
+  loopHintPanel: { display: 'none' },
   loopHintKicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
   loopHintTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   loopHintText: { color: theme.muted, fontSize: 13, lineHeight: 18, fontWeight: '600' },
@@ -295,7 +295,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   focusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
   progressButton: { borderRadius: 14, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surfaceAlt, paddingHorizontal: 12, paddingVertical: 13 },
   progressButtonText: { fontSize: 12, fontWeight: '700' },
-  breakdownBox: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 12, padding: 12 },
+  breakdownBox: { display: 'none' },
   breakdownHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   sectionMiniTitle: { color: theme.text, fontSize: 13, fontWeight: '700' },
   breakdownCount: { color: theme.muted, fontSize: 12, fontWeight: '700' },
@@ -305,7 +305,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   stepCheckText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
   stepText: { flex: 1, color: theme.text, fontSize: 13, fontWeight: '700' },
   stepTextDone: { color: theme.muted, textDecorationLine: 'line-through' },
-  planBox: { backgroundColor: theme.surfaceAlt, borderRadius: 16, borderWidth: 1, borderColor: theme.border, marginTop: 10, padding: 12, gap: 8 },
+  planBox: { display: 'none' },
   planRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   planDate: { width: 66, color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '700' },
   planTextWrap: { flex: 1 },

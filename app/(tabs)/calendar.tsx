@@ -215,9 +215,9 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.kicker}>Campus plan</Text>
+      <Text style={styles.kicker}>Schedule</Text>
       <Text style={styles.heading}>Schedule</Text>
-      <Text style={styles.headingSub}>Pick a day to see assignments, classes, and events.</Text>
+      <Text style={styles.headingSub}>Classes, events, and due dates in one place.</Text>
 
       <View style={styles.plannerStrip}>
         <View>
@@ -465,12 +465,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
   heading: { fontSize: 26, fontWeight: '700', color: theme.text, marginBottom: 4 },
   headingSub: { color: theme.muted, fontSize: 13, fontWeight: '600', marginBottom: 18, lineHeight: 18 },
-  plannerStrip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 18 },
+  plannerStrip: { display: 'none' },
   plannerLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 3 },
   plannerValue: { color: theme.text, fontSize: 15, fontWeight: '700' },
   plannerDivider: { width: 1, height: 32, backgroundColor: theme.border },
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 28 },
-  emptySchedulePanel: { backgroundColor: theme.surface, borderRadius: 20, borderWidth: 1, borderColor: theme.border, padding: 16, marginBottom: 18 },
+  emptySchedulePanel: { display: 'none' },
   emptyScheduleNumber: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, marginBottom: 12 },
   emptyScheduleNumberText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 18, fontWeight: '700' },
   emptyScheduleCopy: { marginBottom: 14 },

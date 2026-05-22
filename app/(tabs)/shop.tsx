@@ -79,15 +79,6 @@ const ITEMS: ShopItem[] = [
   },
 ];
 
-const TAG_COLORS: Record<string, string> = {
-  Protection: '#3B82F6',
-  Boost: '#F59E0B',
-  Focus: '#8B5CF6',
-  Theme: '#EC4899',
-  Utility: '#22C55E',
-  Cosmetic: '#06B6D4',
-};
-
 export default function ShopScreen() {
   const { coins, spendCoins } = useCoins();
   const { theme } = useSchoolTheme();
@@ -130,7 +121,7 @@ export default function ShopScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.kicker}>Earn rewards</Text>
+          <Text style={styles.kicker}>Rewards</Text>
           <Text style={styles.heading}>Rewards</Text>
         </View>
         <View style={styles.balanceBadge}>
@@ -139,16 +130,13 @@ export default function ShopScreen() {
         </View>
       </View>
       <View style={styles.shopIntro}>
-        <Text style={styles.sub}>Focus sessions earn coins. Coins buy boosts. Boosts make the next study session easier.</Text>
-        <Text style={styles.earn}>Add assignment, focus, earn coins, keep streak</Text>
+        <Text style={styles.sub}>Use coins from focus sessions.</Text>
       </View>
 
       <Text style={styles.shelfLabel}>Study boosts</Text>
       {ITEMS.map(item => {
         const isOwned = owned.has(item.id);
         const canAfford = coins >= item.cost;
-        const tagColor = TAG_COLORS[item.tag] ?? '#888';
-
         return (
           <View key={item.id} style={[styles.card, isOwned && styles.cardOwned]}>
             <View style={styles.rewardMain}>
@@ -161,12 +149,7 @@ export default function ShopScreen() {
               <View style={styles.cardTop}>
                 <Text style={styles.itemInitials}>{item.initials}</Text>
                 <View style={styles.itemInfo}>
-                  <View style={styles.itemTitleRow}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    <View style={[styles.tag, { backgroundColor: tagColor + '33' }]}>
-                      <Text style={[styles.tagText, { color: tagColor }]}>{item.tag}</Text>
-                    </View>
-                  </View>
+                  <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemDesc}>{item.description}</Text>
                 </View>
               </View>

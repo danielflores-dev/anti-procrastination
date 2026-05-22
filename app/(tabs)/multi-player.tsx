@@ -138,7 +138,7 @@ const SCHOOL_OPTIONS = [
 
 const MEETING_OPTIONS = ['In person', 'Online', 'Either'];
 const STUDY_OPTIONS = ['Homework', 'Exam prep', 'Projects', 'Accountability'];
-const BROWSE_TABS = ['Profiles', 'Friends', 'Feed', 'Library rooms'] as const;
+const BROWSE_TABS = ['Library rooms', 'Profiles', 'Friends', 'Feed'] as const;
 const FILTER_OPTIONS = ['All', 'Same major', 'Online', 'In person', 'Exam prep', 'Projects'];
 const FEED_KINDS: HelpPost['kind'][] = ['Help', 'Suggestion'];
 const MIN_STUDENT_AGE = 13;
@@ -1674,7 +1674,7 @@ export default function MultiPlayerScreen() {
             <Text style={styles.heading}>Study Groups</Text>
             {!isProfileSetup && (
               <Text style={styles.description}>
-                Join a room when you want classmates, shared focus, and a coin boost.
+                Join or create a study room.
               </Text>
             )}
           </View>
@@ -1713,7 +1713,7 @@ export default function MultiPlayerScreen() {
       ) : !isSearching ? (
         <View style={styles.startPanel}>
           <Text style={styles.panelTitle}>Start with your school</Text>
-          <Text style={styles.profileSub}>Choose a school, make a quick profile, then join a study group when solo focus is not enough.</Text>
+          <Text style={styles.profileSub}>Pick your school, then find a room.</Text>
           <View style={styles.startSteps}>
             <View style={styles.startStep}>
               <Text style={styles.startStepNumber}>1</Text>
@@ -1789,12 +1789,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   heroIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.primary },
   heading: { color: theme.text, fontSize: 26, fontWeight: '700', marginBottom: 6 },
   description: { color: theme.muted, fontSize: 15, lineHeight: 22 },
-  lobbySignals: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, marginTop: 18, paddingVertical: 12 },
+  lobbySignals: { display: 'none' },
   lobbySignalValue: { color: theme.text, fontSize: 15, fontWeight: '700' },
   lobbySignalLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   lobbySignalDivider: { width: 1, height: 32, backgroundColor: theme.border },
   startPanel: { paddingTop: 4 },
-  startSteps: { gap: 9, marginBottom: 16 },
+  startSteps: { display: 'none' },
   startStep: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 9 },
   startStepNumber: { width: 26, height: 26, borderRadius: 10, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, fontSize: 12, fontWeight: '700' },
   startStepText: { flex: 1, color: theme.text, fontSize: 14, fontWeight: '700' },
@@ -1919,7 +1919,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginTop: 2, marginBottom: 6 },
   sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 3 },
   sectionHint: { color: theme.muted, fontSize: 13, lineHeight: 18, maxWidth: 260 },
-  countPill: { minWidth: 34, textAlign: 'center', color: theme.school ? theme.background : theme.onPrimary, backgroundColor: theme.school ? theme.secondary : theme.primary, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, fontWeight: '700' },
+  countPill: { display: 'none' },
   filterToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 15, paddingHorizontal: 13, paddingVertical: 12, marginBottom: 10 },
   filterToggleText: { color: theme.text, fontSize: 13, fontWeight: '700' },
   profileCard: { borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 15 },
