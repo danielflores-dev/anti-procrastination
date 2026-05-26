@@ -386,7 +386,7 @@ export default function FocusScreen() {
                 <Text style={[styles.coinHeroLabel, { color: theme.muted }]}>You earned</Text>
                 <Text style={[styles.coinHeroValue, { color }]}>{sessionCoins} coins</Text>
                 <Text style={[styles.coinHeroMeta, { color: theme.muted }]}>
-                  {isPartySession ? `${coinMultiplier.toFixed(1)}x party boost applied` : `${formatTime(elapsed)} focused`}
+                  {isPartySession ? `${coinMultiplier.toFixed(1)}x room bonus` : `${formatTime(elapsed)} focused`}
                 </Text>
               </View>
 
@@ -407,14 +407,14 @@ export default function FocusScreen() {
                     ? 'A short start still counts. Save it, or keep going for one more round.'
                     : goalReached
                       ? 'This assignment is on track for today.'
-                      : 'If this felt harder than expected, adjust the daily goal before saving.'}
+                      : 'If this felt harder than expected, change the daily goal before saving.'}
                 </Text>
               </View>
 
               <View style={[styles.nextLoopCard, { borderColor: theme.border }]}>
-                <Text style={[styles.nextLoopKicker, { color: theme.school ? theme.secondary : theme.accent }]}>Next in the loop</Text>
+                <Text style={[styles.nextLoopKicker, { color: theme.school ? theme.secondary : theme.accent }]}>Next</Text>
                 <Text style={[styles.nextLoopText, { color: theme.text }]}>
-                  Save to keep your streak moving. Then spend coins or join a study group for a boosted focus session.
+                  Save to keep your streak. Then pick the next assignment or rejoin a study room.
                 </Text>
               </View>
 

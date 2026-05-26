@@ -92,8 +92,8 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
       : {
           id: 'first-add-assignment',
           step: 'First',
-          title: 'Add one assignment',
-          detail: 'Start with the next thing due.',
+          title: 'Add work',
+          detail: 'Add what is due next.',
           icon: 'plus',
           route: '/auto-add',
         },
@@ -109,16 +109,16 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
       : {
           id: 'then-schedule',
           step: 'Then',
-          title: 'Check your schedule',
-          detail: 'Fit study time around class.',
+          title: 'Check schedule',
+          detail: 'Make room for study time.',
           icon: 'calendar-alt',
           route: '/(tabs)/calendar',
         },
     {
       id: recentRoom ? 'later-room-rejoin' : 'later-room-find',
       step: 'Later',
-      title: recentRoom ? `Rejoin ${recentRoom}` : 'Find classmates',
-      detail: recentRoom ? 'Study with the room again.' : 'Use this when you want company.',
+      title: recentRoom ? `Rejoin ${recentRoom}` : 'Find a room',
+      detail: recentRoom ? 'Return when you are ready.' : 'Find people when it helps.',
       icon: 'user-friends',
       route: '/(tabs)/multi-player',
     },
@@ -147,20 +147,24 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.date}>{formatDate()}</Text>
         </View>
-        <TouchableOpacity style={styles.schoolPill} onPress={() => router.push('/')} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.schoolPill}
+          onPress={() => router.push({ pathname: '/(tabs)/multi-player', params: { start: 'school' } })}
+          activeOpacity={0.85}
+        >
           <Text style={styles.schoolPillText}>{theme.school ? theme.name : 'Pick school'}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.nextPanel}>
-        <Text style={styles.panelLabel}>Do this now</Text>
+        <Text style={styles.panelLabel}>Now</Text>
         <Text style={styles.nextTitle}>
-          {nextTask ? nextTask.assignmentName : 'Add your first assignment'}
+          {nextTask ? nextTask.assignmentName : 'Add work'}
         </Text>
         <Text style={styles.nextMeta}>
           {nextTask
-            ? `${duePhrase(nextTask)}. Start with ${Math.round(nextTask.hoursPerDay * 60)} minutes.`
-            : 'Once one due date is in, your plan becomes clear.'}
+            ? `${duePhrase(nextTask)}. ${Math.round(nextTask.hoursPerDay * 60)} minutes.`
+            : 'Add one due date.'}
         </Text>
         <ThemeButton size="lg" onPress={() => router.push(primaryRoute)}>
           {nextTask ? 'Start focus' : 'Add assignment'}
@@ -170,7 +174,7 @@ export default function HomeScreen() {
       <View style={styles.studyPlanSection}>
         <View style={styles.studyPlanHeader}>
           <Text style={styles.sectionTitle}>{"Today's plan"}</Text>
-          <Text style={styles.sectionHint}>First, then, later.</Text>
+          <Text style={styles.sectionHint}>Small steps for today.</Text>
         </View>
 
         {todayStudyPlan.map((item, index) => (
@@ -184,7 +188,7 @@ export default function HomeScreen() {
               <FontAwesome5
                 name={item.icon}
                 size={10}
-                color={index === 0 ? (theme.school ? theme.background : theme.onPrimary) : theme.muted}
+                color={index === 0 ? theme.onPrimary : theme.muted}
               />
             </View>
             <View style={styles.planCopy}>
@@ -237,7 +241,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   kicker: {
-    color: theme.school ? theme.secondary : theme.accent,
+    color: theme.primary,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.35,
@@ -272,19 +276,20 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   nextPanel: {
     marginHorizontal: 20,
     marginBottom: 22,
-    borderRadius: 22,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: theme.border,
-    backgroundColor: theme.surface,
-    padding: 16,
+    backgroundColor: 'transparent',
+    paddingVertical: 16,
   },
   panelLabel: {
-    color: theme.school ? theme.secondary : theme.accent,
-    fontSize: 11,
+    color: theme.primary,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.35,
+    letterSpacing: 0,
     marginBottom: 7,
-    textTransform: 'uppercase',
   },
   nextTitle: {
     color: theme.text,
@@ -332,28 +337,25 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   planIcon: {
     width: 30,
     height: 30,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.background,
+    borderRadius: 10,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
   },
   planIconActive: {
-    borderColor: theme.school ? theme.secondary : theme.primary,
-    backgroundColor: theme.school ? theme.secondary : theme.primary,
+    backgroundColor: theme.primary,
   },
   planCopy: {
     flex: 1,
   },
   planStepLabel: {
-    color: theme.school ? theme.secondary : theme.accent,
+    color: theme.primary,
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.35,
+    letterSpacing: 0,
     marginBottom: 2,
-    textTransform: 'uppercase',
   },
   planStepTitle: {
     color: theme.text,
@@ -396,8 +398,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   textLink: {
     minHeight: 44,
     justifyContent: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: 1,
     borderColor: theme.border,
     paddingHorizontal: 12,
   },

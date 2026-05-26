@@ -5,77 +5,59 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 
 type ShopItem = {
   id: string;
-  initials: string;
   name: string;
   description: string;
   cost: number;
-  tag: string;
 };
 
 const ITEMS: ShopItem[] = [
   {
     id: 'streak_shield',
-    initials: 'SS',
-    name: 'Streak Shield',
-    description: 'Keep your streak safe if you miss one day.',
+    name: 'Streak save',
+    description: 'Use once when you miss a day.',
     cost: 30,
-    tag: 'Protection',
   },
   {
     id: 'double_coins',
-    initials: '2x',
-    name: 'Double Focus',
-    description: 'Double the coins from your next focus session.',
+    name: 'Double coins',
+    description: 'Applies to your next focus session.',
     cost: 50,
-    tag: 'Boost',
   },
   {
     id: 'focus_music',
-    initials: 'FM',
-    name: 'Focus Mix',
-    description: 'Save a study playlist to your focus screen.',
+    name: 'Focus mix',
+    description: 'Add a playlist to focus mode.',
     cost: 75,
-    tag: 'Focus',
   },
   {
     id: 'dark_theme',
-    initials: 'MT',
-    name: 'Midnight Theme',
-    description: 'Use a quieter theme for late-night studying.',
+    name: 'Night theme',
+    description: 'A calmer look for late studying.',
     cost: 100,
-    tag: 'Theme',
   },
   {
     id: 'purple_theme',
-    initials: 'CT',
-    name: 'Campus Theme',
-    description: 'Save a second color preset for your dashboard.',
+    name: 'Campus theme',
+    description: 'Save another color preset.',
     cost: 100,
-    tag: 'Theme',
   },
   {
     id: 'skip_pass',
-    initials: 'GP',
-    name: 'Grace Pass',
-    description: 'Mark one assignment complete when you need a reset.',
+    name: 'Grace pass',
+    description: 'Use when a week gets messy.',
     cost: 150,
-    tag: 'Utility',
   },
   {
     id: 'custom_ring',
-    initials: 'FR',
-    name: 'Focus Ring',
-    description: 'Choose a calmer timer ring style.',
+    name: 'Focus ring',
+    description: 'Change the timer ring.',
     cost: 200,
-    tag: 'Cosmetic',
   },
   {
     id: 'xp_boost',
-    initials: 'WK',
-    name: 'Finals Week Boost',
-    description: 'Earn extra coins during a heavy study week.',
+    name: 'Finals week',
+    description: 'Extra coins during a hard week.',
     cost: 300,
-    tag: 'Boost',
   },
 ];
 
@@ -87,19 +69,19 @@ export default function ShopScreen() {
 
   const handleBuy = (item: ShopItem) => {
     if (owned.has(item.id)) {
-      Alert.alert('Already owned', `${item.name} is already in your shop items.`);
+      Alert.alert('Already saved', `${item.name} is already yours.`);
       return;
     }
     if (coins < item.cost) {
       Alert.alert(
         'Not enough coins',
-        `You need ${item.cost - coins} more coins to buy ${item.name}.\n\nKeep studying to earn more!`
+        `You need ${item.cost - coins} more.`
       );
       return;
     }
     Alert.alert(
-      `Buy ${item.name}?`,
-      `${item.name} costs ${item.cost} coins. You have ${coins}.`,
+      `Get ${item.name}?`,
+      `${item.cost} coins. You have ${coins}.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -108,7 +90,7 @@ export default function ShopScreen() {
             const ok = spendCoins(item.cost);
             if (ok) {
               setOwned(prev => new Set([...prev, item.id]));
-              Alert.alert('Purchased', `${item.name} is ready for your next focus session.`);
+              Alert.alert('Ready', `${item.name} is saved.`);
             }
           },
         },
@@ -121,7 +103,7 @@ export default function ShopScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.kicker}>Rewards</Text>
+          <Text style={styles.kicker}>Coins</Text>
           <Text style={styles.heading}>Rewards</Text>
         </View>
         <View style={styles.balanceBadge}>
@@ -129,11 +111,7 @@ export default function ShopScreen() {
           <Text style={styles.balanceLabel}>coins</Text>
         </View>
       </View>
-      <View style={styles.shopIntro}>
-        <Text style={styles.sub}>Use coins from focus sessions.</Text>
-      </View>
-
-      <Text style={styles.shelfLabel}>Study boosts</Text>
+      <Text style={styles.shelfLabel}>Available</Text>
       {ITEMS.map(item => {
         const isOwned = owned.has(item.id);
         const canAfford = coins >= item.cost;
@@ -146,12 +124,9 @@ export default function ShopScreen() {
                 </Text>
                 <Text style={styles.priceLabel}>coins</Text>
               </View>
-              <View style={styles.cardTop}>
-                <Text style={styles.itemInitials}>{item.initials}</Text>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemDesc}>{item.description}</Text>
-                </View>
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemDesc}>{item.description}</Text>
               </View>
             </View>
 
@@ -173,8 +148,6 @@ export default function ShopScreen() {
           </View>
         );
       })}
-
-      <Text style={styles.footer}>Rewards rotate as your study streak grows.</Text>
     </ScrollView>
   );
 }
@@ -184,34 +157,32 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   container: { paddingHorizontal: 20, paddingTop: 44, paddingBottom: 118 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
-  kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
+  kicker: { color: theme.primary, fontSize: 12, fontWeight: '700', letterSpacing: 0, marginBottom: 5 },
   heading: { fontSize: 26, fontWeight: '700', color: theme.text },
   balanceBadge: {
     minWidth: 72,
-    backgroundColor: theme.school ? theme.secondary : theme.primary,
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderWidth: 1,
-    borderColor: theme.school ? theme.secondary : theme.primary,
-    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.primary,
+    paddingHorizontal: 2,
+    paddingVertical: 6,
+    alignItems: 'flex-end',
   },
-  balanceText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 16, fontWeight: '700' },
-  balanceLabel: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginTop: 1 },
-  shopIntro: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 14, marginBottom: 22 },
+  balanceText: { color: theme.text, fontSize: 16, fontWeight: '700' },
+  balanceLabel: { color: theme.muted, fontSize: 10, fontWeight: '700', marginTop: 1 },
+  shopIntro: { display: 'none' },
   sub: { color: theme.muted, fontSize: 14, lineHeight: 20, marginBottom: 6 },
-  earn: { color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
-  shelfLabel: { color: theme.text, fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  earn: { color: theme.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
+  shelfLabel: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 10 },
 
   card: {
     borderTopWidth: 1,
     borderTopColor: theme.border,
     paddingVertical: 14,
   },
-  cardOwned: { backgroundColor: theme.surfaceAlt, borderRadius: 16, paddingHorizontal: 12, borderTopWidth: 0, marginBottom: 8 },
+  cardOwned: { backgroundColor: 'transparent', paddingHorizontal: 0, borderTopWidth: 1, marginBottom: 0 },
   rewardMain: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   cardTop: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', marginBottom: 0 },
-  itemInitials: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 14, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', fontSize: 14, fontWeight: '800', marginRight: 12, marginTop: 2, width: 44, height: 44, lineHeight: 44 },
+  itemInitials: { display: 'none' },
   itemInfo: { flex: 1 },
   itemTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' },
   itemName: { color: theme.text, fontSize: 16, fontWeight: '700' },
@@ -222,7 +193,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   priceColumn: { width: 50, alignItems: 'center' },
   priceLabel: { color: theme.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginTop: 2 },
   cardBottom: { alignItems: 'flex-end', gap: 8, marginTop: 10 },
-  cost: { color: theme.secondary, fontSize: 15, fontWeight: '700' },
+  cost: { color: theme.primary, fontSize: 15, fontWeight: '700' },
   costUnaffordable: { color: theme.muted },
 
   buyBtn: {
@@ -231,13 +202,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.primary,
-    borderRadius: 999,
+    borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 9,
   },
   buyBtnDisabled: { backgroundColor: theme.border },
   buyBtnOwned: { backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.primary },
-  buyBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  buyBtnText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700' },
   buyBtnTextOwned: { color: theme.primary },
 
   footer: { color: theme.muted, fontSize: 13, textAlign: 'center', marginTop: 12 },

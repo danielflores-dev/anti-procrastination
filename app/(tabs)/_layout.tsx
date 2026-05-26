@@ -45,7 +45,7 @@ function TabIcon({ name, color, focused }: { name: TabIconName; color: string; f
 export default function TabsLayout() {
   const { coins } = useCoins();
   const { theme } = useSchoolTheme();
-  const activeTint = theme.school ? theme.secondary : theme.primary;
+  const activeTint = theme.primary;
 
   return (
     <Tabs
@@ -103,7 +103,7 @@ export default function TabsLayout() {
           title: 'Rewards',
           tabBarIcon: ({ color, focused }) => <TabIcon name="coins" color={color} focused={focused} />,
           tabBarBadge: coins > 0 ? coins : undefined,
-          tabBarBadgeStyle: { backgroundColor: theme.secondary, color: theme.school ? '#111' : theme.text, fontSize: 10, fontWeight: '700' },
+          tabBarBadgeStyle: { backgroundColor: theme.primary, color: theme.onPrimary, fontSize: 10, fontWeight: '700' },
         }}
       />
     </Tabs>

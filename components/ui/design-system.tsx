@@ -37,8 +37,8 @@ export function ThemeButton({
   ...props
 }: ThemeButtonProps) {
   const { theme } = useSchoolTheme();
-  const actionColor = theme.school ? theme.secondary : theme.primary;
-  const actionText = theme.school ? theme.background : theme.onPrimary;
+  const actionColor = theme.primary;
+  const actionText = theme.onPrimary;
 
   const variantStyle: ViewStyle =
     variant === 'primary'
@@ -46,10 +46,10 @@ export function ThemeButton({
           backgroundColor: actionColor,
           borderColor: actionColor,
           shadowColor: actionColor,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: theme.school ? 0.14 : 0.22,
-          shadowRadius: theme.school ? 6 : 8,
-          elevation: 4,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.06,
+          shadowRadius: 4,
+          elevation: 1,
         }
       : variant === 'danger'
         ? { backgroundColor: 'transparent', borderColor: '#EF4444' }
@@ -96,7 +96,7 @@ export function ThemeCard({ children, variant = 'surface', style }: ThemeCardPro
         {
           backgroundColor: variant === 'alt' ? theme.surfaceAlt : theme.surface,
           borderColor: theme.border,
-          shadowColor: elevated ? (theme.school ? theme.secondary : theme.primary) : 'transparent',
+          shadowColor: elevated ? theme.primary : 'transparent',
         },
         elevated && cardStyles.elevated,
         style,
@@ -117,8 +117,7 @@ type ThemeChipProps = {
 
 export function ThemeChip({ children, selected = false, onPress, style, textStyle }: ThemeChipProps) {
   const { theme } = useSchoolTheme();
-  const actionColor = theme.school ? theme.secondary : theme.primary;
-  const actionText = theme.school ? theme.background : theme.onPrimary;
+  const actionColor = theme.primary;
   const Container = onPress ? TouchableOpacity : View;
 
   return (
@@ -128,13 +127,13 @@ export function ThemeChip({ children, selected = false, onPress, style, textStyl
       style={[
         chipStyles.base,
         {
-          backgroundColor: selected ? actionColor : theme.surfaceAlt,
+          backgroundColor: selected ? theme.surface : theme.surfaceAlt,
           borderColor: selected ? actionColor : theme.border,
         },
         style,
       ]}
     >
-      <Text style={[chipStyles.text, { color: selected ? actionText : theme.text }, textStyle]}>{children}</Text>
+      <Text style={[chipStyles.text, { color: selected ? actionColor : theme.text }, textStyle]}>{children}</Text>
     </Container>
   );
 }
@@ -188,7 +187,7 @@ export function ThemeField({
 const buttonStyles = StyleSheet.create({
   base: {
     minHeight: 44,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -197,7 +196,7 @@ const buttonStyles = StyleSheet.create({
   },
   sm: { paddingHorizontal: 12, paddingVertical: 8, minHeight: 44 },
   md: { paddingHorizontal: 14, paddingVertical: 12 },
-  lg: { paddingHorizontal: 18, paddingVertical: 15, borderRadius: 16 },
+  lg: { paddingHorizontal: 18, paddingVertical: 15, borderRadius: 12 },
   fullWidth: { flex: 1 },
   text: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
   textSm: { fontSize: 12 },
@@ -205,22 +204,22 @@ const buttonStyles = StyleSheet.create({
 
 const cardStyles = StyleSheet.create({
   base: {
-    borderRadius: 18,
+    borderRadius: 10,
     borderWidth: 1,
     padding: 14,
   },
   elevated: {
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
 });
 
 const chipStyles = StyleSheet.create({
   base: {
     minHeight: 44,
-    borderRadius: 999,
+    borderRadius: 10,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -232,7 +231,7 @@ const chipStyles = StyleSheet.create({
 
 const fieldStyles = StyleSheet.create({
   input: {
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     fontSize: 14,
     paddingHorizontal: 12,

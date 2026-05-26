@@ -40,7 +40,7 @@ const SAMPLE_RESULT: AIResult = {
   estimatedHours: 2.5,
   workload: 'Medium',
   confidence: 'Good starting point',
-  reasoning: 'Based on the page count, notes, and a short reflection, this should take about two focused sittings. Adjust it if your class usually takes longer.',
+  reasoning: 'This looks like reading, notes, and a short reflection. Two focused sittings should be enough for a first plan.',
   factors: [
     { label: 'Reading load', value: '35 pages' },
     { label: 'Writing', value: '1 page of notes' },
@@ -50,8 +50,8 @@ const SAMPLE_RESULT: AIResult = {
 
 const ADJUSTMENT_PRESETS = [
   { label: 'I read fast', delta: -0.5 },
-  { label: 'Need breaks', delta: 0.5 },
-  { label: 'Heavy notes', delta: 1 },
+  { label: 'Need more time', delta: 0.5 },
+  { label: 'Lots of notes', delta: 1 },
   { label: 'Reset', delta: 0 },
 ];
 
@@ -101,7 +101,7 @@ export default function AutoAddScreen() {
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert('Photo access needed', 'Allow photo access so we can estimate this assignment.');
+      Alert.alert('Photo access needed', 'Allow photo access to read this assignment.');
       return;
     }
 
@@ -173,7 +173,7 @@ export default function AutoAddScreen() {
     setIsDragOver(false);
     const file: File | undefined = event.nativeEvent?.dataTransfer?.files?.[0];
     if (!file) {
-      Alert.alert('No file found', 'Drop an image file of your assignment.');
+      Alert.alert('No file found', 'Drop an assignment image.');
       return;
     }
     if (!file.type.startsWith('image/')) {
@@ -197,8 +197,8 @@ export default function AutoAddScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.analyzingText, { color: theme.text }]}>Estimating study time...</Text>
-        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Reading the assignment details</Text>
+        <Text style={[styles.analyzingText, { color: theme.text }]}>Reading assignment...</Text>
+        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Making a first time plan</Text>
       </View>
     );
   }
@@ -215,7 +215,7 @@ export default function AutoAddScreen() {
 
       {step === 'pick' && (
         <>
-          <Text style={styles.sub}>Upload the assignment sheet or try the built-in example. You can adjust the time before focus starts.</Text>
+          <Text style={styles.sub}>Add a photo of the assignment. You can change the time before focus starts.</Text>
 
           {Platform.OS === 'web' && (
             <DropView
@@ -225,8 +225,8 @@ export default function AutoAddScreen() {
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
             >
-              <Text style={styles.dropIcon}>☁️</Text>
-              <Text style={styles.dropTitle}>{isDragOver ? 'Drop the image' : 'Drop assignment image'}</Text>
+              <Text style={styles.dropIcon}>+</Text>
+              <Text style={styles.dropTitle}>{isDragOver ? 'Drop it here' : 'Drop assignment photo'}</Text>
               <Text style={styles.dropSub}>PNG or JPG</Text>
             </DropView>
           )}
@@ -242,7 +242,7 @@ export default function AutoAddScreen() {
           </ThemeButton>
 
           <ThemeButton size="lg" variant="secondary" style={styles.actionGap} onPress={() => analyzeImage()}>
-            Try example assignment
+            Use sample assignment
           </ThemeButton>
 
           <ThemeButton variant="ghost" onPress={() => router.back()}>Cancel</ThemeButton>
@@ -264,15 +264,15 @@ export default function AutoAddScreen() {
             <Text style={styles.cardValue}>{result.className}</Text>
           </ThemeCard>
           <ThemeCard variant="elevated" style={styles.estimateHero}>
-            <Text style={styles.cardLabel}>Estimated time</Text>
+            <Text style={styles.cardLabel}>Time plan</Text>
             <Text style={styles.estimateHours}>{formatHours(result.estimatedHours)}</Text>
             <Text style={styles.estimateSub}>{result.workload} workload</Text>
             <Text style={styles.confidenceText}>{result.confidence}</Text>
           </ThemeCard>
           <ThemeCard style={styles.card}>
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardLabel}>Why this time?</Text>
-              <Text style={styles.cardMeta}>Editable</Text>
+              <Text style={styles.cardLabel}>Why this estimate?</Text>
+              <Text style={styles.cardMeta}>You can change it</Text>
             </View>
             <Text style={styles.cardReasoning}>{result.reasoning}</Text>
             <View style={styles.factorList}>
@@ -285,7 +285,7 @@ export default function AutoAddScreen() {
             </View>
           </ThemeCard>
 
-          <Text style={styles.sectionTitle}>Your time</Text>
+          <Text style={styles.sectionTitle}>Adjust time</Text>
           <View style={styles.timeAdjuster}>
             <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(-0.5)}>
               <Text style={styles.adjBtnText}>-</Text>
@@ -315,7 +315,7 @@ export default function AutoAddScreen() {
           <ThemeCard style={styles.planCard}>
             <Text style={styles.cardLabel}>Focus plan</Text>
             <Text style={styles.planTitle}>{getFocusPlan(adjustedHours)}</Text>
-            <Text style={styles.planText}>You can change this later if the assignment feels easier or harder than expected.</Text>
+            <Text style={styles.planText}>Change this later if the assignment feels easier or harder than expected.</Text>
           </ThemeCard>
 
           <Text style={styles.sectionTitle}>Due date</Text>

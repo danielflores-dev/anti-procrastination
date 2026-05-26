@@ -33,13 +33,11 @@ function AssignmentCard({
   task,
   onFocus,
   onProgress,
-  onToggleStep,
   styles,
 }: {
   task: Task;
   onFocus: () => void;
   onProgress: () => void;
-  onToggleStep: (stepId: string) => void;
   styles: ReturnType<typeof createStyles>;
 }) {
   const days = daysUntil(task.dueDateRaw);
@@ -86,7 +84,7 @@ function AssignmentCard({
             <Text style={styles.breakdownCount}>{doneSteps}/{steps.length}</Text>
           </View>
           {steps.map(step => (
-            <TouchableOpacity key={step.id} style={styles.stepRow} onPress={() => onToggleStep(step.id)} activeOpacity={0.8}>
+            <TouchableOpacity key={step.id} style={styles.stepRow} activeOpacity={0.8}>
               <View style={[styles.stepCheck, step.done && styles.stepCheckDone]}>
                 <Text style={styles.stepCheckText}>{step.done ? '✓' : ''}</Text>
               </View>
@@ -116,11 +114,10 @@ function AssignmentCard({
 
 export default function SinglePlayerScreen() {
   const router = useRouter();
-  const { tasks, updateProgress, toggleTaskStep } = useTasks();
+  const { tasks, updateProgress } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const totalHours = tasks.reduce((sum, task) => sum + task.estimatedHours, 0);
   const urgentCount = tasks.filter(task => daysUntil(task.dueDateRaw) <= 2 && task.progress !== 'Done').length;
   const doneCount = tasks.filter(task => task.progress === 'Done').length;
 
@@ -130,57 +127,20 @@ export default function SinglePlayerScreen() {
         <View>
           <Text style={styles.kicker}>Work</Text>
           <Text style={styles.greeting}>Assignments</Text>
-          <Text style={styles.date}>Pick one task and start.</Text>
+          <Text style={styles.date}>What needs focus.</Text>
         </View>
         <View style={styles.countPill}>
           <Text style={styles.countPillText}>{tasks.length}</Text>
         </View>
       </View>
 
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{totalHours}h</Text>
-          <Text style={styles.statLabel}>hours</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, urgentCount > 0 && styles.statUrgent]}>{urgentCount}</Text>
-          <Text style={styles.statLabel}>urgent</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{doneCount}</Text>
-          <Text style={styles.statLabel}>done</Text>
-        </View>
-      </View>
-
-      <View style={styles.loopHintPanel}>
-        <Text style={styles.loopHintKicker}>Core loop</Text>
-        <Text style={styles.loopHintTitle}>
-          {tasks.length === 0 ? 'Add assignment first' : 'Pick a task and start focus'}
-        </Text>
-        <Text style={styles.loopHintText}>
-          {tasks.length === 0
-            ? 'After it is added, the focus timer turns study time into coins and streak progress.'
-            : 'A saved focus session earns coins, builds your streak, and can become a group session later.'}
-        </Text>
-      </View>
-
       {tasks.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <Text style={styles.emptyIconText}>1</Text>
-          </View>
-          <Text style={styles.emptyTitle}>Your focus queue is empty</Text>
-          <Text style={styles.emptySub}>Add one assignment and it becomes a timer, a short plan, and coins when you finish.</Text>
-          <View style={styles.emptyPreview}>
-            <Text style={styles.emptyPreviewLabel}>Example queue item</Text>
-            <Text style={styles.emptyPreviewTitle}>Read chapter 4 before lab</Text>
-            <Text style={styles.emptyPreviewMeta}>45m estimate, 3 focus steps, study tonight</Text>
-          </View>
+          <Text style={styles.emptyTitle}>No assignments yet</Text>
+          <Text style={styles.emptySub}>Add the next thing due.</Text>
           <View style={styles.emptyActions}>
             <ThemeButton size="lg" onPress={() => router.push('/auto-add')}>
-              Try example assignment
+              Add assignment
             </ThemeButton>
             <ThemeButton size="lg" variant="secondary" onPress={() => router.push('/add-task')}>
               Add manually
@@ -190,8 +150,8 @@ export default function SinglePlayerScreen() {
       ) : (
         <View style={styles.queueArea}>
           <View style={styles.queueHeader}>
-            <Text style={styles.queueTitle}>Focus queue</Text>
-            <Text style={styles.queueHint}>Top task first</Text>
+            <Text style={styles.queueTitle}>Queue</Text>
+            <Text style={styles.queueHint}>{urgentCount > 0 ? `${urgentCount} urgent` : `${doneCount} done`}</Text>
           </View>
           <FlatList
             data={tasks}
@@ -205,7 +165,6 @@ export default function SinglePlayerScreen() {
                 styles={styles}
                 onFocus={() => router.push(`/focus?id=${item.id}`)}
                 onProgress={() => updateProgress(item.id, nextProgress(item.progress))}
-                onToggleStep={stepId => toggleTaskStep(item.id, stepId)}
               />
             )}
           />
@@ -214,7 +173,7 @@ export default function SinglePlayerScreen() {
 
       <View style={styles.bottomBar}>
         <ThemeButton fullWidth size="lg" variant="secondary" style={styles.autoBtn} onPress={() => router.push('/auto-add')}>
-          Estimate from photo
+          Plan from photo
         </ThemeButton>
         <TouchableOpacity style={styles.fab} onPress={() => router.push('/add-task')} activeOpacity={0.85}>
           <Text style={styles.fabIcon}>+</Text>
@@ -227,11 +186,11 @@ export default function SinglePlayerScreen() {
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background, paddingTop: 36 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 16 },
-  kicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
+  kicker: { color: theme.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
   greeting: { fontSize: 26, fontWeight: '700', color: theme.text },
   date: { fontSize: 13, color: theme.muted, marginTop: 4, fontWeight: '600', lineHeight: 18 },
-  countPill: { backgroundColor: theme.surfaceAlt, borderRadius: 18, minWidth: 40, height: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: theme.border },
-  countPillText: { color: theme.text, fontSize: 16, fontWeight: '700' },
+  countPill: { minWidth: 28, height: 32, alignItems: 'center', justifyContent: 'center' },
+  countPillText: { color: theme.muted, fontSize: 14, fontWeight: '700' },
   statsRow: { display: 'none' },
   statItem: { flex: 1, alignItems: 'center' },
   statValue: { color: theme.text, fontSize: 20, fontWeight: '700' },
@@ -239,7 +198,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   statLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   statDivider: { width: 1, backgroundColor: theme.border },
   loopHintPanel: { display: 'none' },
-  loopHintKicker: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
+  loopHintKicker: { color: theme.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.35, marginBottom: 5, textTransform: 'uppercase' },
   loopHintTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   loopHintText: { color: theme.muted, fontSize: 13, lineHeight: 18, fontWeight: '600' },
   queueArea: { flex: 1 },
@@ -253,26 +212,19 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     backgroundColor: theme.surface,
     borderRadius: 0,
     paddingVertical: 16,
-    paddingLeft: 18,
+    paddingLeft: 0,
     paddingRight: 2,
     marginBottom: 0,
     borderWidth: 0,
     borderTopWidth: 1,
     borderTopColor: theme.border,
   },
-  queueRail: {
-    position: 'absolute',
-    left: 0,
-    top: 18,
-    bottom: 18,
-    width: 4,
-    borderRadius: 999,
-  },
+  queueRail: { display: 'none' },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   cardTitles: { flex: 1, marginRight: 10 },
   cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   cardClass: { color: theme.muted, fontSize: 13, fontWeight: '600' },
-  hourPill: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  hourPill: { borderRadius: 0, paddingHorizontal: 0, paddingVertical: 0, backgroundColor: 'transparent' },
   hourPillText: { fontSize: 13, fontWeight: '700' },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border },
   metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 },
@@ -282,17 +234,17 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   focusButton: {
     flex: 1,
-    backgroundColor: theme.school ? theme.secondary : theme.primary,
+    backgroundColor: theme.primary,
     borderRadius: 14,
     paddingVertical: 13,
     alignItems: 'center',
-    shadowColor: theme.school ? theme.secondary : theme.primary,
+    shadowColor: theme.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
     shadowRadius: 8,
     elevation: 4,
   },
-  focusButtonText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 14, fontWeight: '700' },
+  focusButtonText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700' },
   progressButton: { borderRadius: 14, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surfaceAlt, paddingHorizontal: 12, paddingVertical: 13 },
   progressButtonText: { fontSize: 12, fontWeight: '700' },
   breakdownBox: { display: 'none' },
@@ -307,23 +259,23 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   stepTextDone: { color: theme.muted, textDecorationLine: 'line-through' },
   planBox: { display: 'none' },
   planRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  planDate: { width: 66, color: theme.school ? theme.secondary : theme.accent, fontSize: 12, fontWeight: '700' },
+  planDate: { width: 66, color: theme.primary, fontSize: 12, fontWeight: '700' },
   planTextWrap: { flex: 1 },
   planFocus: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 17 },
   planMinutes: { color: theme.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
   emptyState: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingBottom: 92 },
-  emptyIcon: { width: 58, height: 58, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.school ? theme.secondary : theme.primary, marginBottom: 18 },
-  emptyIconText: { color: theme.school ? theme.background : theme.onPrimary, fontSize: 22, fontWeight: '700' },
+  emptyIcon: { display: 'none' },
+  emptyIconText: { color: theme.primary, fontSize: 22, fontWeight: '700' },
   emptyTitle: { color: theme.text, fontSize: 20, fontWeight: '700', marginBottom: 8 },
   emptySub: { color: theme.muted, fontSize: 15, lineHeight: 22, maxWidth: 310 },
-  emptyPreview: { marginTop: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 14 },
-  emptyPreviewLabel: { color: theme.school ? theme.secondary : theme.accent, fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 6 },
+  emptyPreview: { display: 'none' },
+  emptyPreviewLabel: { color: theme.primary, fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 6 },
   emptyPreviewTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   emptyPreviewMeta: { color: theme.muted, fontSize: 13, fontWeight: '700' },
   emptyActions: { gap: 10, marginTop: 22 },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 24, paddingTop: 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border },
-  autoBtn: { flex: 1, marginRight: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, alignItems: 'center' },
+  autoBtn: { flex: 1, marginRight: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, alignItems: 'center' },
   autoBtnText: { color: theme.text, fontSize: 14, fontWeight: '700' },
-  fab: { width: 56, height: 56, borderRadius: 20, backgroundColor: theme.school ? theme.secondary : theme.primary, alignItems: 'center', justifyContent: 'center', shadowColor: theme.school ? theme.secondary : theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 },
+  fab: { width: 56, height: 56, borderRadius: 12, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center', shadowColor: theme.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 5, elevation: 1 },
   fabIcon: { color: '#ffffff', fontSize: 26, fontWeight: '300', lineHeight: 34, marginTop: -2 },
 });
