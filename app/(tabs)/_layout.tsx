@@ -9,8 +9,8 @@ import { Animated, Easing } from 'react-native';
 type TabIconName = ComponentProps<typeof FontAwesome5>['name'];
 
 function TabIcon({ name, color, focused }: { name: TabIconName; color: string; focused: boolean }) {
-  const scale = useRef(new Animated.Value(focused ? 1.08 : 1)).current;
-  const lift = useRef(new Animated.Value(focused ? -2 : 0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const lift = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -21,13 +21,13 @@ function TabIcon({ name, color, focused }: { name: TabIconName; color: string; f
     }
     Animated.parallel([
       Animated.timing(scale, {
-        toValue: focused ? 1.08 : 1,
+        toValue: 1,
         duration: 180,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(lift, {
-        toValue: focused ? -2 : 0,
+        toValue: 0,
         duration: 180,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
@@ -58,15 +58,15 @@ export default function TabsLayout() {
           height: 76,
           paddingBottom: 14,
           paddingTop: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.4,
-          shadowRadius: 12,
-          elevation: 16,
+          shadowColor: 'transparent',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
         },
         tabBarActiveTintColor: activeTint,
         tabBarInactiveTintColor: theme.tabInactive,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.2 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500', letterSpacing: 0 },
       }}
     >
       <Tabs.Screen

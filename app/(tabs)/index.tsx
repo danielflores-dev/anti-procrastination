@@ -1,9 +1,8 @@
-import { ThemeButton } from '@/components/ui/design-system';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { type Href, useRouter } from 'expo-router';
-import { type ComponentProps, useMemo } from 'react';
+import { type ComponentProps, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function getGreeting(): string {
@@ -45,7 +44,6 @@ function getStudyStreak(sessions: StudySession[]): number {
 
 type StudyPlanStep = {
   id: string;
-  step: string;
   title: string;
   detail: string;
   icon: ComponentProps<typeof FontAwesome5>['name'];
@@ -83,7 +81,6 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
     firstTask
       ? {
           id: `first-${firstTask.id}`,
-          step: 'First',
           title: firstTask.assignmentName,
           detail: `${duePhrase(firstTask)}. ${Math.round(firstTask.hoursPerDay * 60)} min.`,
           icon: 'play',
@@ -91,7 +88,6 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
         }
       : {
           id: 'first-add-assignment',
-          step: 'First',
           title: 'Add work',
           detail: 'Add what is due next.',
           icon: 'plus',
@@ -100,7 +96,6 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
     secondTask
       ? {
           id: `then-${secondTask.id}`,
-          step: 'Then',
           title: secondTask.assignmentName,
           detail: duePhrase(secondTask),
           icon: 'clipboard-list',
@@ -108,7 +103,6 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
         }
       : {
           id: 'then-schedule',
-          step: 'Then',
           title: 'Check schedule',
           detail: 'Make room for study time.',
           icon: 'calendar-alt',
@@ -116,7 +110,6 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
         },
     {
       id: recentRoom ? 'later-room-rejoin' : 'later-room-find',
-      step: 'Later',
       title: recentRoom ? `Rejoin ${recentRoom}` : 'Find a room',
       detail: recentRoom ? 'Return when you are ready.' : 'Find people when it helps.',
       icon: 'user-friends',
@@ -130,6 +123,7 @@ export default function HomeScreen() {
   const { tasks, sessions } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const [showStreakInfo, setShowStreakInfo] = useState(false);
 
   const openTasks = tasks.filter(task => task.progress !== 'Done');
   const nextTask = getNextTask(tasks);
@@ -138,9 +132,78 @@ export default function HomeScreen() {
   const streak = getStudyStreak(sessions);
   const todayStudyPlan = buildTodayStudyPlan(openTasks, sessions);
   const primaryRoute: Href = nextTask ? `/focus?id=${nextTask.id}` : '/auto-add';
+  const achievements = [
+    {
+      id: 'focus-30',
+      title: 'Study for 30 min',
+      reward: 20,
+      progress: Math.min(1, focusedMinutes / 30),
+      current: `${Math.min(focusedMinutes, 30)}/30 min`,
+      icon: 'clock' as ComponentProps<typeof FontAwesome5>['name'],
+    },
+    {
+      id: 'focus-60',
+      title: 'Study for 1 hour',
+      reward: 45,
+      progress: Math.min(1, focusedMinutes / 60),
+      current: `${Math.min(focusedMinutes, 60)}/60 min`,
+      icon: 'hourglass-half' as ComponentProps<typeof FontAwesome5>['name'],
+    },
+    {
+      id: 'streak-3',
+      title: 'Keep a 3 day streak',
+      reward: 60,
+      progress: Math.min(1, streak / 3),
+      current: `${Math.min(streak, 3)}/3 days`,
+      icon: 'fire' as ComponentProps<typeof FontAwesome5>['name'],
+    },
+  ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          style={[styles.statCapsule, styles.streakCapsule]}
+          onPress={() => setShowStreakInfo(current => !current)}
+          activeOpacity={0.85}
+          accessibilityLabel="Show streak details"
+        >
+          <FontAwesome5 name="fire" size={12} color="#F59E0B" />
+          <Text style={styles.statCapsuleText}>{streak}</Text>
+        </TouchableOpacity>
+        <View style={styles.topStatsRight}>
+        <View style={styles.statCapsule}>
+          <FontAwesome5 name="coins" size={12} color="#D9A441" />
+          <Text style={styles.statCapsuleText}>{totalCoins}</Text>
+        </View>
+        <View style={styles.statCapsule}>
+          <FontAwesome5 name="clock" size={12} color={theme.primary} />
+          <Text style={styles.statCapsuleText}>{focusedMinutes}m</Text>
+        </View>
+        </View>
+      </View>
+
+      {showStreakInfo && (
+        <View style={styles.streakPopover}>
+          <View style={styles.streakPopoverArrow} />
+          <View style={styles.streakInfoHeader}>
+            <FontAwesome5 name="fire" size={13} color="#F59E0B" />
+            <Text style={styles.streakInfoTitle}>Streak</Text>
+            <TouchableOpacity
+              style={styles.streakCloseButton}
+              onPress={() => setShowStreakInfo(false)}
+              activeOpacity={0.8}
+              accessibilityLabel="Close streak details"
+            >
+              <FontAwesome5 name="times" size={11} color={theme.muted} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.streakInfoText}>
+            Days in a row you finish a focus session. Study once today to keep it going.
+          </Text>
+        </View>
+      )}
+
       <View style={styles.header}>
         <View>
           <Text style={styles.kicker}>Today</Text>
@@ -156,68 +219,78 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.nextPanel}>
-        <Text style={styles.panelLabel}>Now</Text>
-        <Text style={styles.nextTitle}>
-          {nextTask ? nextTask.assignmentName : 'Add work'}
-        </Text>
-        <Text style={styles.nextMeta}>
-          {nextTask
-            ? `${duePhrase(nextTask)}. ${Math.round(nextTask.hoursPerDay * 60)} minutes.`
-            : 'Add one due date.'}
-        </Text>
-        <ThemeButton size="lg" onPress={() => router.push(primaryRoute)}>
-          {nextTask ? 'Start focus' : 'Add assignment'}
-        </ThemeButton>
+      <View style={styles.pathHeader}>
+        <Text style={styles.sectionTitle}>Study path</Text>
+        <Text style={styles.sectionHint}>Tap the next step.</Text>
       </View>
 
-      <View style={styles.studyPlanSection}>
-        <View style={styles.studyPlanHeader}>
-          <Text style={styles.sectionTitle}>{"Today's plan"}</Text>
-          <Text style={styles.sectionHint}>Small steps for today.</Text>
+      <View style={styles.path}>
+        {todayStudyPlan.map((item, index) => {
+          const isActive = index === 0;
+          const alignStyle = index % 2 === 0 ? styles.pathNodeLeft : styles.pathNodeRight;
+          return (
+            <View key={item.id} style={styles.pathRow}>
+              {index < todayStudyPlan.length - 1 && <View style={styles.pathLine} />}
+              <TouchableOpacity
+                style={[styles.pathNodeWrap, alignStyle]}
+                onPress={() => router.push(index === 0 ? primaryRoute : item.route)}
+                activeOpacity={0.88}
+              >
+                <View style={[styles.pathNode, isActive && styles.pathNodeActive]}>
+                  <FontAwesome5
+                    name={item.icon}
+                    size={isActive ? 24 : 18}
+                    color={isActive ? theme.onPrimary : theme.primary}
+                  />
+                </View>
+                <View style={[styles.nodeLabel, isActive && styles.nodeLabelActive]}>
+                  <Text style={[styles.nodeTitle, isActive && styles.nodeTitleActive]} numberOfLines={2}>
+                    {index === 0 && !nextTask ? 'Add assignment' : item.title}
+                  </Text>
+                  <Text style={[styles.nodeDetail, isActive && styles.nodeDetailActive]} numberOfLines={2}>
+                    {item.detail}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.achievementSection}>
+        <View style={styles.achievementHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Achievements</Text>
+            <Text style={styles.sectionHint}>Small goals for extra coins.</Text>
+          </View>
+          <View style={styles.rewardBadge}>
+            <FontAwesome5 name="coins" size={12} color="#D9A441" />
+            <Text style={styles.rewardBadgeText}>Rewards</Text>
+          </View>
         </View>
 
-        {todayStudyPlan.map((item, index) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.planStep}
-            onPress={() => router.push(item.route)}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.planIcon, index === 0 && styles.planIconActive]}>
-              <FontAwesome5
-                name={item.icon}
-                size={10}
-                color={index === 0 ? theme.onPrimary : theme.muted}
-              />
-            </View>
-            <View style={styles.planCopy}>
-              <Text style={styles.planStepLabel}>{item.step}</Text>
-              <Text style={styles.planStepTitle}>{item.title}</Text>
-              <Text style={styles.planStepDetail}>{item.detail}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.quietStats}>
-        <Text style={styles.statText}>{streak} day streak</Text>
-        <View style={styles.statDot} />
-        <Text style={styles.statText}>{totalCoins} coins</Text>
-        <View style={styles.statDot} />
-        <Text style={styles.statText}>{focusedMinutes} min</Text>
-      </View>
-
-      <View style={styles.linkRow}>
-        <TouchableOpacity style={styles.textLink} onPress={() => router.push('/(tabs)/single-player')} activeOpacity={0.85}>
-          <Text style={styles.textLinkLabel}>Assignments</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.textLink} onPress={() => router.push('/(tabs)/calendar')} activeOpacity={0.85}>
-          <Text style={styles.textLinkLabel}>Schedule</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.textLink} onPress={() => router.push('/(tabs)/multi-player')} activeOpacity={0.85}>
-          <Text style={styles.textLinkLabel}>Study groups</Text>
-        </TouchableOpacity>
+        <View style={styles.achievementList}>
+          {achievements.map(item => {
+            const complete = item.progress >= 1;
+            return (
+              <View key={item.id} style={styles.achievementRow}>
+                <View style={[styles.achievementIcon, complete && styles.achievementIconComplete]}>
+                  <FontAwesome5 name={complete ? 'check' : item.icon} size={14} color={complete ? theme.onPrimary : theme.primary} />
+                </View>
+                <View style={styles.achievementCopy}>
+                  <View style={styles.achievementTopLine}>
+                    <Text style={styles.achievementTitle}>{item.title}</Text>
+                    <Text style={styles.achievementReward}>+{item.reward}</Text>
+                  </View>
+                  <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${Math.round(item.progress * 100)}%` }]} />
+                  </View>
+                  <Text style={styles.achievementProgress}>{complete ? 'Ready to claim' : item.current}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
       </View>
     </ScrollView>
   );
@@ -229,8 +302,96 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     backgroundColor: theme.background,
   },
   content: {
-    paddingTop: 38,
-    paddingBottom: 124,
+    paddingTop: 24,
+    paddingBottom: 118,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    marginBottom: 14,
+  },
+  topStatsRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statCapsule: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    paddingHorizontal: 10,
+  },
+  streakCapsule: {
+    borderColor: '#7A4E1D',
+  },
+  statCapsuleText: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  streakPopover: {
+    position: 'absolute',
+    top: 62,
+    left: 20,
+    zIndex: 20,
+    width: 270,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#7A4E1D',
+    backgroundColor: theme.surface,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  streakPopoverArrow: {
+    position: 'absolute',
+    top: -6,
+    left: 21,
+    width: 12,
+    height: 12,
+    borderLeftWidth: 1,
+    borderTopWidth: 1,
+    borderColor: '#7A4E1D',
+    backgroundColor: theme.surface,
+    transform: [{ rotate: '45deg' }],
+  },
+  streakInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 5,
+  },
+  streakInfoTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  streakCloseButton: {
+    marginLeft: 'auto',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+  },
+  streakInfoText: {
+    color: theme.muted,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   header: {
     flexDirection: 'row',
@@ -238,20 +399,20 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     alignItems: 'flex-start',
     gap: 14,
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 18,
   },
   kicker: {
     color: theme.primary,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     letterSpacing: 0.35,
     marginBottom: 5,
     textTransform: 'uppercase',
   },
   greeting: {
     color: theme.text,
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '600',
   },
   date: {
     color: theme.muted,
@@ -262,7 +423,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   schoolPill: {
     minHeight: 36,
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: theme.border,
     backgroundColor: theme.surface,
@@ -271,55 +432,16 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   schoolPillText: {
     color: theme.text,
     fontSize: 12,
-    fontWeight: '700',
-  },
-  nextPanel: {
-    marginHorizontal: 20,
-    marginBottom: 22,
-    borderRadius: 0,
-    borderWidth: 0,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
-  },
-  panelLabel: {
-    color: theme.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0,
-    marginBottom: 7,
-  },
-  nextTitle: {
-    color: theme.text,
-    fontSize: 22,
-    fontWeight: '700',
-    lineHeight: 28,
-    marginBottom: 7,
-  },
-  nextMeta: {
-    color: theme.muted,
-    fontSize: 13,
     fontWeight: '600',
-    lineHeight: 19,
-    marginBottom: 16,
   },
-  studyPlanSection: {
-    marginHorizontal: 20,
-    marginBottom: 18,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: theme.border,
-    paddingVertical: 15,
-  },
-  studyPlanHeader: {
-    marginBottom: 11,
+  pathHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 14,
   },
   sectionTitle: {
     color: theme.text,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     marginBottom: 3,
   },
   sectionHint: {
@@ -327,86 +449,187 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  planStep: {
-    minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 8,
+  path: {
+    paddingHorizontal: 20,
   },
-  planIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
+  pathRow: {
+    minHeight: 190,
+    position: 'relative',
   },
-  planIconActive: {
-    backgroundColor: theme.primary,
-  },
-  planCopy: {
-    flex: 1,
-  },
-  planStepLabel: {
-    color: theme.primary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0,
-    marginBottom: 2,
-  },
-  planStepTitle: {
-    color: theme.text,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-  planStepDetail: {
-    color: theme.muted,
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  quietStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginHorizontal: 20,
-    marginBottom: 18,
-  },
-  statText: {
-    color: theme.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  statDot: {
-    width: 3,
-    height: 3,
+  pathLine: {
+    position: 'absolute',
+    top: 88,
+    bottom: -18,
+    left: '50%',
+    width: 4,
+    marginLeft: -2,
     borderRadius: 2,
     backgroundColor: theme.border,
   },
-  linkRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginHorizontal: 20,
+  pathNodeWrap: {
+    width: '82%',
+    alignItems: 'center',
   },
-  textLink: {
-    minHeight: 44,
+  pathNodeLeft: {
+    alignSelf: 'flex-start',
+  },
+  pathNodeRight: {
+    alignSelf: 'flex-end',
+  },
+  pathNode: {
+    width: 82,
+    height: 72,
+    borderRadius: 26,
+    alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 0,
-    borderWidth: 0,
-    borderBottomWidth: 1,
+    borderWidth: 2,
     borderColor: theme.border,
-    paddingHorizontal: 12,
+    backgroundColor: theme.surface,
   },
-  textLinkLabel: {
+  pathNodeActive: {
+    width: 106,
+    height: 90,
+    borderRadius: 32,
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  nodeLabel: {
+    minWidth: 230,
+    maxWidth: 300,
+    alignItems: 'center',
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  nodeLabelActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.surfaceAlt,
+  },
+  nodeTitle: {
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  nodeTitleActive: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  nodeDetail: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  nodeDetailActive: {
+    color: theme.text,
+  },
+  achievementSection: {
+    marginHorizontal: 20,
+    marginTop: 6,
+    borderTopWidth: 1,
+    borderColor: theme.border,
+    paddingTop: 18,
+  },
+  achievementHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  rewardBadge: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    paddingHorizontal: 10,
+  },
+  rewardBadgeText: {
     color: theme.text,
     fontSize: 12,
     fontWeight: '700',
+  },
+  achievementList: {
+    gap: 10,
+  },
+  achievementRow: {
+    minHeight: 78,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    padding: 12,
+  },
+  achievementIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  achievementIconComplete: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+  achievementCopy: {
+    flex: 1,
+  },
+  achievementTopLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 8,
+  },
+  achievementTitle: {
+    flex: 1,
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  achievementReward: {
+    color: '#D9A441',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: theme.surfaceAlt,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: theme.primary,
+  },
+  achievementProgress: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
   },
 });

@@ -47,9 +47,9 @@ export function ThemeButton({
           borderColor: actionColor,
           shadowColor: actionColor,
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 4,
-          elevation: 1,
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
         }
       : variant === 'danger'
         ? { backgroundColor: 'transparent', borderColor: '#EF4444' }
@@ -187,7 +187,7 @@ export function ThemeField({
 const buttonStyles = StyleSheet.create({
   base: {
     minHeight: 44,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -196,42 +196,42 @@ const buttonStyles = StyleSheet.create({
   },
   sm: { paddingHorizontal: 12, paddingVertical: 8, minHeight: 44 },
   md: { paddingHorizontal: 14, paddingVertical: 12 },
-  lg: { paddingHorizontal: 18, paddingVertical: 15, borderRadius: 12 },
+  lg: { paddingHorizontal: 18, paddingVertical: 15, borderRadius: 9 },
   fullWidth: { flex: 1 },
-  text: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  text: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
   textSm: { fontSize: 12 },
 });
 
 const cardStyles = StyleSheet.create({
   base: {
-    borderRadius: 10,
+    borderRadius: 7,
     borderWidth: 1,
     padding: 14,
   },
   elevated: {
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
 });
 
 const chipStyles = StyleSheet.create({
   base: {
     minHeight: 44,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: { fontSize: 12, fontWeight: '700' },
+  text: { fontSize: 12, fontWeight: '600' },
 });
 
 const fieldStyles = StyleSheet.create({
   input: {
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     fontSize: 14,
     paddingHorizontal: 12,
@@ -243,7 +243,7 @@ const fieldStyles = StyleSheet.create({
   },
   meta: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     lineHeight: 16,
     marginTop: 5,
   },
