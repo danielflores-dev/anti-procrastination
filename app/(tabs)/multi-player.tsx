@@ -155,6 +155,12 @@ const FEED_KINDS: HelpPost['kind'][] = ['Help', 'Suggestion'];
 const MIN_STUDENT_AGE = 13;
 const MAX_STUDENT_AGE = 100;
 const MAX_ROOM_CAPACITY = 20;
+const BROWSE_TAB_META: Record<(typeof BROWSE_TABS)[number], { label: string; icon: ComponentProps<typeof FontAwesome5>['name'] }> = {
+  'Library rooms': { label: 'Rooms', icon: 'door-open' },
+  Profiles: { label: 'People', icon: 'user-friends' },
+  Friends: { label: 'Friends', icon: 'user-check' },
+  Feed: { label: 'Feed', icon: 'comment-alt' },
+};
 
 const noticeStyles = StyleSheet.create({
   wrap: {
@@ -447,6 +453,35 @@ export default function MultiPlayerScreen() {
   const selectedRoomMembers = selectedRoom
     ? SAMPLE_PROFILES.filter(profile => selectedRoom.memberIds.includes(profile.id))
     : [];
+  const campusStories = [
+    {
+      id: 'you',
+      label: profileHidden ? 'Hidden' : 'You',
+      icon: 'user' as ComponentProps<typeof FontAwesome5>['name'],
+      image: profileImage,
+      onPress: () => setProfileHidden(current => !current),
+    },
+    ...studyRooms.slice(0, 5).map(room => ({
+      id: room.id,
+      label: room.name.replace('Room ', ''),
+      icon: 'door-open' as ComponentProps<typeof FontAwesome5>['name'],
+      image: null,
+      onPress: () => {
+        setActiveBrowseTab('Library rooms');
+        setSelectedRoom(room);
+      },
+    })),
+    {
+      id: 'new-room',
+      label: 'Host',
+      icon: 'plus' as ComponentProps<typeof FontAwesome5>['name'],
+      image: null,
+      onPress: () => {
+        setActiveBrowseTab('Library rooms');
+        setShowRoomForm(true);
+      },
+    },
+  ];
 
   const pickProfileImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -787,6 +822,7 @@ export default function MultiPlayerScreen() {
     multiline,
     keyboardType,
     containerStyle,
+    showHelper = true,
   }: {
     value: string;
     onChangeText: (text: string) => void;
@@ -796,13 +832,14 @@ export default function MultiPlayerScreen() {
     multiline?: boolean;
     keyboardType?: TextInputKeyboardType;
     containerStyle?: StyleProp<ViewStyle>;
+    showHelper?: boolean;
   }) => (
     <ThemeField
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
       error={error}
-      helper={`${maxLength - value.length} left`}
+      helper={showHelper ? `${maxLength - value.length} left` : undefined}
       multiline={multiline}
       keyboardType={keyboardType}
       maxLength={maxLength}
@@ -847,86 +884,69 @@ export default function MultiPlayerScreen() {
 
   const renderProfileSetup = () => (
     <View style={styles.profileSection}>
-      <View style={styles.selectedSchool}>
-        <View style={styles.selectedSchoolTop}>
-          <View>
-            <Text style={styles.selectedSchoolLabel}>School</Text>
-            <Text style={styles.selectedSchoolText}>{selectedSchool}</Text>
-          </View>
+      <View style={styles.profileSetupPanel}>
+        <View style={styles.profileMiniSchool}>
           <View style={styles.schoolSwatches}>
             {(SCHOOL_COLOR_SWATCHES[selectedSchool] ?? [theme.primary, theme.secondary]).map(color => (
               <View key={color} style={[styles.schoolSwatch, { backgroundColor: color }]} />
             ))}
           </View>
-        </View>
-      </View>
-
-      <View style={styles.profileStarter}>
-        <View style={styles.profileStarterTop}>
-          <View style={styles.profileProgressPill}>
-            <Text style={styles.profileProgressText}>2 min</Text>
-          </View>
-          <Text style={styles.profileStarterNote}>Keep it short. You can edit it later.</Text>
-        </View>
-        <Text style={styles.profileTitle}>Set up profile</Text>
-        <Text style={styles.profileSub}>Name, major, and how you study.</Text>
-      </View>
-
-      <View style={styles.profilePreviewCard}>
-        <View style={styles.profilePreviewTop}>
-          {profileImage ? (
-            <Image source={{ uri: profileImage }} style={styles.previewImage} />
-          ) : (
-            <View style={styles.previewAvatar}>
-              <Text style={styles.previewAvatarText}>{(name.trim() || 'You').slice(0, 1)}</Text>
-            </View>
-          )}
           <View style={styles.profileHeadingText}>
-            <Text style={styles.previewName}>{name.trim() || 'Your name'}</Text>
-            <Text style={styles.previewMeta}>{major.trim() || 'Your major'} at {selectedSchool}</Text>
+            <Text style={styles.selectedSchoolLabel}>School</Text>
+            <Text style={styles.selectedSchoolText}>{selectedSchool}</Text>
           </View>
         </View>
-        <View style={styles.previewChipRow}>
-          <Text style={styles.metaChip}>{studyFocus}</Text>
-          <Text style={styles.metaChip}>{meetingPreference}</Text>
-          {!!availability.trim() && <Text style={styles.metaChip}>{availability.trim()}</Text>}
+
+        <View style={styles.profileComposerHeader}>
+          <TouchableOpacity style={styles.profileAvatarButton} onPress={pickProfileImage} activeOpacity={0.85}>
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.profileAvatarImage} />
+            ) : (
+              <View style={styles.profileAvatarEmpty}>
+                <Text style={styles.profileAvatarInitial}>{(name.trim() || 'Y').slice(0, 1)}</Text>
+              </View>
+            )}
+            <View style={styles.profilePhotoBadge}>
+              <FontAwesome5 name="camera" size={10} color={theme.onPrimary} />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.profileIntroCopy}>
+            <Text style={styles.profileTitle}>Create your profile</Text>
+            <Text style={[styles.profileSub, styles.profileIntroSub]}>Help classmates know who they are studying with.</Text>
+          </View>
+        </View>
+
+        <View style={styles.profileFormBlock}>
+          {renderField({
+            value: name,
+            onChangeText: text => {
+              setName(text);
+              clearProfileError('name');
+            },
+            placeholder: 'Name',
+            error: profileErrors.name,
+            maxLength: 40,
+            showHelper: false,
+          })}
+          {renderField({
+            value: major,
+            onChangeText: text => {
+              setMajor(text);
+              clearProfileError('major');
+            },
+            placeholder: 'Major or field',
+            error: profileErrors.major,
+            maxLength: 60,
+            showHelper: false,
+          })}
+        </View>
+
+        <View style={styles.profilePreviewLine}>
+          <Text style={styles.previewName}>{name.trim() || 'Your name'}</Text>
+          <Text style={styles.previewMeta}>{major.trim() || 'Your major'} at {selectedSchool}</Text>
         </View>
       </View>
-
-      <TouchableOpacity style={styles.photoButton} onPress={pickProfileImage} activeOpacity={0.85}>
-        {profileImage ? (
-          <Image source={{ uri: profileImage }} style={styles.profileImage} />
-        ) : (
-          <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoInitials}>+</Text>
-          </View>
-        )}
-        <View style={styles.photoTextWrap}>
-          <Text style={styles.photoTitle}>Add a photo</Text>
-          <Text style={styles.photoSub}>Optional.</Text>
-        </View>
-      </TouchableOpacity>
-
-      {renderField({
-        value: name,
-        onChangeText: text => {
-          setName(text);
-          clearProfileError('name');
-        },
-        placeholder: 'Your name',
-        error: profileErrors.name,
-        maxLength: 40,
-      })}
-      {renderField({
-        value: major,
-        onChangeText: text => {
-          setMajor(text);
-          clearProfileError('major');
-        },
-        placeholder: 'Major or field',
-        error: profileErrors.major,
-        maxLength: 60,
-      })}
 
       <Text style={styles.sectionLabel}>How do you want to meet?</Text>
       <View style={styles.choiceRow}>
@@ -947,7 +967,7 @@ export default function MultiPlayerScreen() {
       </View>
 
       <TouchableOpacity style={styles.profileExtrasToggle} onPress={() => setShowProfileExtras(current => !current)} activeOpacity={0.85}>
-        <Text style={styles.profileExtrasText}>{showProfileExtras ? 'Hide extra details' : 'Add more about me'}</Text>
+        <Text style={styles.profileExtrasText}>{showProfileExtras ? 'Hide optional details' : 'Add optional details'}</Text>
         <FontAwesome5 name={showProfileExtras ? 'chevron-up' : 'chevron-down'} size={12} color={theme.text} />
       </TouchableOpacity>
 
@@ -965,6 +985,7 @@ export default function MultiPlayerScreen() {
               maxLength: 3,
               keyboardType: 'number-pad',
               containerStyle: styles.halfInput,
+              showHelper: false,
             })}
             {renderField({
               value: year,
@@ -976,6 +997,7 @@ export default function MultiPlayerScreen() {
               error: profileErrors.year,
               maxLength: 30,
               containerStyle: styles.halfInput,
+              showHelper: false,
             })}
           </View>
           {renderField({
@@ -987,6 +1009,7 @@ export default function MultiPlayerScreen() {
             placeholder: 'When are you free?',
             error: profileErrors.availability,
             maxLength: 80,
+            showHelper: false,
           })}
           {renderField({
             value: studyGoal,
@@ -997,6 +1020,7 @@ export default function MultiPlayerScreen() {
             placeholder: 'What are you working on?',
             error: profileErrors.studyGoal,
             maxLength: 80,
+            showHelper: false,
           })}
           {renderField({
             value: coolFact,
@@ -1008,11 +1032,12 @@ export default function MultiPlayerScreen() {
             error: profileErrors.coolFact,
             maxLength: 140,
             multiline: true,
+            showHelper: false,
           })}
         </View>
       )}
 
-      <ThemeButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Save profile</ThemeButton>
+      <ThemeButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Create profile</ThemeButton>
     </View>
   );
 
@@ -1425,69 +1450,110 @@ export default function MultiPlayerScreen() {
     if (selectedRoom) {
       return (
         <View style={styles.cardList}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Review room</Text>
-              <Text style={styles.sectionHint}>Check the room before joining.</Text>
-            </View>
-          </View>
-
-          <View style={styles.roomDetailCard}>
-            <Text style={styles.selectedSchoolLabel}>Study room</Text>
-            <Text style={styles.roomDetailTitle}>{selectedRoom.name}</Text>
-            <Text style={styles.cardMajor}>{selectedRoom.subject}</Text>
-            <Text style={styles.cardFact}>{selectedRoom.vibe}</Text>
-
-            <View style={styles.roomSummaryStack}>
-              <Text style={styles.roomSummaryLine}>{selectedRoom.available} for {selectedRoom.duration}</Text>
-              <Text style={styles.roomSummaryLine}>{selectedRoom.floor} - {selectedRoom.capacity}</Text>
-              <Text style={styles.roomSummaryLine}>
-                {selectedRoom.friendsOnly ? 'Friends only' : selectedRoom.approvalRequired ? 'Host approval needed' : 'Open join'}
-              </Text>
+          <View style={styles.serverPreview}>
+            <View style={styles.serverBanner}>
+              <TouchableOpacity style={styles.serverBackButton} onPress={() => setSelectedRoom(null)} activeOpacity={0.85}>
+                <FontAwesome5 name="chevron-left" size={13} color={theme.text} />
+              </TouchableOpacity>
+              <View style={styles.serverBadge}>
+                <FontAwesome5 name="door-open" size={22} color={theme.onPrimary} />
+              </View>
+              <Text style={styles.serverKicker}>Room preview</Text>
+              <Text style={styles.serverTitle}>{selectedRoom.name}</Text>
+              <Text style={styles.serverSubtitle}>{selectedRoom.subject}</Text>
+              <View style={styles.serverStatusRow}>
+                <Text style={styles.serverStatusPill}>{selectedRoom.approvalRequired ? 'Approval needed' : 'Open join'}</Text>
+                {selectedRoom.friendsOnly && <Text style={styles.serverStatusPill}>Friends only</Text>}
+              </View>
             </View>
 
-            <Text style={styles.sectionLabel}>Room focus</Text>
-            <View style={styles.partyTaskList}>
+            <View style={styles.serverQuickGrid}>
+              <View style={styles.serverQuickItem}>
+                <FontAwesome5 name="clock" size={13} color={theme.primary} />
+                <Text style={styles.serverQuickLabel}>Time</Text>
+                <Text style={styles.serverQuickValue}>{selectedRoom.available}</Text>
+                <Text style={styles.serverQuickMuted}>{selectedRoom.duration}</Text>
+              </View>
+              <View style={styles.serverQuickItem}>
+                <FontAwesome5 name="map-marker-alt" size={13} color={theme.primary} />
+                <Text style={styles.serverQuickLabel}>Place</Text>
+                <Text style={styles.serverQuickValue}>{selectedRoom.floor}</Text>
+                <Text style={styles.serverQuickMuted}>{selectedRoom.capacity}</Text>
+              </View>
+            </View>
+
+            <View style={styles.serverSection}>
+              <View style={styles.serverSectionHeader}>
+                <FontAwesome5 name="hashtag" size={12} color={theme.muted} />
+                <Text style={styles.serverSectionTitle}>room-focus</Text>
+              </View>
               {selectedRoom.assignments.slice(0, 1).map(assignment => (
-                <View key={assignment.id} style={styles.previewAssignmentCard}>
-                  <Text style={styles.partyTaskTitle}>{assignment.title}</Text>
-                  <Text style={styles.cardSubtle}>{assignment.className} - {assignment.goalHours}h</Text>
-                  <Text style={styles.partyTaskDetails}>{assignment.details}</Text>
+                <View key={assignment.id} style={styles.serverFocusCard}>
+                  <View style={styles.serverFocusIcon}>
+                    <FontAwesome5 name="book-open" size={14} color={theme.text} />
+                  </View>
+                  <View style={styles.profileHeadingText}>
+                    <Text style={styles.partyTaskTitle}>{assignment.title}</Text>
+                    <Text style={styles.cardSubtle}>{assignment.className} • {assignment.goalHours}h • Added by {assignment.owner}</Text>
+                    <Text style={styles.partyTaskDetails}>{assignment.details}</Text>
+                  </View>
                 </View>
               ))}
             </View>
 
-            <Text style={styles.sectionLabel}>People</Text>
-            <View style={styles.partyPeopleRow}>
+            <View style={styles.serverSection}>
+              <View style={styles.serverSectionHeader}>
+                <FontAwesome5 name="volume-up" size={12} color={theme.muted} />
+                <Text style={styles.serverSectionTitle}>study-lobby</Text>
+              </View>
+              <View style={styles.serverChatPreview}>
+                <Text style={styles.serverChatLine}>
+                  <Text style={styles.roomPostCaptionStrong}>{selectedRoom.host || 'Host'} </Text>
+                  opened this room for {selectedRoom.vibe.toLowerCase()}.
+                </Text>
+                <Text style={styles.serverChatLine}>
+                  Join when you are ready, or message the room first if you have a question.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.serverSection}>
+              <View style={styles.serverSectionHeader}>
+                <FontAwesome5 name="users" size={12} color={theme.muted} />
+                <Text style={styles.serverSectionTitle}>members</Text>
+                <Text style={styles.serverMemberCount}>{selectedRoomMembers.length}</Text>
+              </View>
+              <View style={styles.serverMemberList}>
               {selectedRoomMembers.length > 0 ? (
                 <>
-                  <View style={styles.avatarTrail}>
-                    {selectedRoomMembers.slice(0, 4).map(profile => (
-                      <View key={profile.id} style={styles.partyAvatar}>
+                  {selectedRoomMembers.map(profile => (
+                    <View key={profile.id} style={styles.serverMemberRow}>
+                      <View style={styles.partyAvatar}>
                         <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
                       </View>
-                    ))}
-                  </View>
-                  <Text style={styles.cardSubtle} numberOfLines={1}>
-                    {selectedRoomMembers.map(profile => profile.name).join(', ')}
-                  </Text>
+                      <View style={styles.profileHeadingText}>
+                        <Text style={styles.cardName}>{profile.name}</Text>
+                        <Text style={styles.cardSubtle}>{profile.major} • {profile.focus}</Text>
+                      </View>
+                    </View>
+                  ))}
                 </>
               ) : (
                 <Text style={styles.emptyText}>No students have joined yet.</Text>
               )}
+              </View>
             </View>
 
-            <ThemeButton
-              variant="secondary"
-              style={styles.messageRoomButton}
-              onPress={() => handleMessageRoom(selectedRoom)}
-              accessibilityLabel={`Message ${selectedRoom.name}`}
-              leftIcon={<FontAwesome5 name="comment-dots" size={13} color={theme.text} />}
-            >
-              Message room
-            </ThemeButton>
-            <View style={styles.confirmRow}>
-              <ThemeButton fullWidth variant="secondary" onPress={() => setSelectedRoom(null)}>Back</ThemeButton>
+            <View style={styles.serverActionDock}>
+              <ThemeButton
+                fullWidth
+                variant="secondary"
+                onPress={() => handleMessageRoom(selectedRoom)}
+                accessibilityLabel={`Message ${selectedRoom.name}`}
+                leftIcon={<FontAwesome5 name="comment-dots" size={13} color={theme.text} />}
+              >
+                Message
+              </ThemeButton>
               <ThemeButton fullWidth disabled={joiningRoomId === selectedRoom.id} onPress={() => handleConfirmJoin(selectedRoom)}>
                 {joiningRoomId === selectedRoom.id ? 'Connecting...' : selectedRoom.approvalRequired ? 'Confirm request' : 'Confirm join'}
               </ThemeButton>
@@ -1619,21 +1685,44 @@ export default function MultiPlayerScreen() {
             activeOpacity={0.85}
             accessibilityLabel={`Review ${room.name}`}
           >
-            <View style={styles.cardHeader}>
-              <View style={styles.profileHeadingText}>
-                <Text style={styles.cardName}>{room.name}</Text>
-                <Text style={styles.cardMajor}>{room.subject}</Text>
+            <View style={styles.roomPostHeader}>
+              <View style={styles.profileTitleRow}>
+                <View style={styles.roomPostAvatar}>
+                  <FontAwesome5 name="door-open" size={14} color={theme.text} />
+                </View>
+                <View style={styles.profileHeadingText}>
+                  <Text style={styles.cardName}>{room.name}</Text>
+                  <Text style={styles.cardSubtle}>{room.available}</Text>
+                </View>
               </View>
-              <Text style={styles.roomTimePill}>{room.duration}</Text>
+              <FontAwesome5 name="ellipsis-h" size={14} color={theme.muted} />
+            </View>
+            <View style={styles.roomPostMedia}>
+              <View style={styles.roomPostMediaTop}>
+                <Text style={styles.roomPostSubject}>{room.subject}</Text>
+                <Text style={styles.roomTimePill}>{room.duration}</Text>
+              </View>
+              {!!room.assignments[0] && (
+                <Text style={styles.roomAssignmentPreview}>Focus: {room.assignments[0].title}</Text>
+              )}
+              <Text style={styles.roomPostMeta}>{room.floor} • {room.capacity} • {room.vibe}</Text>
+            </View>
+            <View style={styles.roomPostActions}>
+              <View style={styles.roomPostLeftActions}>
+                <FontAwesome5 name="users" size={15} color={theme.text} />
+                <Text style={styles.roomPostActionText}>{room.memberIds.length} studying</Text>
+              </View>
+              <Text style={styles.roomOpenText}>{room.approvalRequired ? 'Request' : 'Join'}</Text>
             </View>
             {!!room.assignments[0] && (
-              <Text style={styles.roomAssignmentPreview}>Focus: {room.assignments[0].title}</Text>
+              <Text style={styles.roomPostCaption}>
+                <Text style={styles.roomPostCaptionStrong}>{room.host || 'Campus'} </Text>
+                is working on {room.assignments[0].title.toLowerCase()}.
+              </Text>
             )}
-            <Text style={styles.cardSubtle}>{room.available} - {room.floor}</Text>
             <View style={styles.roomFooter}>
               {room.approvalRequired && <Text style={styles.tag}>Approval</Text>}
               {room.friendsOnly && <Text style={styles.tag}>Friends</Text>}
-              <Text style={styles.roomOpenText}>{room.approvalRequired ? 'Request' : 'Join'}</Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -1658,26 +1747,30 @@ export default function MultiPlayerScreen() {
 
     return (
     <>
-      <View style={styles.myProfileCard}>
-        <View style={styles.myProfileTop}>
-          <View style={styles.profileTitleRow}>
-            <View style={styles.avatarSmall}>
-              <Text style={styles.avatarSmallText}>{(name || 'Y').slice(0, 1)}</Text>
-            </View>
-            <View style={styles.profileHeadingText}>
-              <Text style={styles.myProfileName}>{profileHidden ? 'Profile hidden' : name}</Text>
-              <Text style={styles.myProfileDetails}>
-                {profileHidden ? 'Hidden from students' : `${major} at ${selectedSchool}`}
-              </Text>
-            </View>
-          </View>
+      <View style={styles.socialHeader}>
+        <View style={styles.socialTitleBlock}>
+          <Text style={styles.socialSchool}>{theme.name || selectedSchool}</Text>
+          <Text style={styles.socialTitle}>Study groups</Text>
+        </View>
+        <View style={styles.socialHeaderActions}>
           <TouchableOpacity
-            style={styles.privacyMiniButton}
+            style={styles.socialIconButton}
             onPress={() => setProfileHidden(current => !current)}
             activeOpacity={0.85}
             accessibilityLabel={profileHidden ? 'Show your profile' : 'Hide your profile'}
           >
-            <Text style={styles.privacyMiniButtonText}>{profileHidden ? 'Show' : 'Hide'}</Text>
+            <FontAwesome5 name={profileHidden ? 'eye-slash' : 'eye'} size={14} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.socialIconButton, styles.socialIconButtonPrimary]}
+            onPress={() => {
+              setActiveBrowseTab('Library rooms');
+              setShowRoomForm(true);
+            }}
+            activeOpacity={0.85}
+            accessibilityLabel="Create study room"
+          >
+            <FontAwesome5 name="plus" size={14} color={theme.onPrimary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1685,15 +1778,41 @@ export default function MultiPlayerScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.tabScroller}
-        contentContainerStyle={styles.tabRow}
+        style={styles.storyScroller}
+        contentContainerStyle={styles.storyRow}
       >
-        {BROWSE_TABS.map(tab => (
-          <TouchableOpacity key={tab} style={[styles.browseTab, activeBrowseTab === tab && styles.browseTabActive]} onPress={() => setActiveBrowseTab(tab)}>
-            <Text style={[styles.browseTabText, activeBrowseTab === tab && styles.browseTabTextActive]}>{tab}</Text>
+        {campusStories.map(story => (
+          <TouchableOpacity key={story.id} style={styles.storyItem} onPress={story.onPress} activeOpacity={0.86}>
+            <View style={styles.storyRing}>
+              {story.image ? (
+                <Image source={{ uri: story.image }} style={styles.storyImage} />
+              ) : (
+                <View style={styles.storyAvatar}>
+                  <FontAwesome5 name={story.icon} size={16} color={theme.text} />
+                </View>
+              )}
+            </View>
+            <Text style={styles.storyLabel} numberOfLines={1}>{story.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <View style={styles.socialTabBar}>
+        {BROWSE_TABS.map(tab => {
+          const meta = BROWSE_TAB_META[tab];
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.socialTab, activeBrowseTab === tab && styles.socialTabActive]}
+              onPress={() => setActiveBrowseTab(tab)}
+              activeOpacity={0.86}
+            >
+              <FontAwesome5 name={meta.icon} size={14} color={activeBrowseTab === tab ? theme.onPrimary : theme.muted} />
+              <Text style={[styles.socialTabText, activeBrowseTab === tab && styles.socialTabTextActive]}>{meta.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {activeBrowseTab === 'Profiles' && (
         <>
@@ -1728,40 +1847,42 @@ export default function MultiPlayerScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <View style={[styles.hero, (isProfileSetup || isSchoolConfirmation) && styles.heroCompact]}>
-        <View style={styles.heroTop}>
-          <View style={styles.heroCopy}>
-            <Text style={styles.kicker}>Campus</Text>
-            <Text style={styles.heading}>Study Groups</Text>
-            {!isProfileSetup && !isSchoolConfirmation && (
-              <Text style={styles.description}>
-                Join or create a study room.
-              </Text>
-            )}
+      {!profileCreated && (
+        <View style={[styles.hero, (isProfileSetup || isSchoolConfirmation) && styles.heroCompact]}>
+          <View style={styles.heroTop}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.kicker}>Campus</Text>
+              <Text style={styles.heading}>Study Groups</Text>
+              {!isProfileSetup && !isSchoolConfirmation && (
+                <Text style={styles.description}>
+                  Join or create a study room.
+                </Text>
+              )}
+            </View>
+            <View style={styles.heroIcon}>
+              <FontAwesome5 name="user-graduate" size={24} color={theme.onPrimary} />
+            </View>
           </View>
-          <View style={styles.heroIcon}>
-            <FontAwesome5 name="user-graduate" size={24} color={theme.onPrimary} />
-          </View>
+          {!isProfileSetup && !isSchoolConfirmation && (
+            <View style={styles.lobbySignals}>
+              <View>
+                <Text style={styles.lobbySignalValue}>3</Text>
+                <Text style={styles.lobbySignalLabel}>rooms</Text>
+              </View>
+              <View style={styles.lobbySignalDivider} />
+              <View>
+                <Text style={styles.lobbySignalValue}>2</Text>
+                <Text style={styles.lobbySignalLabel}>friends</Text>
+              </View>
+              <View style={styles.lobbySignalDivider} />
+              <View>
+                <Text style={styles.lobbySignalValue}>Open</Text>
+                <Text style={styles.lobbySignalLabel}>study groups</Text>
+              </View>
+            </View>
+          )}
         </View>
-        {!isProfileSetup && !isSchoolConfirmation && (
-          <View style={styles.lobbySignals}>
-            <View>
-              <Text style={styles.lobbySignalValue}>3</Text>
-              <Text style={styles.lobbySignalLabel}>rooms</Text>
-            </View>
-            <View style={styles.lobbySignalDivider} />
-            <View>
-              <Text style={styles.lobbySignalValue}>2</Text>
-              <Text style={styles.lobbySignalLabel}>friends</Text>
-            </View>
-            <View style={styles.lobbySignalDivider} />
-            <View>
-              <Text style={styles.lobbySignalValue}>Open</Text>
-              <Text style={styles.lobbySignalLabel}>study groups</Text>
-            </View>
-          </View>
-        )}
-      </View>
+      )}
 
       <MotionNotice
         message={motionNotice}
@@ -1905,7 +2026,24 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   schoolOptionSwatches: { width: 34, height: 22, flexDirection: 'row', overflow: 'hidden', borderRadius: 7, borderWidth: 1, borderColor: theme.border },
   schoolOptionSwatch: { flex: 1 },
   schoolOptionText: { color: theme.school ? theme.text : '#FFFFFF', fontSize: 15, fontWeight: '600' },
-  profileSection: { marginTop: 4 },
+  profileSection: { marginTop: 0 },
+  profileSetupPanel: {
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 14,
+    marginBottom: 16,
+  },
+  profileMiniSchool: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    paddingBottom: 12,
+    marginBottom: 14,
+  },
   selectedSchool: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 18 },
   selectedSchoolTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   selectedSchoolLabel: { color: theme.primary, fontSize: 11, fontWeight: '700', marginBottom: 3, textTransform: 'uppercase' },
@@ -1924,6 +2062,41 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   profileStarterNote: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17, fontWeight: '600' },
   profilePreviewCard: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 14 },
   profilePreviewTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  profileComposerHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
+  profileAvatarButton: { width: 78, height: 78, borderRadius: 24 },
+  profileAvatarImage: { width: 78, height: 78, borderRadius: 24 },
+  profileAvatarEmpty: {
+    width: 78,
+    height: 78,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  profileAvatarInitial: { color: theme.text, fontSize: 28, fontWeight: '700' },
+  profilePhotoBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.primary,
+    borderWidth: 2,
+    borderColor: theme.surface,
+  },
+  profileIntroCopy: { flex: 1 },
+  profileIntroSub: { marginBottom: 0 },
+  profileFormBlock: { marginBottom: 2 },
+  profilePreviewLine: {
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    paddingTop: 12,
+  },
   previewAvatar: { width: 54, height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border },
   previewAvatarText: { color: theme.text, fontSize: 23, fontWeight: '700' },
   previewImage: { width: 54, height: 54, borderRadius: 14 },
@@ -1966,6 +2139,84 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   compactActionButton: { marginTop: 0 },
   createRoomButton: { marginTop: 0 },
   saveButtonText: { color: theme.onPrimary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
+  socialHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  socialTitleBlock: { flex: 1 },
+  socialSchool: { color: theme.muted, fontSize: 12, fontWeight: '700', marginBottom: 3 },
+  socialTitle: { color: theme.text, fontSize: 25, fontWeight: '700' },
+  socialHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  socialIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  socialIconButtonPrimary: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+  storyScroller: { marginHorizontal: -18, marginTop: 14, marginBottom: 12 },
+  storyRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 18, paddingRight: 28 },
+  storyItem: { width: 70, alignItems: 'center', gap: 7 },
+  storyRing: {
+    width: 62,
+    height: 62,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: theme.primary,
+    backgroundColor: theme.background,
+  },
+  storyAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  storyImage: { width: 52, height: 52, borderRadius: 19 },
+  storyLabel: { width: '100%', color: theme.text, fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  socialTabBar: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: theme.border,
+  },
+  socialTab: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  socialTabActive: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+  socialTabText: { color: theme.muted, fontSize: 11, fontWeight: '700' },
+  socialTabTextActive: { color: theme.onPrimary },
   myProfileCard: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 14, marginBottom: 14 },
   myProfileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   avatarSmall: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
@@ -2072,6 +2323,125 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   privacySub: { color: theme.muted, fontSize: 12, lineHeight: 17 },
   privacySubActive: { color: theme.muted, opacity: 1 },
   roomDetailCard: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16 },
+  serverPreview: {
+    backgroundColor: theme.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.border,
+    overflow: 'hidden',
+  },
+  serverBanner: {
+    minHeight: 190,
+    backgroundColor: theme.surfaceAlt,
+    padding: 16,
+    justifyContent: 'flex-end',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  serverBackButton: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  serverBadge: {
+    width: 62,
+    height: 62,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.primary,
+    borderWidth: 4,
+    borderColor: theme.surfaceAlt,
+    marginBottom: 12,
+  },
+  serverKicker: { color: theme.primary, fontSize: 12, fontWeight: '800', marginBottom: 4, textTransform: 'uppercase' },
+  serverTitle: { color: theme.text, fontSize: 25, fontWeight: '800', lineHeight: 30 },
+  serverSubtitle: { color: theme.muted, fontSize: 14, fontWeight: '700', marginTop: 3 },
+  serverStatusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  serverStatusPill: {
+    color: theme.text,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 999,
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  serverQuickGrid: { flexDirection: 'row', gap: 10, padding: 12 },
+  serverQuickItem: {
+    flex: 1,
+    minHeight: 106,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 12,
+  },
+  serverQuickLabel: { color: theme.muted, fontSize: 11, fontWeight: '800', marginTop: 8, marginBottom: 5, textTransform: 'uppercase' },
+  serverQuickValue: { color: theme.text, fontSize: 14, fontWeight: '800', lineHeight: 18 },
+  serverQuickMuted: { color: theme.muted, fontSize: 12, fontWeight: '700', lineHeight: 16, marginTop: 3 },
+  serverSection: { paddingHorizontal: 12, paddingBottom: 12 },
+  serverSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 },
+  serverSectionTitle: { color: theme.muted, fontSize: 12, fontWeight: '900', textTransform: 'uppercase' },
+  serverMemberCount: { marginLeft: 'auto', color: theme.muted, fontSize: 12, fontWeight: '800' },
+  serverFocusCard: {
+    flexDirection: 'row',
+    gap: 11,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 12,
+  },
+  serverFocusIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  serverChatPreview: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 12,
+    gap: 8,
+  },
+  serverChatLine: { color: theme.muted, fontSize: 13, lineHeight: 19, fontWeight: '600' },
+  serverMemberList: { gap: 8 },
+  serverMemberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 10,
+  },
+  serverActionDock: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    backgroundColor: theme.surface,
+  },
   roomDetailTitle: { color: theme.text, fontSize: 20, fontWeight: '700', marginBottom: 4 },
   roomSummaryStack: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, gap: 5, marginTop: 12, marginBottom: 14 },
   roomSummaryLine: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
@@ -2088,11 +2458,45 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cancelButtonText: { color: theme.text, fontSize: 14, fontWeight: '700', textAlign: 'center' },
   confirmButton: { flex: 1, backgroundColor: theme.primary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13 },
   confirmButtonText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700', textAlign: 'center' },
-  roomCard: { borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 16 },
-  roomTimePill: { alignSelf: 'flex-start', color: theme.muted, backgroundColor: 'transparent', borderRadius: 6, overflow: 'hidden', paddingHorizontal: 0, paddingVertical: 5, fontSize: 12, fontWeight: '700' },
-  roomAssignmentPreview: { color: theme.text, fontSize: 13, fontWeight: '700', marginTop: 10 },
-  roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  roomOpenText: { marginLeft: 'auto', color: theme.primary, fontSize: 12, fontWeight: '700' },
+  roomCard: {
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 12,
+  },
+  roomPostHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 11 },
+  roomPostAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  roomPostMedia: {
+    minHeight: 118,
+    borderRadius: 14,
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  roomPostMediaTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  roomPostSubject: { flex: 1, color: theme.text, fontSize: 20, fontWeight: '800', lineHeight: 24 },
+  roomTimePill: { alignSelf: 'flex-start', color: theme.primary, backgroundColor: theme.surface, borderRadius: 999, overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 5, fontSize: 11, fontWeight: '800' },
+  roomAssignmentPreview: { color: theme.text, fontSize: 14, fontWeight: '800', lineHeight: 19, marginTop: 12 },
+  roomPostMeta: { color: theme.muted, fontSize: 12, fontWeight: '700', lineHeight: 17, marginTop: 8 },
+  roomPostActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 11 },
+  roomPostLeftActions: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  roomPostActionText: { color: theme.text, fontSize: 13, fontWeight: '700' },
+  roomPostCaption: { color: theme.muted, fontSize: 13, lineHeight: 19, marginTop: 9 },
+  roomPostCaptionStrong: { color: theme.text, fontWeight: '800' },
+  roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  roomOpenText: { marginLeft: 'auto', color: theme.primary, fontSize: 13, fontWeight: '800' },
   smallButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   smallButtonText: { color: theme.onPrimary, fontSize: 12, fontWeight: '700' },
 });

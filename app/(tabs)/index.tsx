@@ -50,6 +50,8 @@ type StudyPlanStep = {
   route: Href;
 };
 
+type TopStatInfo = 'streak' | 'coins' | 'time';
+
 function getNextTask(tasks: Task[]): Task | null {
   return [...tasks]
     .filter(task => task.progress !== 'Done')
@@ -123,7 +125,7 @@ export default function HomeScreen() {
   const { tasks, sessions } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [showStreakInfo, setShowStreakInfo] = useState(false);
+  const [activeTopInfo, setActiveTopInfo] = useState<TopStatInfo | null>(null);
 
   const openTasks = tasks.filter(task => task.progress !== 'Done');
   const nextTask = getNextTask(tasks);
@@ -158,13 +160,35 @@ export default function HomeScreen() {
       icon: 'fire' as ComponentProps<typeof FontAwesome5>['name'],
     },
   ];
+  const activeTopDetail = activeTopInfo
+    ? {
+        streak: {
+          icon: 'fire' as ComponentProps<typeof FontAwesome5>['name'],
+          color: '#F59E0B',
+          title: 'Streak',
+          text: 'Days in a row you finish a focus session. Study once today to keep it going.',
+        },
+        coins: {
+          icon: 'coins' as ComponentProps<typeof FontAwesome5>['name'],
+          color: '#D9A441',
+          title: 'Coins',
+          text: 'Coins are rewards you earn after focus sessions, achievements, and group study.',
+        },
+        time: {
+          icon: 'clock' as ComponentProps<typeof FontAwesome5>['name'],
+          color: theme.primary,
+          title: 'Focus time',
+          text: 'This shows how many minutes you have spent in focus sessions.',
+        },
+      }[activeTopInfo]
+    : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.topBar}>
         <TouchableOpacity
           style={[styles.statCapsule, styles.streakCapsule]}
-          onPress={() => setShowStreakInfo(current => !current)}
+          onPress={() => setActiveTopInfo(current => (current === 'streak' ? null : 'streak'))}
           activeOpacity={0.85}
           accessibilityLabel="Show streak details"
         >
@@ -172,35 +196,57 @@ export default function HomeScreen() {
           <Text style={styles.statCapsuleText}>{streak}</Text>
         </TouchableOpacity>
         <View style={styles.topStatsRight}>
-        <View style={styles.statCapsule}>
-          <FontAwesome5 name="coins" size={12} color="#D9A441" />
-          <Text style={styles.statCapsuleText}>{totalCoins}</Text>
-        </View>
-        <View style={styles.statCapsule}>
-          <FontAwesome5 name="clock" size={12} color={theme.primary} />
-          <Text style={styles.statCapsuleText}>{focusedMinutes}m</Text>
-        </View>
+          <TouchableOpacity
+            style={styles.statCapsule}
+            onPress={() => setActiveTopInfo(current => (current === 'coins' ? null : 'coins'))}
+            activeOpacity={0.85}
+            accessibilityLabel="Show coin details"
+          >
+            <FontAwesome5 name="coins" size={12} color="#D9A441" />
+            <Text style={styles.statCapsuleText}>{totalCoins}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.statCapsule}
+            onPress={() => setActiveTopInfo(current => (current === 'time' ? null : 'time'))}
+            activeOpacity={0.85}
+            accessibilityLabel="Show focus time details"
+          >
+            <FontAwesome5 name="clock" size={12} color={theme.primary} />
+            <Text style={styles.statCapsuleText}>{focusedMinutes}m</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {showStreakInfo && (
-        <View style={styles.streakPopover}>
-          <View style={styles.streakPopoverArrow} />
+      {activeTopDetail && (
+        <View
+          style={[
+            styles.statPopover,
+            activeTopInfo === 'streak' ? styles.statPopoverLeft : styles.statPopoverRight,
+          ]}
+        >
+          <View
+            style={[
+              styles.statPopoverArrow,
+              activeTopInfo === 'streak'
+                ? styles.statPopoverArrowLeft
+                : activeTopInfo === 'coins'
+                  ? styles.statPopoverArrowCoins
+                  : styles.statPopoverArrowTime,
+            ]}
+          />
           <View style={styles.streakInfoHeader}>
-            <FontAwesome5 name="fire" size={13} color="#F59E0B" />
-            <Text style={styles.streakInfoTitle}>Streak</Text>
+            <FontAwesome5 name={activeTopDetail.icon} size={13} color={activeTopDetail.color} />
+            <Text style={styles.streakInfoTitle}>{activeTopDetail.title}</Text>
             <TouchableOpacity
               style={styles.streakCloseButton}
-              onPress={() => setShowStreakInfo(false)}
+              onPress={() => setActiveTopInfo(null)}
               activeOpacity={0.8}
-              accessibilityLabel="Close streak details"
+              accessibilityLabel="Close stat details"
             >
               <FontAwesome5 name="times" size={11} color={theme.muted} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.streakInfoText}>
-            Days in a row you finish a focus session. Study once today to keep it going.
-          </Text>
+          <Text style={styles.streakInfoText}>{activeTopDetail.text}</Text>
         </View>
       )}
 
@@ -337,10 +383,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  streakPopover: {
+  statPopover: {
     position: 'absolute',
     top: 62,
-    left: 20,
     zIndex: 20,
     width: 270,
     borderRadius: 16,
@@ -355,10 +400,15 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     shadowRadius: 14,
     elevation: 8,
   },
-  streakPopoverArrow: {
+  statPopoverLeft: {
+    left: 20,
+  },
+  statPopoverRight: {
+    right: 20,
+  },
+  statPopoverArrow: {
     position: 'absolute',
     top: -6,
-    left: 21,
     width: 12,
     height: 12,
     borderLeftWidth: 1,
@@ -366,6 +416,15 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderColor: '#7A4E1D',
     backgroundColor: theme.surface,
     transform: [{ rotate: '45deg' }],
+  },
+  statPopoverArrowLeft: {
+    left: 21,
+  },
+  statPopoverArrowCoins: {
+    right: 82,
+  },
+  statPopoverArrowTime: {
+    right: 24,
   },
   streakInfoHeader: {
     flexDirection: 'row',
