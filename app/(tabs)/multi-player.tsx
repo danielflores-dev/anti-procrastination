@@ -340,6 +340,7 @@ export default function MultiPlayerScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [showSchoolSwitcher, setShowSchoolSwitcher] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
   const [selectedSchool, setSelectedSchool] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -505,6 +506,8 @@ export default function MultiPlayerScreen() {
     setSchoolSearch(school);
     setSchoolTheme(school);
     setShowProfileSetup(false);
+    setShowSchoolSwitcher(false);
+    if (profileCreated) setMotionNotice(`Switched to ${school}`);
   };
 
   const clearProfileError = (field: ProfileField) => {
@@ -1749,7 +1752,18 @@ export default function MultiPlayerScreen() {
     <>
       <View style={styles.socialHeader}>
         <View style={styles.socialTitleBlock}>
-          <Text style={styles.socialSchool}>{theme.name || selectedSchool}</Text>
+          <TouchableOpacity
+            style={styles.schoolSwitchButton}
+            onPress={() => {
+              setSchoolSearch(selectedSchool || theme.name || '');
+              setShowSchoolSwitcher(current => !current);
+            }}
+            activeOpacity={0.85}
+            accessibilityLabel="Switch school"
+          >
+            <Text style={styles.socialSchool}>{theme.name || selectedSchool}</Text>
+            <FontAwesome5 name={showSchoolSwitcher ? 'chevron-up' : 'chevron-down'} size={10} color={theme.muted} />
+          </TouchableOpacity>
           <Text style={styles.socialTitle}>Study groups</Text>
         </View>
         <View style={styles.socialHeaderActions}>
@@ -1774,6 +1788,51 @@ export default function MultiPlayerScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {showSchoolSwitcher && (
+        <View style={styles.schoolSwitcherPanel}>
+          <View style={styles.schoolSwitcherHeader}>
+            <View>
+              <Text style={styles.panelTitle}>Switch school</Text>
+              <Text style={styles.schoolSwitcherSub}>Your app colors update right away.</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.schoolSwitcherClose}
+              onPress={() => setShowSchoolSwitcher(false)}
+              activeOpacity={0.85}
+              accessibilityLabel="Close school switcher"
+            >
+              <FontAwesome5 name="times" size={12} color={theme.muted} />
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            value={schoolSearch}
+            onChangeText={setSchoolSearch}
+            placeholder="Search schools"
+            placeholderTextColor={theme.muted}
+            style={[styles.input, styles.schoolSwitcherInput]}
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+          <View style={styles.schoolSwitcherList}>
+            {(filteredSchools.length > 0 ? filteredSchools : [schoolSearch.trim()]).slice(0, 5).map(school => (
+              <TouchableOpacity
+                key={school}
+                style={[styles.schoolOption, selectedSchool === school && styles.schoolSwitcherOptionActive]}
+                onPress={() => handleSelectSchool(school)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.schoolOptionSwatches}>
+                  {(SCHOOL_COLOR_SWATCHES[school] ?? [theme.primary, theme.secondary]).map(color => (
+                    <View key={color} style={[styles.schoolOptionSwatch, { backgroundColor: color }]} />
+                  ))}
+                </View>
+                <Text style={styles.schoolOptionText}>{selectedSchool === school ? `${school} current` : school}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
 
       <ScrollView
         horizontal
@@ -2152,6 +2211,47 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   socialSchool: { color: theme.muted, fontSize: 12, fontWeight: '700', marginBottom: 3 },
   socialTitle: { color: theme.text, fontSize: 25, fontWeight: '700' },
   socialHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  schoolSwitchButton: {
+    alignSelf: 'flex-start',
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderRadius: 999,
+    paddingRight: 8,
+  },
+  schoolSwitcherPanel: {
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 13,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  schoolSwitcherHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 10,
+  },
+  schoolSwitcherSub: { color: theme.muted, fontSize: 12, fontWeight: '700', lineHeight: 17 },
+  schoolSwitcherClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  schoolSwitcherInput: { marginBottom: 4 },
+  schoolSwitcherList: { gap: 2 },
+  schoolSwitcherOptionActive: {
+    borderBottomColor: theme.primary,
+  },
   socialIconButton: {
     width: 44,
     height: 44,
