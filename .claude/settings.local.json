@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(npx expo *)",
-      "Bash(start *)"
+      "Bash(start *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(node .agents/skills/impeccable/scripts/load-context.mjs)",
+      "Bash(npx impeccable *)",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(node -e \"const p = require\\('./package.json'\\); const deps = {...p.dependencies, ...p.devDependencies}; const keys = Object.keys\\(deps\\).filter\\(k => k.includes\\('date'\\) || k.includes\\('picker'\\) || k.includes\\('community'\\)\\); console.log\\(keys.length ? keys : 'none'\\); console.log\\(Object.keys\\(deps\\).filter\\(k => k.includes\\('expo'\\)\\).slice\\(0,10\\)\\);\")",
+      "Bash(npx tsc *)",
+      "Bash(grep -v \"accessibilityLabel\\\\|import\\\\|//\\\\|^[0-9]*:  [a-z]\")"
     ]
   }
 }

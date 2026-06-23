@@ -1,10 +1,10 @@
 import { useCoins } from '@/context/CoinContext';
-import { useSchoolTheme } from '@/context/SchoolThemeContext';
+import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ThemeButton } from '@/components/ui/design-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -16,7 +16,7 @@ import {
   View,
 } from 'react-native';
 
-const COIN_INTERVAL = 30; // 30 seconds = 2 coins per minute
+const COIN_INTERVAL = 30;
 
 function hourColor(hours: number): string {
   if (hours < 2) return '#22C55E';
@@ -34,6 +34,14 @@ function formatTime(seconds: number) {
   const s = seconds % 60;
   return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
+
+const RING_SIZE = 360;
+
+const sharedStyles = StyleSheet.create({
+  bgLayer: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  glow: { position: 'absolute', width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2 },
+  ring: { position: 'absolute', width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2, borderWidth: 2 },
+});
 
 function PulseRing({ delay, color }: { delay: number; color: string }) {
   const scale = useRef(new Animated.Value(0)).current;
@@ -58,7 +66,7 @@ function PulseRing({ delay, color }: { delay: number; color: string }) {
   }, [delay, opacity, scale]);
 
   return (
-    <Animated.View style={[styles.ring, { borderColor: color, opacity, transform: [{ scale }] }]} />
+    <Animated.View style={[sharedStyles.ring, { borderColor: color, opacity, transform: [{ scale }] }]} />
   );
 }
 
@@ -84,7 +92,7 @@ function BreathingGlow({ color }: { color: string }) {
   }, [opacity, scale]);
 
   return (
-    <Animated.View style={[styles.glow, { backgroundColor: color, opacity, transform: [{ scale }] }]} />
+    <Animated.View style={[sharedStyles.glow, { backgroundColor: color, opacity, transform: [{ scale }] }]} />
   );
 }
 
@@ -103,11 +111,16 @@ function CoinToast({ visible, amount }: { visible: boolean; amount: number }) {
   }, [opacity, translateY, visible]);
 
   return (
-    <Animated.View style={[styles.coinToast, { opacity, transform: [{ translateY }] }]}>
-      <Text style={styles.coinToastText}>+{amount} coins</Text>
+    <Animated.View style={[coinToastStyles.wrap, { opacity, transform: [{ translateY }] }]}>
+      <Text style={coinToastStyles.text}>+{amount} coins</Text>
     </Animated.View>
   );
 }
+
+const coinToastStyles = StyleSheet.create({
+  wrap: { position: 'absolute', top: '40%' },
+  text: { color: '#F59E0B', fontSize: 28, fontWeight: '800' },
+});
 
 export default function FocusScreen() {
   const router = useRouter();
@@ -124,6 +137,8 @@ export default function FocusScreen() {
   const { theme } = useSchoolTheme();
   const { coins, addCoins } = useCoins();
   const reducedMotion = useReducedMotion();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   const task = tasks.find(t => t.id === id);
   const focusTask = task ?? (
     assignmentName
@@ -174,7 +189,6 @@ export default function FocusScreen() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running]);
 
-  // Award coins every COIN_INTERVAL seconds of active time
   useEffect(() => {
     const earned = Math.floor(elapsed / COIN_INTERVAL);
     if (earned > prevCoinCount.current) {
@@ -189,7 +203,6 @@ export default function FocusScreen() {
       setLastCoinAmount(newCoins);
       toastKey.current += 1;
       setShowToast(false);
-      // small delay so state flip triggers useEffect in CoinToast
       setTimeout(() => setShowToast(true), 10);
     }
   }, [elapsed, coinMultiplier, addCoins]);
@@ -219,6 +232,27 @@ export default function FocusScreen() {
     if (task && sessionGoalHours) updateHoursPerDay(task.id, sessionGoalHours);
   };
 
+  if (!focusTask) {
+    return (
+      <View style={styles.notFoundContainer}>
+        <Text style={styles.notFoundTitle}>Assignment not found</Text>
+        <Text style={styles.notFoundBody}>This assignment may have been removed.</Text>
+        <ThemeButton onPress={() => router.back()} style={styles.notFoundBtn}>
+          Back to assignments
+        </ThemeButton>
+      </View>
+    );
+  }
+
+  const targetHours = sessionGoalHours ?? focusTask.hoursPerDay;
+  const targetSeconds = targetHours * 3600;
+  const progress = Math.min(elapsed / targetSeconds, 1);
+  const goalReached = elapsed >= targetSeconds;
+  const nextCoinIn = COIN_INTERVAL - (elapsed % COIN_INTERVAL);
+  const focusMinutes = Math.floor(elapsed / 60);
+  const progressPercent = Math.round(progress * 100);
+  const newGoalHours = sessionGoalHours ?? focusTask.hoursPerDay;
+
   const finishSession = () => {
     if (!focusTask) return;
     applyGoalUpdate();
@@ -247,39 +281,19 @@ export default function FocusScreen() {
     setRunning(true);
   };
 
-  if (!focusTask) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-          <Text style={{ color: theme.text }}>We could not find this assignment.</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: theme.primary, marginTop: 16 }}>Back to assignments</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const targetHours = sessionGoalHours ?? focusTask.hoursPerDay;
-  const targetSeconds = targetHours * 3600;
-  const progress = Math.min(elapsed / targetSeconds, 1);
-  const goalReached = elapsed >= targetSeconds;
-  const nextCoinIn = COIN_INTERVAL - (elapsed % COIN_INTERVAL);
-  const focusMinutes = Math.floor(elapsed / 60);
-  const progressPercent = Math.round(progress * 100);
-  const newGoalHours = sessionGoalHours ?? focusTask.hoursPerDay;
+  const accentColor = theme.school ? theme.secondary : theme.accent;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Animated background */}
-      <View style={styles.bgLayer}>
+      <View style={sharedStyles.bgLayer}>
         <BreathingGlow color={color} />
         <PulseRing delay={0} color={color} />
         <PulseRing delay={1000} color={color} />
         <PulseRing delay={2000} color={color} />
       </View>
 
-      {/* Top info */}
       <View style={styles.topInfo}>
         <Text style={styles.className}>{focusTask.className}</Text>
         <Text style={styles.assignmentName}>{focusTask.assignmentName}</Text>
@@ -296,7 +310,6 @@ export default function FocusScreen() {
         )}
       </View>
 
-      {/* Coin balance top-right */}
       <View style={styles.coinBadge}>
         <Text style={styles.coinBadgeText}>{coins} coins</Text>
         {running && (
@@ -304,43 +317,54 @@ export default function FocusScreen() {
         )}
       </View>
 
-      {/* Floating coin toast */}
       <CoinToast key={toastKey.current} visible={showToast} amount={lastCoinAmount} />
 
-      {/* Timer */}
       <View style={styles.timerWrapper}>
-        <Text style={[styles.timer, { color: goalReached ? color : '#ffffff' }]}>
+        <Text
+          style={[styles.timer, { color: goalReached ? color : theme.text }]}
+          accessibilityLabel={`Timer: ${formatTime(elapsed)}`}
+          accessibilityLiveRegion="polite"
+        >
           {formatTime(elapsed)}
         </Text>
         <Text style={styles.goal}>
-        {goalReached ? "Today's goal is done" : `Goal: ${formatTime(targetSeconds)}`}
+          {goalReached ? "Today's goal is done" : `Goal: ${formatTime(targetSeconds)}`}
         </Text>
       </View>
 
-      {/* Progress bar */}
-      <View style={styles.progressBg}>
+      <View
+        style={styles.progressBg}
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
+        accessibilityLabel={`${progressPercent}% of today's ${targetHours} hour goal`}
+      >
         <View style={[styles.progressFill, { width: `${progress * 100}%` as any, backgroundColor: color }]} />
       </View>
       <Text style={styles.progressLabel}>
         {progressPercent}% of {"today's"} {targetHours}h goal
       </Text>
 
-      {/* Session coins */}
       {sessionCoins > 0 && (
         <Text style={styles.sessionCoins}>+{sessionCoins} coins earned this session</Text>
       )}
 
-      {/* Controls */}
       <View style={styles.controls}>
         <TouchableOpacity
           style={[styles.playBtn, { borderColor: color }]}
           onPress={() => setRunning(r => !r)}
+          accessibilityLabel={running ? 'Pause session' : 'Start session'}
+          accessibilityRole="button"
         >
           <Text style={[styles.playIcon, { color }]}>{running ? 'Pause' : 'Start'}</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.stopBtn} onPress={handleStop}>
+      <TouchableOpacity
+        style={styles.stopBtn}
+        onPress={handleStop}
+        accessibilityLabel="End session"
+        accessibilityRole="button"
+      >
         <Text style={styles.stopText}>End session</Text>
       </TouchableOpacity>
 
@@ -355,8 +379,6 @@ export default function FocusScreen() {
               style={[
                 styles.recapCard,
                 {
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border,
                   transform: [
                     {
                       translateY: recapAnim.interpolate({
@@ -375,34 +397,34 @@ export default function FocusScreen() {
               ]}
             >
               <View style={styles.recapHeader}>
-                <Text style={[styles.recapKicker, { color: theme.school ? theme.secondary : theme.accent }]}>Session recap</Text>
-                <Text style={[styles.recapTitle, { color: theme.text }]}>{goalReached ? 'Goal complete' : 'Progress saved'}</Text>
-                <Text style={[styles.recapSub, { color: theme.muted }]} numberOfLines={2}>
+                <Text style={[styles.recapKicker, { color: accentColor }]}>Session recap</Text>
+                <Text style={styles.recapTitle}>{goalReached ? 'Goal complete' : 'Progress saved'}</Text>
+                <Text style={styles.recapSub} numberOfLines={2}>
                   {focusTask.assignmentName}
                 </Text>
               </View>
 
-              <View style={[styles.coinHero, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
-                <Text style={[styles.coinHeroLabel, { color: theme.muted }]}>You earned</Text>
+              <View style={styles.coinHero}>
+                <Text style={styles.coinHeroLabel}>You earned</Text>
                 <Text style={[styles.coinHeroValue, { color }]}>{sessionCoins} coins</Text>
-                <Text style={[styles.coinHeroMeta, { color: theme.muted }]}>
+                <Text style={styles.coinHeroMeta}>
                   {isPartySession ? `${coinMultiplier.toFixed(1)}x room bonus` : `${formatTime(elapsed)} focused`}
                 </Text>
               </View>
 
               <View style={styles.recapMetrics}>
-                <View style={[styles.recapMetric, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
-                  <Text style={[styles.recapMetricValue, { color: theme.text }]}>{formatTime(elapsed)}</Text>
-                  <Text style={[styles.recapMetricLabel, { color: theme.muted }]}>Time</Text>
+                <View style={styles.recapMetric}>
+                  <Text style={styles.recapMetricValue}>{formatTime(elapsed)}</Text>
+                  <Text style={styles.recapMetricLabel}>Time</Text>
                 </View>
-                <View style={[styles.recapMetric, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
-                  <Text style={[styles.recapMetricValue, { color: theme.text }]}>{progressPercent}%</Text>
-                  <Text style={[styles.recapMetricLabel, { color: theme.muted }]}>Goal</Text>
+                <View style={styles.recapMetric}>
+                  <Text style={styles.recapMetricValue}>{progressPercent}%</Text>
+                  <Text style={styles.recapMetricLabel}>Goal</Text>
                 </View>
               </View>
 
-              <View style={[styles.recapNote, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
-                <Text style={[styles.recapNoteText, { color: theme.text }]}>
+              <View style={styles.recapNote}>
+                <Text style={styles.recapNoteText}>
                   {focusMinutes < 10
                     ? 'A short start still counts. Save it, or keep going for one more round.'
                     : goalReached
@@ -411,35 +433,39 @@ export default function FocusScreen() {
                 </Text>
               </View>
 
-              <View style={[styles.nextLoopCard, { borderColor: theme.border }]}>
-                <Text style={[styles.nextLoopKicker, { color: theme.school ? theme.secondary : theme.accent }]}>Next</Text>
-                <Text style={[styles.nextLoopText, { color: theme.text }]}>
+              <View style={styles.nextLoopCard}>
+                <Text style={[styles.nextLoopKicker, { color: accentColor }]}>Next</Text>
+                <Text style={styles.nextLoopText}>
                   Save to keep your streak. Then pick the next assignment or rejoin a study room.
                 </Text>
               </View>
 
               <View style={styles.adjustHeader}>
-                <Text style={[styles.adjustLabel, { color: theme.muted }]}>Daily goal</Text>
-                <Text style={[styles.adjustHint, { color: theme.muted }]}>Change only if today felt off</Text>
+                <Text style={styles.adjustLabel}>Daily goal</Text>
+                <Text style={styles.adjustHint}>Change only if today felt off</Text>
               </View>
               <View style={styles.adjustRow}>
                 <TouchableOpacity
-                  style={[styles.adjustButton, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}
+                  style={styles.adjustButton}
                   onPress={() => setSessionGoalHours(current => Math.max(0.5, Math.round(((current ?? newGoalHours) - 0.5) * 2) / 2))}
                   activeOpacity={0.85}
+                  accessibilityLabel="Decrease daily goal"
+                  accessibilityRole="button"
                 >
-                  <Text style={[styles.adjustButtonText, { color: theme.text }]}>-</Text>
+                  <Text style={styles.adjustButtonText}>-</Text>
                 </TouchableOpacity>
                 <View style={styles.adjustValue}>
                   <Text style={[styles.adjustHours, { color }]}>{newGoalHours}h</Text>
-                  <Text style={[styles.adjustSub, { color: theme.muted }]}>per study day</Text>
+                  <Text style={styles.adjustSub}>per study day</Text>
                 </View>
                 <TouchableOpacity
-                  style={[styles.adjustButton, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}
+                  style={styles.adjustButton}
                   onPress={() => setSessionGoalHours(current => Math.round(((current ?? newGoalHours) + 0.5) * 2) / 2)}
                   activeOpacity={0.85}
+                  accessibilityLabel="Increase daily goal"
+                  accessibilityRole="button"
                 >
-                  <Text style={[styles.adjustButtonText, { color: theme.text }]}>+</Text>
+                  <Text style={styles.adjustButtonText}>+</Text>
                 </TouchableOpacity>
               </View>
 
@@ -455,86 +481,349 @@ export default function FocusScreen() {
   );
 }
 
-const RING_SIZE = 360;
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
-  bgLayer: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  glow: { position: 'absolute', width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2 },
-  ring: { position: 'absolute', width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2, borderWidth: 2 },
-  topInfo: { position: 'absolute', top: 72, alignItems: 'center', paddingHorizontal: 32 },
-  className: { color: '#666', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
-  assignmentName: { color: '#fff', fontSize: 20, fontWeight: '700', textAlign: 'center' },
-  partyBadge: { alignItems: 'center', borderWidth: 1, borderRadius: 16, backgroundColor: '#0f0f0fcc', marginTop: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  partyBadgeText: { color: '#fff', fontSize: 13, fontWeight: '800', marginBottom: 2 },
-  partyBadgeMeta: { fontSize: 12, fontWeight: '800' },
-  partyNames: { color: '#999', fontSize: 11, fontWeight: '700', marginTop: 4, maxWidth: 260 },
+const createStyles = (theme: SchoolTheme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notFoundContainer: {
+    flex: 1,
+    backgroundColor: theme.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  notFoundTitle: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  notFoundBody: {
+    color: theme.muted,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  notFoundBtn: {
+    minWidth: 220,
+  },
+  topInfo: {
+    position: 'absolute',
+    top: 72,
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  className: {
+    color: theme.muted,
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  assignmentName: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  partyBadge: {
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 16,
+    backgroundColor: theme.surface,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  partyBadgeText: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  partyBadgeMeta: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  partyNames: {
+    color: theme.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 4,
+    maxWidth: 260,
+  },
   coinBadge: {
     position: 'absolute',
     top: 68,
     right: 24,
     alignItems: 'flex-end',
   },
-  coinBadgeText: { color: '#F59E0B', fontSize: 18, fontWeight: '700' },
-  coinNext: { color: '#555', fontSize: 11, marginTop: 2 },
-  coinToast: {
-    position: 'absolute',
-    top: '40%',
+  coinBadgeText: {
+    color: '#F59E0B',
+    fontSize: 18,
+    fontWeight: '700',
   },
-  coinToastText: { color: '#F59E0B', fontSize: 28, fontWeight: '800' },
-  timerWrapper: { alignItems: 'center', marginBottom: 32 },
-  timer: { fontSize: 72, fontWeight: '200', letterSpacing: 4 },
-  goal: { color: '#555', fontSize: 14, marginTop: 6 },
-  progressBg: { width: 260, height: 4, backgroundColor: '#1e1e1e', borderRadius: 2, overflow: 'hidden', marginBottom: 8 },
-  progressFill: { height: 4, borderRadius: 2 },
-  progressLabel: { color: '#555', fontSize: 12, marginBottom: 8 },
-  sessionCoins: { color: '#F59E0B', fontSize: 13, fontWeight: '600', marginBottom: 36 },
-  controls: { marginBottom: 24 },
-  playBtn: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  playIcon: { fontSize: 15, fontWeight: '900' },
-  stopBtn: { position: 'absolute', bottom: 44, minHeight: 44, justifyContent: 'center', paddingHorizontal: 18 },
-  stopText: { color: '#444', fontSize: 15, fontWeight: '600' },
+  coinNext: {
+    color: theme.muted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  timerWrapper: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  timer: {
+    fontSize: 72,
+    fontWeight: '200',
+    letterSpacing: 4,
+  },
+  goal: {
+    color: theme.muted,
+    fontSize: 14,
+    marginTop: 6,
+  },
+  progressBg: {
+    width: 260,
+    height: 4,
+    backgroundColor: theme.surface,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+  },
+  progressLabel: {
+    color: theme.muted,
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  sessionCoins: {
+    color: '#F59E0B',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 36,
+  },
+  controls: {
+    marginBottom: 24,
+  },
+  playBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playIcon: {
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  stopBtn: {
+    position: 'absolute',
+    bottom: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+  },
+  stopText: {
+    color: theme.muted,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   recapOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000000cc',
+    backgroundColor: 'rgba(0,0,0,0.82)',
   },
-  recapScroll: { width: '100%' },
-  recapScrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 28 },
+  recapScroll: {
+    width: '100%',
+  },
+  recapScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 28,
+  },
   recapCard: {
     width: '100%',
     maxWidth: 390,
     borderRadius: 24,
     borderWidth: 1,
     padding: 20,
+    backgroundColor: theme.surface,
+    borderColor: theme.border,
   },
-  recapHeader: { marginBottom: 14 },
-  recapKicker: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 7 },
-  recapTitle: { fontSize: 25, fontWeight: '900', marginBottom: 5 },
-  recapSub: { fontSize: 14, lineHeight: 20 },
-  coinHero: { borderRadius: 20, borderWidth: 1, padding: 16, alignItems: 'center', marginBottom: 12 },
-  coinHeroLabel: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase', marginBottom: 4 },
-  coinHeroValue: { fontSize: 34, fontWeight: '900', marginBottom: 2 },
-  coinHeroMeta: { fontSize: 13, fontWeight: '800' },
-  recapMetrics: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  recapMetric: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 12 },
-  recapMetricValue: { fontSize: 19, fontWeight: '900', marginBottom: 3 },
-  recapMetricLabel: { fontSize: 12, fontWeight: '900', textTransform: 'uppercase' },
-  recapNote: { borderRadius: 16, borderWidth: 1, padding: 12, marginBottom: 16 },
-  recapNoteText: { fontSize: 13, fontWeight: '700', lineHeight: 19 },
-  nextLoopCard: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 12, marginBottom: 16 },
-  nextLoopKicker: { fontSize: 11, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 5 },
-  nextLoopText: { fontSize: 13, fontWeight: '700', lineHeight: 19 },
-  adjustHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 10 },
-  adjustLabel: { fontSize: 12, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
-  adjustHint: { flex: 1, fontSize: 12, fontWeight: '700', textAlign: 'right' },
-  adjustRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  adjustButton: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  adjustButtonText: { fontSize: 24, fontWeight: '800' },
-  adjustValue: { alignItems: 'center' },
-  adjustHours: { fontSize: 30, fontWeight: '900' },
-  adjustSub: { fontSize: 12, fontWeight: '700', marginTop: 2 },
-  recapActions: { gap: 10 },
+  recapHeader: {
+    marginBottom: 14,
+  },
+  recapKicker: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 7,
+  },
+  recapTitle: {
+    fontSize: 25,
+    fontWeight: '900',
+    marginBottom: 5,
+    color: theme.text,
+  },
+  recapSub: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.muted,
+  },
+  coinHero: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: theme.surfaceAlt,
+    borderColor: theme.border,
+  },
+  coinHeroLabel: {
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    color: theme.muted,
+  },
+  coinHeroValue: {
+    fontSize: 34,
+    fontWeight: '900',
+    marginBottom: 2,
+  },
+  coinHeroMeta: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: theme.muted,
+  },
+  recapMetrics: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  recapMetric: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    backgroundColor: theme.surfaceAlt,
+    borderColor: theme.border,
+  },
+  recapMetricValue: {
+    fontSize: 19,
+    fontWeight: '900',
+    marginBottom: 3,
+    color: theme.text,
+  },
+  recapMetricLabel: {
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    color: theme.muted,
+  },
+  recapNote: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: theme.surfaceAlt,
+    borderColor: theme.border,
+  },
+  recapNoteText: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+    color: theme.text,
+  },
+  nextLoopCard: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    paddingVertical: 12,
+    marginBottom: 16,
+    borderColor: theme.border,
+  },
+  nextLoopKicker: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 5,
+  },
+  nextLoopText: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+    color: theme.text,
+  },
+  adjustHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    gap: 12,
+    marginBottom: 10,
+  },
+  adjustLabel: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: theme.muted,
+  },
+  adjustHint: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+    color: theme.muted,
+  },
+  adjustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  adjustButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    backgroundColor: theme.surfaceAlt,
+    borderColor: theme.border,
+  },
+  adjustButtonText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: theme.text,
+  },
+  adjustValue: {
+    alignItems: 'center',
+  },
+  adjustHours: {
+    fontSize: 30,
+    fontWeight: '900',
+  },
+  adjustSub: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+    color: theme.muted,
+  },
+  recapActions: {
+    gap: 10,
+  },
 });
-

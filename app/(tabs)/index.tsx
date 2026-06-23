@@ -260,6 +260,8 @@ export default function HomeScreen() {
           style={styles.schoolPill}
           onPress={() => router.push({ pathname: '/(tabs)/multi-player', params: { start: 'school' } })}
           activeOpacity={0.85}
+          accessibilityLabel={theme.school ? `School: ${theme.name}. Tap to switch.` : 'Pick your school'}
+          accessibilityRole="button"
         >
           <Text style={styles.schoolPillText}>{theme.school ? theme.name : 'Pick school'}</Text>
         </TouchableOpacity>
@@ -281,6 +283,8 @@ export default function HomeScreen() {
                 style={[styles.pathNodeWrap, alignStyle]}
                 onPress={() => router.push(index === 0 ? primaryRoute : item.route)}
                 activeOpacity={0.88}
+                accessibilityLabel={index === 0 && !nextTask ? 'Add assignment' : item.title}
+                accessibilityRole="button"
               >
                 <View style={[styles.pathNode, isActive && styles.pathNodeActive]}>
                   <FontAwesome5

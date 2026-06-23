@@ -1,11 +1,12 @@
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
-import { useSchoolTheme } from '@/context/SchoolThemeContext';
+import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { ThemeButton, ThemeCard } from '@/components/ui/design-system';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { FontAwesome5 } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +16,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 
 type Step = 'pick' | 'analyzing' | 'review';
@@ -27,13 +28,11 @@ type AIResult = {
   reasoning: string;
   workload: string;
   confidence: string;
-  factors: {
-    label: string;
-    value: string;
-  }[];
+  factors: { label: string; value: string }[];
 };
 
 const DropView = View as any;
+
 const SAMPLE_RESULT: AIResult = {
   assignmentName: 'Chapter 5 Reading Notes',
   className: 'Biology 101',
@@ -70,6 +69,7 @@ export default function AutoAddScreen() {
   const router = useRouter();
   const { addTask } = useTasks();
   const { theme } = useSchoolTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [step, setStep] = useState<Step>('pick');
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -81,7 +81,6 @@ export default function AutoAddScreen() {
 
   const readAsBase64 = async (uri: string): Promise<string> => {
     if (Platform.OS === 'web') {
-      // On web the picker returns a blob: URI — fetch it and use FileReader.
       const res = await fetch(uri);
       const blob = await res.blob();
       return new Promise((resolve, reject) => {
@@ -91,7 +90,6 @@ export default function AutoAddScreen() {
         reader.readAsDataURL(blob);
       });
     }
-    // On native use expo-file-system which can read any local file URI.
     return FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
   };
 
@@ -111,13 +109,10 @@ export default function AutoAddScreen() {
 
     if (!pickerResult.canceled && pickerResult.assets[0]) {
       const asset = pickerResult.assets[0];
-
       let base64: string;
       if (asset.base64) {
-        // Native: picker returns base64 directly when base64: true is set
         base64 = asset.base64;
       } else {
-        // Web: blob URI — read it manually
         try {
           base64 = await readAsBase64(asset.uri);
         } catch {
@@ -125,7 +120,6 @@ export default function AutoAddScreen() {
           return;
         }
       }
-
       setImageUri(asset.uri);
       await analyzeImage(base64);
     }
@@ -139,7 +133,7 @@ export default function AutoAddScreen() {
     setStep('review');
   };
 
-  const saveAssignment = () => {
+  const saveAssignment = (andFocus: boolean) => {
     if (!result) return;
     const dueDateRaw = dueDate.toISOString();
     const taskId = addTask({
@@ -152,7 +146,11 @@ export default function AutoAddScreen() {
       hoursPerDay: computeHoursPerDay(adjustedHours, dueDateRaw),
     });
 
-    router.replace(`/focus?id=${taskId}`);
+    if (andFocus) {
+      router.replace(`/focus?id=${taskId}`);
+    } else {
+      router.back();
+    }
   };
 
   const adjustHours = (delta: number) => {
@@ -195,20 +193,25 @@ export default function AutoAddScreen() {
 
   if (step === 'analyzing') {
     return (
-      <View style={[styles.centered, { backgroundColor: theme.background }]}>
+      <View style={styles.centered}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.analyzingText, { color: theme.text }]}>Reading assignment...</Text>
-        <Text style={[styles.analyzingSub, { color: theme.muted }]}>Making a first time plan</Text>
+        <Text style={styles.analyzingText}>Reading assignment...</Text>
+        <Text style={styles.analyzingSub}>Making a first time plan</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={[styles.scroll, { backgroundColor: theme.background }]} contentContainerStyle={styles.container}>
-      {/* Header */}
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Text style={styles.backArrow}>‹</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <FontAwesome5 name="chevron-left" size={18} color={theme.primary} />
         </TouchableOpacity>
         <Text style={styles.heading}>Add first assignment</Text>
       </View>
@@ -224,6 +227,8 @@ export default function AutoAddScreen() {
               onDragOver={(e: any) => { e.preventDefault(); setIsDragOver(true); }}
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
+              accessibilityLabel="Drop assignment photo here"
+              accessibilityRole="button"
             >
               <Text style={styles.dropIcon}>+</Text>
               <Text style={styles.dropTitle}>{isDragOver ? 'Drop it here' : 'Drop assignment photo'}</Text>
@@ -232,16 +237,33 @@ export default function AutoAddScreen() {
           )}
 
           {Platform.OS !== 'web' && (
-            <ThemeButton size="lg" style={styles.actionGap} onPress={() => pickImage(true)}>
+            <ThemeButton
+              size="lg"
+              style={styles.actionGap}
+              onPress={() => pickImage(true)}
+              accessibilityLabel="Take a photo of your assignment"
+            >
               Take photo
             </ThemeButton>
           )}
 
-          <ThemeButton size="lg" variant="secondary" style={styles.actionGap} onPress={() => pickImage(false)}>
+          <ThemeButton
+            size="lg"
+            variant="secondary"
+            style={styles.actionGap}
+            onPress={() => pickImage(false)}
+            accessibilityLabel="Choose a photo from your library"
+          >
             Choose photo
           </ThemeButton>
 
-          <ThemeButton size="lg" variant="secondary" style={styles.actionGap} onPress={() => analyzeImage()}>
+          <ThemeButton
+            size="lg"
+            variant="secondary"
+            style={styles.actionGap}
+            onPress={() => analyzeImage()}
+            accessibilityLabel="Use a sample assignment to try the feature"
+          >
             Use sample assignment
           </ThemeButton>
 
@@ -252,23 +274,31 @@ export default function AutoAddScreen() {
       {step === 'review' && result && (
         <>
           {imageUri && (
-            <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="cover" />
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.preview}
+              resizeMode="cover"
+              accessibilityLabel="Photo of your assignment"
+            />
           )}
 
           <ThemeCard style={styles.card}>
             <Text style={styles.cardLabel}>Assignment</Text>
             <Text style={styles.cardValue}>{result.assignmentName}</Text>
           </ThemeCard>
+
           <ThemeCard style={styles.card}>
             <Text style={styles.cardLabel}>Class</Text>
             <Text style={styles.cardValue}>{result.className}</Text>
           </ThemeCard>
+
           <ThemeCard variant="elevated" style={styles.estimateHero}>
             <Text style={styles.cardLabel}>Time plan</Text>
             <Text style={styles.estimateHours}>{formatHours(result.estimatedHours)}</Text>
             <Text style={styles.estimateSub}>{result.workload} workload</Text>
             <Text style={styles.confidenceText}>{result.confidence}</Text>
           </ThemeCard>
+
           <ThemeCard style={styles.card}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardLabel}>Why this estimate?</Text>
@@ -287,14 +317,24 @@ export default function AutoAddScreen() {
 
           <Text style={styles.sectionTitle}>Adjust time</Text>
           <View style={styles.timeAdjuster}>
-            <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(-0.5)}>
+            <TouchableOpacity
+              style={styles.adjBtn}
+              onPress={() => adjustHours(-0.5)}
+              accessibilityLabel="Decrease estimated hours"
+              accessibilityRole="button"
+            >
               <Text style={styles.adjBtnText}>-</Text>
             </TouchableOpacity>
             <View style={styles.adjustedTimeWrap}>
               <Text style={styles.hoursDisplay}>{formatHours(adjustedHours)}</Text>
               <Text style={styles.adjustedSub}>{getFocusPlan(adjustedHours)}</Text>
             </View>
-            <TouchableOpacity style={styles.adjBtn} onPress={() => adjustHours(0.5)}>
+            <TouchableOpacity
+              style={styles.adjBtn}
+              onPress={() => adjustHours(0.5)}
+              accessibilityLabel="Increase estimated hours"
+              accessibilityRole="button"
+            >
               <Text style={styles.adjBtnText}>+</Text>
             </TouchableOpacity>
           </View>
@@ -306,6 +346,8 @@ export default function AutoAddScreen() {
                 style={styles.adjustPreset}
                 onPress={() => applyPreset(preset.delta)}
                 activeOpacity={0.85}
+                accessibilityLabel={preset.label}
+                accessibilityRole="button"
               >
                 <Text style={styles.adjustPresetText}>{preset.label}</Text>
               </TouchableOpacity>
@@ -319,25 +361,35 @@ export default function AutoAddScreen() {
           </ThemeCard>
 
           <Text style={styles.sectionTitle}>Due date</Text>
-          <ThemeButton variant="secondary" onPress={() => setShowDatePicker(true)}>
-            {dueDate.toLocaleDateString()}
-          </ThemeButton>
+          <TouchableOpacity
+            style={styles.dateTrigger}
+            onPress={() => setShowDatePicker(v => !v)}
+            activeOpacity={0.8}
+            accessibilityLabel={`Due date: ${dueDate.toLocaleDateString()}. Tap to change.`}
+            accessibilityRole="button"
+          >
+            <FontAwesome5 name="calendar-alt" size={14} color={theme.primary} />
+            <Text style={styles.dateTriggerText}>{dueDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+            <FontAwesome5 name={showDatePicker ? 'chevron-up' : 'chevron-down'} size={11} color={theme.muted} />
+          </TouchableOpacity>
 
           {showDatePicker && (
             <DateTimePicker
               value={dueDate}
               mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(_, selected) => {
-                setShowDatePicker(Platform.OS === 'ios');
+                if (Platform.OS === 'android') setShowDatePicker(false);
                 if (selected) setDueDate(selected);
               }}
               minimumDate={new Date()}
-              themeVariant="dark"
             />
           )}
 
-          <ThemeButton size="lg" style={styles.saveAction} onPress={saveAssignment}>
+          <ThemeButton size="lg" style={styles.saveAction} onPress={() => saveAssignment(false)}>
+            Save assignment
+          </ThemeButton>
+          <ThemeButton variant="secondary" style={styles.focusAction} onPress={() => saveAssignment(true)}>
             Save and start focus
           </ThemeButton>
           <ThemeButton variant="ghost" onPress={() => router.back()}>Cancel</ThemeButton>
@@ -347,8 +399,8 @@ export default function AutoAddScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: '#0f0f0f' },
+const createStyles = (theme: SchoolTheme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.background },
   container: {
     paddingHorizontal: 24,
     paddingTop: 64,
@@ -356,7 +408,7 @@ const styles = StyleSheet.create({
   },
   centered: {
     flex: 1,
-    backgroundColor: '#0f0f0f',
+    backgroundColor: theme.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -364,38 +416,35 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     marginBottom: 20,
   },
   backBtn: {
-    marginRight: 10,
-  },
-  backArrow: {
-    color: '#6C63FF',
-    fontSize: 34,
-    fontWeight: '300',
-    lineHeight: 36,
-    marginTop: -4,
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heading: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#ffffff',
+    color: theme.text,
     letterSpacing: -0.3,
   },
   sub: {
-    color: '#666',
+    color: theme.muted,
     fontSize: 15,
     marginBottom: 32,
     lineHeight: 23,
   },
   analyzingText: {
-    color: '#aaaaaa',
+    color: theme.text,
     fontSize: 18,
     marginTop: 20,
     fontWeight: '600',
   },
   analyzingSub: {
-    color: '#555',
+    color: theme.muted,
     fontSize: 14,
     marginTop: 8,
   },
@@ -409,7 +458,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardLabel: {
-    color: '#666',
+    color: theme.muted,
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -417,12 +466,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardValue: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 16,
     fontWeight: '600',
   },
   cardReasoning: {
-    color: '#aaa',
+    color: theme.muted,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -432,19 +481,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   estimateHours: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 42,
     fontWeight: '800',
     letterSpacing: -1,
   },
   estimateSub: {
-    color: '#aaa',
+    color: theme.muted,
     fontSize: 14,
     fontWeight: '600',
     marginTop: 4,
   },
   confidenceText: {
-    color: '#B8B5FF',
+    color: theme.accent,
     fontSize: 12,
     fontWeight: '700',
     marginTop: 8,
@@ -456,12 +505,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   cardMeta: {
-    color: '#888',
+    color: theme.muted,
     fontSize: 11,
     fontWeight: '700',
   },
   sectionTitle: {
-    color: '#777',
+    color: theme.muted,
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -472,12 +521,12 @@ const styles = StyleSheet.create({
   timeAdjuster: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     padding: 10,
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#252525',
+    borderColor: theme.border,
   },
   adjustedTimeWrap: {
     flex: 1,
@@ -485,7 +534,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   adjBtn: {
-    backgroundColor: '#252525',
+    backgroundColor: theme.surfaceAlt,
     width: 48,
     height: 48,
     borderRadius: 10,
@@ -493,18 +542,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   adjBtnText: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 24,
     fontWeight: '300',
   },
   hoursDisplay: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 28,
     fontWeight: 'bold',
     letterSpacing: -1,
   },
   adjustedSub: {
-    color: '#777',
+    color: theme.muted,
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
@@ -512,7 +561,7 @@ const styles = StyleSheet.create({
   },
   factorList: {
     borderTopWidth: 1,
-    borderTopColor: '#252525',
+    borderTopColor: theme.border,
     marginTop: 12,
     paddingTop: 10,
     gap: 8,
@@ -523,13 +572,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   factorLabel: {
-    color: '#777',
+    color: theme.muted,
     fontSize: 12,
     fontWeight: '700',
   },
   factorValue: {
     flex: 1,
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'right',
@@ -544,13 +593,13 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
-    backgroundColor: '#1a1a1a',
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
     paddingHorizontal: 12,
     justifyContent: 'center',
   },
   adjustPresetText: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -558,46 +607,64 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   planTitle: {
-    color: '#ffffff',
+    color: theme.text,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 5,
   },
   planText: {
-    color: '#aaa',
+    color: theme.muted,
     fontSize: 13,
     lineHeight: 19,
   },
+  dateTrigger: {
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginBottom: 8,
+  },
+  dateTriggerText: {
+    flex: 1,
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   actionGap: { marginBottom: 12 },
   saveAction: { marginTop: 24, marginBottom: 12 },
+  focusAction: { marginBottom: 12 },
   dropZone: {
     borderWidth: 2,
-    borderColor: '#2a2a2a',
+    borderColor: theme.border,
     borderStyle: 'dashed',
     borderRadius: 16,
     paddingVertical: 48,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
-    backgroundColor: '#141414',
+    backgroundColor: theme.surface,
   },
   dropZoneActive: {
-    borderColor: '#6C63FF',
-    backgroundColor: '#1e1a2e',
+    borderColor: theme.primary,
+    backgroundColor: theme.surfaceAlt,
   },
   dropIcon: {
     fontSize: 40,
     marginBottom: 12,
   },
   dropTitle: {
-    color: '#ccc',
+    color: theme.text,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   dropSub: {
-    color: '#555',
+    color: theme.muted,
     fontSize: 13,
   },
 });
-

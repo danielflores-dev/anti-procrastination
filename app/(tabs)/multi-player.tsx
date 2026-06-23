@@ -561,10 +561,7 @@ export default function MultiPlayerScreen() {
     setAvailability(nextAvailability);
     setProfileErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) {
-      Alert.alert('Check your profile', 'Check the highlighted fields.');
-      return;
-    }
+    if (Object.keys(nextErrors).length > 0) return;
 
     setProfileCreated(true);
   };
@@ -628,10 +625,7 @@ export default function MultiPlayerScreen() {
     setRoomVibe(nextVibe);
     setRoomErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) {
-      Alert.alert('Check your room', 'Check the highlighted fields.');
-      return;
-    }
+    if (Object.keys(nextErrors).length > 0) return;
 
     const room: StudyRoom = {
       id: `room-${Date.now()}`,
@@ -901,7 +895,7 @@ export default function MultiPlayerScreen() {
         </View>
 
         <View style={styles.profileComposerHeader}>
-          <TouchableOpacity style={styles.profileAvatarButton} onPress={pickProfileImage} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.profileAvatarButton} onPress={pickProfileImage} activeOpacity={0.85} accessibilityLabel="Add profile photo" accessibilityRole="button">
             {profileImage ? (
               <Image source={{ uri: profileImage }} style={styles.profileAvatarImage} />
             ) : (
@@ -969,7 +963,7 @@ export default function MultiPlayerScreen() {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.profileExtrasToggle} onPress={() => setShowProfileExtras(current => !current)} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.profileExtrasToggle} onPress={() => setShowProfileExtras(current => !current)} activeOpacity={0.85} accessibilityLabel={showProfileExtras ? 'Hide optional details' : 'Add optional details'} accessibilityRole="button">
         <Text style={styles.profileExtrasText}>{showProfileExtras ? 'Hide optional details' : 'Add optional details'}</Text>
         <FontAwesome5 name={showProfileExtras ? 'chevron-up' : 'chevron-down'} size={12} color={theme.text} />
       </TouchableOpacity>
@@ -1392,10 +1386,10 @@ export default function MultiPlayerScreen() {
                     </View>
                   </View>
                   <View style={styles.hostActions}>
-                    <TouchableOpacity style={styles.smallButton} onPress={() => handleApproveRoomRequest(profile.id)}>
+                    <TouchableOpacity style={styles.smallButton} onPress={() => handleApproveRoomRequest(profile.id)} accessibilityLabel={`Approve ${profile.name}`} accessibilityRole="button">
                       <Text style={styles.smallButtonText}>Approve</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.denyButton} onPress={() => handleDenyRoomRequest(profile.id)}>
+                    <TouchableOpacity style={styles.denyButton} onPress={() => handleDenyRoomRequest(profile.id)} accessibilityLabel={`Deny ${profile.name}`} accessibilityRole="button">
                       <Text style={styles.denyButtonText}>Deny</Text>
                     </TouchableOpacity>
                   </View>
@@ -1417,13 +1411,13 @@ export default function MultiPlayerScreen() {
                     <Text style={styles.cardSubtle}>{member.major}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveRoomMember(member.id)}>
+                <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveRoomMember(member.id)} accessibilityLabel={`Remove ${member.name} from room`} accessibilityRole="button">
                   <Text style={styles.removeButtonText}>Remove</Text>
                 </TouchableOpacity>
               </View>
             ))}
 
-            <TouchableOpacity style={styles.closeRoomButton} onPress={handleCloseRoom} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.closeRoomButton} onPress={handleCloseRoom} activeOpacity={0.85} accessibilityLabel="Close this study room" accessibilityRole="button">
               <Text style={styles.closeRoomButtonText}>Close room</Text>
             </TouchableOpacity>
           </View>
@@ -1455,7 +1449,7 @@ export default function MultiPlayerScreen() {
         <View style={styles.cardList}>
           <View style={styles.serverPreview}>
             <View style={styles.serverBanner}>
-              <TouchableOpacity style={styles.serverBackButton} onPress={() => setSelectedRoom(null)} activeOpacity={0.85}>
+              <TouchableOpacity style={styles.serverBackButton} onPress={() => setSelectedRoom(null)} activeOpacity={0.85} accessibilityLabel="Back to room list" accessibilityRole="button">
                 <FontAwesome5 name="chevron-left" size={13} color={theme.text} />
               </TouchableOpacity>
               <View style={styles.serverBadge}>
@@ -1661,14 +1655,14 @@ export default function MultiPlayerScreen() {
             </View>
 
             <Text style={styles.sectionLabel}>Privacy</Text>
-            <TouchableOpacity style={[styles.privacyRow, approvalRequired && styles.privacyRowActive]} onPress={() => setApprovalRequired(current => !current)} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.privacyRow, approvalRequired && styles.privacyRowActive]} onPress={() => setApprovalRequired(current => !current)} activeOpacity={0.85} accessibilityLabel={`Require approval to join: ${approvalRequired ? 'on' : 'off'}`} accessibilityRole="switch">
               <View style={[styles.toggleDot, approvalRequired && styles.toggleDotActive]} />
               <View style={styles.privacyTextWrap}>
                 <Text style={[styles.privacyTitle, approvalRequired && styles.privacyTitleActive]}>Require approval to join</Text>
                 <Text style={[styles.privacySub, approvalRequired && styles.privacySubActive]}>You approve requests.</Text>
               </View>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.privacyRow, friendsOnly && styles.privacyRowActive]} onPress={() => setFriendsOnly(current => !current)} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.privacyRow, friendsOnly && styles.privacyRowActive]} onPress={() => setFriendsOnly(current => !current)} activeOpacity={0.85} accessibilityLabel={`Show to friends only: ${friendsOnly ? 'on' : 'off'}`} accessibilityRole="switch">
               <View style={[styles.toggleDot, friendsOnly && styles.toggleDotActive]} />
               <View style={styles.privacyTextWrap}>
                 <Text style={[styles.privacyTitle, friendsOnly && styles.privacyTitleActive]}>Show to friends only</Text>
@@ -1841,7 +1835,7 @@ export default function MultiPlayerScreen() {
         contentContainerStyle={styles.storyRow}
       >
         {campusStories.map(story => (
-          <TouchableOpacity key={story.id} style={styles.storyItem} onPress={story.onPress} activeOpacity={0.86}>
+          <TouchableOpacity key={story.id} style={styles.storyItem} onPress={story.onPress} activeOpacity={0.86} accessibilityLabel={story.label} accessibilityRole="button">
             <View style={styles.storyRing}>
               {story.image ? (
                 <Image source={{ uri: story.image }} style={styles.storyImage} />
@@ -1865,6 +1859,8 @@ export default function MultiPlayerScreen() {
               style={[styles.socialTab, activeBrowseTab === tab && styles.socialTabActive]}
               onPress={() => setActiveBrowseTab(tab)}
               activeOpacity={0.86}
+              accessibilityLabel={meta.label}
+              accessibilityRole="tab"
             >
               <FontAwesome5 name={meta.icon} size={14} color={activeBrowseTab === tab ? theme.onPrimary : theme.muted} />
               <Text style={[styles.socialTabText, activeBrowseTab === tab && styles.socialTabTextActive]}>{meta.label}</Text>
@@ -1875,7 +1871,7 @@ export default function MultiPlayerScreen() {
 
       {activeBrowseTab === 'Profiles' && (
         <>
-          <TouchableOpacity style={styles.filterToggle} onPress={() => setShowProfileFilters(current => !current)} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.filterToggle} onPress={() => setShowProfileFilters(current => !current)} activeOpacity={0.85} accessibilityLabel={showProfileFilters ? 'Hide filters' : activeFilter === 'All' ? 'Filter profiles' : `Filter: ${activeFilter}`} accessibilityRole="button">
             <Text style={styles.filterToggleText}>{showProfileFilters ? 'Hide filters' : activeFilter === 'All' ? 'Filter profiles' : `Filter: ${activeFilter}`}</Text>
             <FontAwesome5 name={showProfileFilters ? 'chevron-up' : 'sliders-h'} size={12} color={theme.text} />
           </TouchableOpacity>
@@ -1955,7 +1951,7 @@ export default function MultiPlayerScreen() {
         <View style={styles.startPanel}>
           <Text style={styles.panelTitle}>Choose your school</Text>
           <Text style={styles.profileSub}>Find classmates and library rooms on your campus.</Text>
-          <TouchableOpacity style={styles.beginButton} onPress={() => setIsSearching(true)} activeOpacity={0.82}>
+          <TouchableOpacity style={styles.beginButton} onPress={() => setIsSearching(true)} activeOpacity={0.82} accessibilityLabel="Choose your school" accessibilityRole="button">
             <FontAwesome5 name="search-location" size={16} color={theme.onPrimary} />
             <Text style={styles.beginButtonText}>Choose school</Text>
           </TouchableOpacity>
@@ -2007,6 +2003,8 @@ export default function MultiPlayerScreen() {
   );
 }
 
+const DANGER_RED = '#EF4444';
+
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.background },
   container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 118 },
@@ -2029,10 +2027,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   lobbySignalLabel: { color: theme.muted, fontSize: 11, fontWeight: '700', marginTop: 2, textTransform: 'uppercase' },
   lobbySignalDivider: { width: 1, height: 32, backgroundColor: theme.border },
   startPanel: { paddingTop: 4 },
-  startSteps: { display: 'none' },
-  startStep: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 9 },
-  startStepNumber: { width: 26, height: 26, borderRadius: 8, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: theme.primary, backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, fontSize: 12, fontWeight: '700' },
-  startStepText: { flex: 1, color: theme.text, fontSize: 14, fontWeight: '700' },
   beginButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2052,10 +2046,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   panel: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16 },
   panelTitle: { color: theme.text, fontSize: 20, fontWeight: '600', marginBottom: 12 },
   input: {
-    backgroundColor: theme.school ? theme.surfaceAlt : '#0f0f0f',
+    backgroundColor: theme.surfaceAlt,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.school ? theme.border : '#6C63FF66',
+    borderColor: theme.border,
     color: theme.text,
     fontSize: 15,
     paddingHorizontal: 14,
@@ -2063,12 +2057,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     marginBottom: 12,
   },
   fieldWrap: { marginBottom: 12 },
-  fieldInput: { marginBottom: 0 },
-  inputError: { borderColor: '#EF4444', borderWidth: 1.5 },
   fieldMetaRow: { minHeight: 17, marginTop: 5 },
-  helperText: { color: theme.muted, fontSize: 11, fontWeight: '700', textAlign: 'right' },
-  errorText: { color: '#EF4444', fontSize: 12, fontWeight: '700', lineHeight: 16 },
-  multiInput: { minHeight: 82, textAlignVertical: 'top' },
   twoColumn: { flexDirection: 'row', gap: 10 },
   halfInput: { flex: 1 },
   sectionLabel: {
@@ -2084,7 +2073,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   schoolOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'transparent', borderRadius: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: theme.border, paddingHorizontal: 0, paddingVertical: 13 },
   schoolOptionSwatches: { width: 34, height: 22, flexDirection: 'row', overflow: 'hidden', borderRadius: 7, borderWidth: 1, borderColor: theme.border },
   schoolOptionSwatch: { flex: 1 },
-  schoolOptionText: { color: theme.school ? theme.text : '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  schoolOptionText: { color: theme.text, fontSize: 15, fontWeight: '600' },
   profileSection: { marginTop: 0 },
   profileSetupPanel: {
     backgroundColor: theme.surface,
@@ -2114,13 +2103,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   schoolConfirmTitle: { color: theme.text, fontSize: 22, fontWeight: '600', marginBottom: 5 },
   schoolConfirmText: { color: theme.muted, fontSize: 13, lineHeight: 19, maxWidth: 280 },
   onboardingNext: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 16, gap: 10 },
-  profileStarter: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 16, marginBottom: 16 },
-  profileStarterTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  profileProgressPill: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingHorizontal: 0, paddingVertical: 6 },
-  profileProgressText: { color: theme.primary, fontSize: 12, fontWeight: '700' },
-  profileStarterNote: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17, fontWeight: '600' },
-  profilePreviewCard: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 14 },
-  profilePreviewTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   profileComposerHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
   profileAvatarButton: { width: 78, height: 78, borderRadius: 24 },
   profileAvatarImage: { width: 78, height: 78, borderRadius: 24 },
@@ -2156,48 +2138,16 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderTopColor: theme.border,
     paddingTop: 12,
   },
-  previewAvatar: { width: 54, height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border },
-  previewAvatarText: { color: theme.text, fontSize: 23, fontWeight: '700' },
-  previewImage: { width: 54, height: 54, borderRadius: 14 },
   previewName: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 3 },
   previewMeta: { color: theme.muted, fontSize: 13, lineHeight: 18 },
-  previewChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
-  firstFocusCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 18 },
-  firstFocusText: { flex: 1 },
-  firstFocusTitle: { color: theme.text, fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  firstFocusSub: { color: theme.muted, fontSize: 12, fontWeight: '700', lineHeight: 17 },
   profileTitle: { color: theme.text, fontSize: 20, fontWeight: '600', marginBottom: 5 },
   profileSub: { color: theme.muted, fontSize: 13, lineHeight: 19, marginBottom: 16 },
-  photoButton: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 14 },
-  photoPlaceholder: { width: 62, height: 62, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border },
-  photoInitials: { color: theme.text, fontSize: 26, fontWeight: '600' },
-  profileImage: { width: 62, height: 62, borderRadius: 16 },
-  photoTextWrap: { flex: 1, marginLeft: 12 },
-  photoTitle: { color: theme.text, fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  photoSub: { color: theme.muted, fontSize: 13 },
   choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  choiceChip: { backgroundColor: 'transparent', borderRadius: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: theme.border, paddingHorizontal: 4, paddingVertical: 8 },
-  choiceChipSelected: { backgroundColor: 'transparent', borderColor: theme.primary },
-  choiceText: { color: theme.muted, fontSize: 13, fontWeight: '700' },
-  choiceTextSelected: { color: theme.primary },
   profileExtrasToggle: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingHorizontal: 0, marginBottom: 12 },
   profileExtrasText: { color: theme.text, fontSize: 13, fontWeight: '700' },
   profileExtras: { marginBottom: 4 },
-  saveButton: {
-    backgroundColor: theme.primary,
-    borderRadius: 9,
-    marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    shadowColor: theme.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0,
-    shadowRadius: 8,
-    elevation: 0,
-  },
   compactActionButton: { marginTop: 0 },
   createRoomButton: { marginTop: 0 },
-  saveButtonText: { color: theme.onPrimary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
   socialHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2317,20 +2267,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   socialTabText: { color: theme.muted, fontSize: 11, fontWeight: '700' },
   socialTabTextActive: { color: theme.onPrimary },
-  myProfileCard: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 14, marginBottom: 14 },
-  myProfileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  avatarSmall: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
-  avatarSmallText: { color: theme.text, fontSize: 15, fontWeight: '700' },
-  myProfileName: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 2 },
-  myProfileDetails: { color: theme.muted, fontSize: 13, lineHeight: 18 },
-  privacyMiniButton: { minHeight: 44, alignSelf: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
-  privacyMiniButtonText: { color: theme.text, fontSize: 12, fontWeight: '700' },
-  tabScroller: { marginBottom: 18, marginHorizontal: -18, paddingHorizontal: 18 },
-  tabRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 8, paddingRight: 18 },
-  browseTab: { minHeight: 44, flexGrow: 0, borderRadius: 0, borderBottomWidth: 1, borderBottomColor: theme.border, paddingHorizontal: 8, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
-  browseTabActive: { borderBottomColor: theme.primary },
-  browseTabText: { color: theme.muted, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  browseTabTextActive: { color: theme.primary },
   cardList: { gap: 12 },
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginTop: 2, marginBottom: 6 },
   sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '600', marginBottom: 3 },
@@ -2353,15 +2289,14 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cardSubtle: { color: theme.muted, fontSize: 12, lineHeight: 18, marginTop: 3 },
   iconButton: { minWidth: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 8 },
   iconButtonActive: { backgroundColor: theme.surface, borderColor: theme.primary },
-  iconButtonText: { color: theme.text, fontSize: 18, fontWeight: '700', lineHeight: 22 },
   messageButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 9 },
   messageButtonText: { color: theme.text, fontSize: 12, fontWeight: '600' },
   metaChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
   metaChip: { color: theme.muted, paddingRight: 10, paddingVertical: 4, fontSize: 12, fontWeight: '700' },
   cardFooterActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 },
   approvalHint: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17, fontWeight: '700' },
-  blockButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 11, paddingVertical: 8 },
-  blockButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '700' },
+  blockButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: DANGER_RED, paddingHorizontal: 11, paddingVertical: 8 },
+  blockButtonText: { color: DANGER_RED, fontSize: 12, fontWeight: '700' },
   tag: { color: theme.primary, borderBottomWidth: 1, borderBottomColor: theme.border, overflow: 'hidden', paddingHorizontal: 0, paddingVertical: 5, fontSize: 12, fontWeight: '700' },
   emptyPanel: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16, gap: 10 },
   emptyPanelFeatured: { padding: 18 },
@@ -2388,8 +2323,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   multiplierText: { color: theme.primary, fontSize: 16, fontWeight: '700' },
   partyPeopleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 10 },
   avatarTrail: { flexDirection: 'row', alignItems: 'center' },
-  partyMemberStack: { gap: 8 },
-  partyMemberPill: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 10 },
   partyAvatar: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border },
   partyTaskList: { gap: 8 },
   partyTaskButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 12 },
@@ -2397,7 +2330,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   partyTaskTitle: { color: theme.text, fontSize: 15, fontWeight: '700', marginBottom: 3 },
   activeAssignmentText: { alignSelf: 'flex-start', color: theme.primary, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border, borderRadius: 6, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: '700', marginTop: 7 },
   partyTaskDetails: { color: theme.muted, fontSize: 12, lineHeight: 17, marginTop: 6 },
-  previewAssignmentCard: { backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 12 },
   hostPanel: { backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 14, gap: 10 },
   hostTitle: { color: theme.text, fontSize: 18, fontWeight: '700' },
   hostSub: { color: theme.muted, fontSize: 13, lineHeight: 18, marginTop: -6 },
@@ -2405,24 +2337,19 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   hostActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   denyButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
   denyButtonText: { color: theme.text, fontSize: 12, fontWeight: '700' },
-  removeButton: { minHeight: 44, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 8 },
-  removeButtonText: { color: '#EF4444', fontSize: 12, fontWeight: '700' },
-  closeRoomButton: { alignItems: 'center', borderRadius: 14, backgroundColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13, marginTop: 4 },
+  removeButton: { minHeight: 44, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: DANGER_RED, paddingHorizontal: 12, paddingVertical: 8 },
+  removeButtonText: { color: DANGER_RED, fontSize: 12, fontWeight: '700' },
+  closeRoomButton: { alignItems: 'center', borderRadius: 14, backgroundColor: DANGER_RED, paddingHorizontal: 16, paddingVertical: 13, marginTop: 4 },
   closeRoomButtonText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700' },
-  partyFocusButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: theme.primary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14 },
-  partyFocusButtonText: { color: theme.onPrimary, fontSize: 15, fontWeight: '700' },
-  leavePartyButton: { alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 16, paddingVertical: 13 },
-  leavePartyButtonText: { color: '#EF4444', fontSize: 14, fontWeight: '700' },
   privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 10 },
   privacyRowActive: { backgroundColor: theme.surface, borderColor: theme.primary },
-  toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#94A3B8' },
+  toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: theme.border },
   toggleDotActive: { backgroundColor: theme.primary, borderColor: theme.primary },
   privacyTextWrap: { flex: 1 },
   privacyTitle: { color: theme.text, fontSize: 14, fontWeight: '700', marginBottom: 3 },
   privacyTitleActive: { color: theme.text },
   privacySub: { color: theme.muted, fontSize: 12, lineHeight: 17 },
   privacySubActive: { color: theme.muted, opacity: 1 },
-  roomDetailCard: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16 },
   serverPreview: {
     backgroundColor: theme.surface,
     borderRadius: 18,
@@ -2542,22 +2469,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderTopColor: theme.border,
     backgroundColor: theme.surface,
   },
-  roomDetailTitle: { color: theme.text, fontSize: 20, fontWeight: '700', marginBottom: 4 },
-  roomSummaryStack: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, gap: 5, marginTop: 12, marginBottom: 14 },
-  roomSummaryLine: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
-  roomInfoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14, marginBottom: 8 },
-  roomInfoItem: { width: '48%', backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 10 },
-  roomInfoLabel: { color: theme.primary, fontSize: 11, fontWeight: '700', marginBottom: 4, textTransform: 'uppercase' },
-  roomInfoValue: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
-  memberList: { gap: 10, marginBottom: 14 },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, padding: 10 },
-  messageRoomButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 16, paddingVertical: 13, marginBottom: 10 },
-  messageRoomButtonText: { color: theme.text, fontSize: 14, fontWeight: '700', textAlign: 'center' },
-  confirmRow: { flexDirection: 'row', gap: 10 },
-  cancelButton: { flex: 1, backgroundColor: theme.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 16, paddingVertical: 13 },
-  cancelButtonText: { color: theme.text, fontSize: 14, fontWeight: '700', textAlign: 'center' },
-  confirmButton: { flex: 1, backgroundColor: theme.primary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13 },
-  confirmButtonText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700', textAlign: 'center' },
   roomCard: {
     backgroundColor: theme.surface,
     borderRadius: 16,
