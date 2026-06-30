@@ -6,12 +6,14 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -49,9 +51,9 @@ const SAMPLE_RESULT: AIResult = {
 
 const ADJUSTMENT_PRESETS = [
   { label: 'I read fast', delta: -0.5 },
+  { label: 'Feels right', delta: 0 },
   { label: 'Need more time', delta: 0.5 },
   { label: 'Lots of notes', delta: 1 },
-  { label: 'Reset', delta: 0 },
 ];
 
 function formatHours(hours: number) {
@@ -63,6 +65,37 @@ function getFocusPlan(hours: number) {
   const sessions = Math.max(1, Math.ceil(totalMinutes / 50));
   const minutesPerSession = Math.max(15, Math.round(totalMinutes / sessions));
   return `${sessions} focus session${sessions === 1 ? '' : 's'} of about ${minutesPerSession} min`;
+}
+
+function getTimeTip(hours: number): { emoji: string; tip: string } {
+  if (hours <= 0.5) {
+    return {
+      emoji: '⚡',
+      tip: 'Quick one! Set a timer for 30 minutes, close your notifications, and knock it out in one shot.',
+    };
+  }
+  if (hours <= 1.5) {
+    return {
+      emoji: '🎯',
+      tip: 'Do it in one focused session. Start with the hardest part while your brain is fresh, then wrap up the easier bits.',
+    };
+  }
+  if (hours <= 3) {
+    return {
+      emoji: '✂️',
+      tip: `Split it into two sessions. First session: read and understand. Second session: write and finish. Rest in between — seriously, it helps.`,
+    };
+  }
+  if (hours <= 5) {
+    return {
+      emoji: '📅',
+      tip: 'Spread this over two or three days. Do 45-minute chunks, then take a real break. Trying to cram it all in at once usually backfires.',
+    };
+  }
+  return {
+    emoji: '🗓️',
+    tip: 'Start early — this one needs multiple days. Plan short daily sessions and track what you finish each time so it doesn\'t feel overwhelming.',
+  };
 }
 
 export default function AutoAddScreen() {
@@ -78,6 +111,7 @@ export default function AutoAddScreen() {
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(false);
 
   const readAsBase64 = async (uri: string): Promise<string> => {
     if (Platform.OS === 'web') {
@@ -157,14 +191,14 @@ export default function AutoAddScreen() {
     setAdjustedHours(prev => Math.max(0.5, parseFloat((prev + delta).toFixed(1))));
   };
 
-  const applyPreset = (delta: number) => {
+  const applyPreset = useCallback((delta: number) => {
     if (!result) return;
     if (delta === 0) {
       setAdjustedHours(result.estimatedHours);
       return;
     }
     adjustHours(delta);
-  };
+  }, [result]);
 
   const handleDrop = (event: any) => {
     event.preventDefault();
@@ -282,117 +316,185 @@ export default function AutoAddScreen() {
             />
           )}
 
-          <ThemeCard style={styles.card}>
-            <Text style={styles.cardLabel}>Assignment</Text>
-            <Text style={styles.cardValue}>{result.assignmentName}</Text>
-          </ThemeCard>
-
-          <ThemeCard style={styles.card}>
-            <Text style={styles.cardLabel}>Class</Text>
-            <Text style={styles.cardValue}>{result.className}</Text>
-          </ThemeCard>
-
-          <ThemeCard variant="elevated" style={styles.estimateHero}>
-            <Text style={styles.cardLabel}>Time plan</Text>
-            <Text style={styles.estimateHours}>{formatHours(result.estimatedHours)}</Text>
-            <Text style={styles.estimateSub}>{result.workload} workload</Text>
-            <Text style={styles.confidenceText}>{result.confidence}</Text>
-          </ThemeCard>
-
-          <ThemeCard style={styles.card}>
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.cardLabel}>Why this estimate?</Text>
-              <Text style={styles.cardMeta}>You can change it</Text>
+          {/* Assignment + class summary row */}
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryBlock}>
+              <Text style={styles.summaryLabel}>Assignment</Text>
+              <Text style={styles.summaryValue} numberOfLines={2}>{result.assignmentName}</Text>
             </View>
-            <Text style={styles.cardReasoning}>{result.reasoning}</Text>
-            <View style={styles.factorList}>
-              {result.factors.map(factor => (
-                <View key={factor.label} style={styles.factorRow}>
-                  <Text style={styles.factorLabel}>{factor.label}</Text>
-                  <Text style={styles.factorValue}>{factor.value}</Text>
-                </View>
-              ))}
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryBlock}>
+              <Text style={styles.summaryLabel}>Class</Text>
+              <Text style={styles.summaryValue} numberOfLines={2}>{result.className}</Text>
             </View>
-          </ThemeCard>
-
-          <Text style={styles.sectionTitle}>Adjust time</Text>
-          <View style={styles.timeAdjuster}>
-            <TouchableOpacity
-              style={styles.adjBtn}
-              onPress={() => adjustHours(-0.5)}
-              accessibilityLabel="Decrease estimated hours"
-              accessibilityRole="button"
-            >
-              <Text style={styles.adjBtnText}>-</Text>
-            </TouchableOpacity>
-            <View style={styles.adjustedTimeWrap}>
-              <Text style={styles.hoursDisplay}>{formatHours(adjustedHours)}</Text>
-              <Text style={styles.adjustedSub}>{getFocusPlan(adjustedHours)}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.adjBtn}
-              onPress={() => adjustHours(0.5)}
-              accessibilityLabel="Increase estimated hours"
-              accessibilityRole="button"
-            >
-              <Text style={styles.adjBtnText}>+</Text>
-            </TouchableOpacity>
           </View>
 
+          {/* Time estimate hero */}
+          <ThemeCard variant="elevated" style={styles.estimateHero}>
+            <View style={styles.estimateLabelRow}>
+              <Text style={styles.estimateLabel}>We think it'll take</Text>
+              <TouchableOpacity
+                onPress={() => setShowReasoning(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityLabel="Why does it take this long?"
+                accessibilityRole="button"
+                style={styles.whyBtn}
+              >
+                <FontAwesome5 name="question-circle" size={16} color={theme.primary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.estimateHours}>{formatHours(adjustedHours)}</Text>
+            <Text style={styles.estimatePlan}>{getFocusPlan(adjustedHours)}</Text>
+          </ThemeCard>
+
+          {/* Reasoning modal */}
+          <Modal
+            visible={showReasoning}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setShowReasoning(false)}
+          >
+            <View style={styles.reasoningModal}>
+              <View style={styles.reasoningHeader}>
+                <Text style={styles.reasoningTitle}>Why {formatHours(result.estimatedHours)}?</Text>
+                <TouchableOpacity
+                  onPress={() => setShowReasoning(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityLabel="Close explanation"
+                  accessibilityRole="button"
+                >
+                  <FontAwesome5 name="times" size={18} color={theme.muted} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.reasoningText}>{result.reasoning}</Text>
+
+              <View style={styles.reasoningDivider} />
+
+              <Text style={styles.reasoningBreakdownTitle}>Here's the breakdown</Text>
+              {result.factors.map(factor => (
+                <View key={factor.label} style={styles.reasoningFactor}>
+                  <View style={styles.reasoningFactorDot} />
+                  <View style={styles.reasoningFactorBody}>
+                    <Text style={styles.reasoningFactorLabel}>{factor.label}</Text>
+                    <Text style={styles.reasoningFactorValue}>{factor.value}</Text>
+                  </View>
+                </View>
+              ))}
+
+              {/* Tip */}
+              {(() => {
+                const { emoji, tip } = getTimeTip(adjustedHours);
+                return (
+                  <View style={styles.tipCard}>
+                    <Text style={styles.tipEmoji}>{emoji}</Text>
+                    <View style={styles.tipBody}>
+                      <Text style={styles.tipLabel}>How to use this time</Text>
+                      <Text style={styles.tipText}>{tip}</Text>
+                    </View>
+                  </View>
+                );
+              })()}
+
+              <View style={styles.reasoningFooter}>
+                <Text style={styles.reasoningFooterText}>You can always adjust the time using the chips below.</Text>
+              </View>
+
+              <Pressable style={styles.reasoningDismiss} onPress={() => setShowReasoning(false)}>
+                <Text style={styles.reasoningDismissText}>Got it</Text>
+              </Pressable>
+            </View>
+          </Modal>
+
+          {/* Tap-to-adjust chips */}
+          <Text style={styles.adjustQuestion}>Does that feel right?</Text>
           <View style={styles.adjustPresetRow}>
             {ADJUSTMENT_PRESETS.map(preset => (
               <TouchableOpacity
                 key={preset.label}
-                style={styles.adjustPreset}
+                style={[
+                  styles.adjustPreset,
+                  preset.delta === 0 && adjustedHours === result.estimatedHours && styles.adjustPresetActive,
+                ]}
                 onPress={() => applyPreset(preset.delta)}
-                activeOpacity={0.85}
+                activeOpacity={0.8}
                 accessibilityLabel={preset.label}
                 accessibilityRole="button"
               >
-                <Text style={styles.adjustPresetText}>{preset.label}</Text>
+                <Text style={[
+                  styles.adjustPresetText,
+                  preset.delta === 0 && adjustedHours === result.estimatedHours && styles.adjustPresetTextActive,
+                ]}>{preset.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <ThemeCard style={styles.planCard}>
-            <Text style={styles.cardLabel}>Focus plan</Text>
-            <Text style={styles.planTitle}>{getFocusPlan(adjustedHours)}</Text>
-            <Text style={styles.planText}>Change this later if the assignment feels easier or harder than expected.</Text>
-          </ThemeCard>
-
-          <Text style={styles.sectionTitle}>Due date</Text>
-          <TouchableOpacity
-            style={styles.dateTrigger}
-            onPress={() => setShowDatePicker(v => !v)}
-            activeOpacity={0.8}
-            accessibilityLabel={`Due date: ${dueDate.toLocaleDateString()}. Tap to change.`}
-            accessibilityRole="button"
-          >
-            <FontAwesome5 name="calendar-alt" size={14} color={theme.primary} />
-            <Text style={styles.dateTriggerText}>{dueDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</Text>
-            <FontAwesome5 name={showDatePicker ? 'chevron-up' : 'chevron-down'} size={11} color={theme.muted} />
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={dueDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(_, selected) => {
-                if (Platform.OS === 'android') setShowDatePicker(false);
-                if (selected) setDueDate(selected);
-              }}
-              minimumDate={new Date()}
-            />
+          {/* Due date */}
+          <Text style={styles.adjustQuestion}>When is it due?</Text>
+          {Platform.OS === 'web' ? (
+            <View style={styles.dateWrapper}>
+              <FontAwesome5 name="calendar-alt" size={14} color={theme.primary} />
+              <Text style={styles.dateTriggerText}>
+                {dueDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+              </Text>
+              <FontAwesome5 name="chevron-down" size={11} color={theme.muted} />
+              <input
+                type="date"
+                value={dueDate.toISOString().split('T')[0]}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e: any) => {
+                  if (e.target.value) {
+                    const d = new Date(e.target.value + 'T12:00:00');
+                    if (!isNaN(d.getTime())) setDueDate(d);
+                  }
+                }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: 0,
+                  cursor: 'pointer',
+                  width: '100%',
+                  height: '100%',
+                } as any}
+              />
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.dateWrapper}
+                onPress={() => setShowDatePicker(v => !v)}
+                activeOpacity={0.8}
+                accessibilityLabel={`Due date: ${dueDate.toLocaleDateString()}. Tap to change.`}
+                accessibilityRole="button"
+              >
+                <FontAwesome5 name="calendar-alt" size={14} color={theme.primary} />
+                <Text style={styles.dateTriggerText}>
+                  {dueDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+                <FontAwesome5 name={showDatePicker ? 'chevron-up' : 'chevron-down'} size={11} color={theme.muted} />
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dueDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  onChange={(_, selected) => {
+                    if (Platform.OS === 'android') setShowDatePicker(false);
+                    if (selected) setDueDate(selected);
+                  }}
+                  minimumDate={new Date()}
+                  style={styles.datePicker}
+                />
+              )}
+            </>
           )}
 
           <ThemeButton size="lg" style={styles.saveAction} onPress={() => saveAssignment(false)}>
             Save assignment
           </ThemeButton>
-          <ThemeButton variant="secondary" style={styles.focusAction} onPress={() => saveAssignment(true)}>
-            Save and start focus
+          <ThemeButton variant="ghost" style={styles.focusAction} onPress={() => saveAssignment(true)}>
+            Save and start focus now
           </ThemeButton>
-          <ThemeButton variant="ghost" onPress={() => router.back()}>Cancel</ThemeButton>
         </>
       )}
     </ScrollView>
@@ -450,184 +552,252 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   preview: {
     width: '100%',
-    height: 200,
+    height: 180,
     borderRadius: 14,
     marginBottom: 20,
   },
-  card: {
-    marginBottom: 12,
+
+  summaryRow: {
+    flexDirection: 'row',
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginBottom: 20,
+    overflow: 'hidden',
   },
-  cardLabel: {
+  summaryBlock: {
+    flex: 1,
+    padding: 14,
+  },
+  summaryDivider: {
+    width: 1,
+    backgroundColor: theme.border,
+  },
+  summaryLabel: {
     color: theme.muted,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
     marginBottom: 4,
   },
-  cardValue: {
+  summaryValue: {
     color: theme.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cardReasoning: {
-    color: theme.muted,
     fontSize: 14,
+    fontWeight: '700',
     lineHeight: 20,
   },
+
   estimateHero: {
-    padding: 18,
-    marginBottom: 12,
     alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    marginBottom: 28,
+  },
+  estimateLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  estimateLabel: {
+    color: theme.muted,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  whyBtn: {
+    opacity: 0.85,
   },
   estimateHours: {
     color: theme.text,
-    fontSize: 42,
+    fontSize: 64,
     fontWeight: '800',
-    letterSpacing: -1,
+    letterSpacing: -2,
+    lineHeight: 72,
   },
-  estimateSub: {
-    color: theme.muted,
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  confidenceText: {
-    color: theme.accent,
-    fontSize: 12,
+  estimatePlan: {
+    color: theme.primary,
+    fontSize: 13,
     fontWeight: '700',
     marginTop: 8,
   },
-  cardHeaderRow: {
+
+  reasoningModal: {
+    flex: 1,
+    backgroundColor: theme.background,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 40,
+  },
+  reasoningHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    marginBottom: 20,
   },
-  cardMeta: {
-    color: theme.muted,
-    fontSize: 11,
-    fontWeight: '700',
+  reasoningTitle: {
+    color: theme.text,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  sectionTitle: {
+  reasoningText: {
+    color: theme.text,
+    fontSize: 16,
+    lineHeight: 26,
+    marginBottom: 24,
+  },
+  reasoningDivider: {
+    height: 1,
+    backgroundColor: theme.border,
+    marginBottom: 20,
+  },
+  reasoningBreakdownTitle: {
     color: theme.muted,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 16,
   },
-  timeAdjuster: {
+  reasoningFactor: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.surface,
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 14,
+  },
+  reasoningFactorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.primary,
+    marginTop: 6,
+  },
+  reasoningFactorBody: {
+    flex: 1,
+  },
+  reasoningFactorLabel: {
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  reasoningFactorValue: {
+    color: theme.muted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  reasoningFooter: {
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 24,
+    marginBottom: 28,
+  },
+  reasoningFooterText: {
+    color: theme.muted,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  reasoningDismiss: {
+    backgroundColor: theme.primary,
     borderRadius: 14,
-    padding: 10,
-    justifyContent: 'space-between',
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  reasoningDismissText: {
+    color: theme.onPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  tipCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 28,
     borderWidth: 1,
     borderColor: theme.border,
   },
-  adjustedTimeWrap: {
+  tipEmoji: {
+    fontSize: 26,
+    lineHeight: 32,
+  },
+  tipBody: {
     flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 12,
   },
-  adjBtn: {
-    backgroundColor: theme.surfaceAlt,
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tipLabel: {
+    color: theme.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 5,
   },
-  adjBtnText: {
+  tipText: {
     color: theme.text,
-    fontSize: 24,
-    fontWeight: '300',
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: '500',
   },
-  hoursDisplay: {
+
+  adjustQuestion: {
     color: theme.text,
-    fontSize: 28,
-    fontWeight: 'bold',
-    letterSpacing: -1,
-  },
-  adjustedSub: {
-    color: theme.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginTop: 3,
-  },
-  factorList: {
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-    marginTop: 12,
-    paddingTop: 10,
-    gap: 8,
-  },
-  factorRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  factorLabel: {
-    color: theme.muted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  factorValue: {
-    flex: 1,
-    color: theme.text,
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'right',
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 12,
+    letterSpacing: -0.2,
   },
   adjustPresetRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12,
+    marginBottom: 28,
   },
   adjustPreset: {
     minHeight: 44,
     borderRadius: 999,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: theme.border,
     backgroundColor: theme.surface,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     justifyContent: 'center',
+  },
+  adjustPresetActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary + '18',
   },
   adjustPresetText: {
     color: theme.text,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  planCard: {
-    marginTop: 14,
-  },
-  planTitle: {
-    color: theme.text,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 5,
-  },
-  planText: {
-    color: theme.muted,
     fontSize: 13,
-    lineHeight: 19,
+    fontWeight: '600',
   },
-  dateTrigger: {
+  adjustPresetTextActive: {
+    color: theme.primary,
+    fontWeight: '700',
+  },
+
+  datePicker: {
+    marginTop: 8,
+    alignSelf: 'stretch',
+  },
+  dateWrapper: {
     backgroundColor: theme.surface,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
     borderColor: theme.border,
     marginBottom: 8,
+    position: 'relative',
+    overflow: 'hidden',
   },
   dateTriggerText: {
     flex: 1,
@@ -636,8 +806,8 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontWeight: '600',
   },
   actionGap: { marginBottom: 12 },
-  saveAction: { marginTop: 24, marginBottom: 12 },
-  focusAction: { marginBottom: 12 },
+  saveAction: { marginTop: 28, marginBottom: 12 },
+  focusAction: { marginBottom: 8 },
   dropZone: {
     borderWidth: 2,
     borderColor: theme.border,
