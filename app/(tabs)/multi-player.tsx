@@ -1,5 +1,5 @@
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { ThemeButton, ThemeChip, ThemeField } from '@/components/ui/design-system';
+import { PIXEL_FONT, PixelBadge, PixelButton, PixelField } from '@/components/pixel-ui';
 import { useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -168,7 +168,7 @@ const noticeStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderRadius: 14,
+    borderRadius: 2,
     paddingHorizontal: 13,
     paddingVertical: 10,
     marginBottom: 12,
@@ -831,7 +831,7 @@ export default function MultiPlayerScreen() {
     containerStyle?: StyleProp<ViewStyle>;
     showHelper?: boolean;
   }) => (
-    <ThemeField
+    <PixelField
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
@@ -948,18 +948,18 @@ export default function MultiPlayerScreen() {
       <Text style={styles.sectionLabel}>How do you want to meet?</Text>
       <View style={styles.choiceRow}>
         {MEETING_OPTIONS.map(option => (
-          <ThemeChip key={option} selected={meetingPreference === option} onPress={() => setMeetingPreference(option)}>
+          <PixelBadge key={option} selected={meetingPreference === option} onPress={() => setMeetingPreference(option)}>
             {option}
-          </ThemeChip>
+          </PixelBadge>
         ))}
       </View>
 
       <Text style={styles.sectionLabel}>What are you usually working on?</Text>
       <View style={styles.choiceRow}>
         {STUDY_OPTIONS.map(option => (
-          <ThemeChip key={option} selected={studyFocus === option} onPress={() => setStudyFocus(option)}>
+          <PixelBadge key={option} selected={studyFocus === option} onPress={() => setStudyFocus(option)}>
             {option}
-          </ThemeChip>
+          </PixelBadge>
         ))}
       </View>
 
@@ -1034,7 +1034,7 @@ export default function MultiPlayerScreen() {
         </View>
       )}
 
-      <ThemeButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Create profile</ThemeButton>
+      <PixelButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Create profile</PixelButton>
     </View>
   );
 
@@ -1059,12 +1059,12 @@ export default function MultiPlayerScreen() {
         <Text style={styles.sectionLabel}>Next</Text>
         <Text style={styles.profileTitle}>Add your first assignment</Text>
         <Text style={styles.profileSub}>Use a photo or enter it yourself. You can make a profile after that.</Text>
-        <ThemeButton size="lg" style={styles.compactActionButton} onPress={() => router.push('/auto-add')}>
+        <PixelButton size="lg" style={styles.compactActionButton} onPress={() => router.push('/auto-add')}>
           Add assignment
-        </ThemeButton>
-        <ThemeButton variant="secondary" onPress={() => setShowProfileSetup(true)}>
+        </PixelButton>
+        <PixelButton variant="surface" onPress={() => setShowProfileSetup(true)}>
           Set up profile instead
-        </ThemeButton>
+        </PixelButton>
       </View>
     </View>
   );
@@ -1139,9 +1139,9 @@ export default function MultiPlayerScreen() {
         body: 'No matches right now.',
         steps: ['Switch to All', 'Try another study style'],
         action: (
-          <ThemeButton variant="secondary" onPress={() => setActiveFilter('All')}>
+          <PixelButton variant="surface" onPress={() => setActiveFilter('All')}>
             Show all profiles
-          </ThemeButton>
+          </PixelButton>
         ),
       })}
     </View>
@@ -1221,9 +1221,9 @@ export default function MultiPlayerScreen() {
             body: 'Add someone you would actually study with.',
             steps: ['Browse profiles', 'Send one request'],
             action: (
-              <ThemeButton variant="secondary" onPress={() => setActiveBrowseTab('Profiles')}>
+              <PixelButton variant="surface" onPress={() => setActiveBrowseTab('Profiles')}>
                 Browse profiles
-              </ThemeButton>
+              </PixelButton>
             ),
           })
         )}
@@ -1240,22 +1240,22 @@ export default function MultiPlayerScreen() {
         </View>
         <Text style={styles.countPill}>{helpPosts.length}</Text>
       </View>
-      <ThemeButton style={styles.compactActionButton} onPress={() => setShowFeedComposer(current => !current)}>
+      <PixelButton style={styles.compactActionButton} onPress={() => setShowFeedComposer(current => !current)}>
         {showFeedComposer ? 'Cancel post' : 'Write post'}
-      </ThemeButton>
+      </PixelButton>
       {showFeedComposer && (
         <View style={styles.roomForm}>
           <Text style={styles.profileTitle}>Share a post</Text>
           <View style={styles.choiceRow}>
             {FEED_KINDS.map(kind => (
-              <ThemeChip key={kind} selected={postKind === kind} onPress={() => setPostKind(kind)}>
+              <PixelBadge key={kind} selected={postKind === kind} onPress={() => setPostKind(kind)}>
                 {kind}
-              </ThemeChip>
+              </PixelBadge>
             ))}
           </View>
-          <ThemeField value={helpTopic} onChangeText={setHelpTopic} placeholder="What do you need help with?" containerStyle={styles.fieldWrap} />
-          <ThemeField value={helpDetails} onChangeText={setHelpDetails} placeholder="Add details or a suggestion" multiline containerStyle={styles.fieldWrap} />
-          <ThemeButton onPress={handleCreateHelpPost}>Share post</ThemeButton>
+          <PixelField value={helpTopic} onChangeText={setHelpTopic} placeholder="What do you need help with?" containerStyle={styles.fieldWrap} />
+          <PixelField value={helpDetails} onChangeText={setHelpDetails} placeholder="Add details or a suggestion" multiline containerStyle={styles.fieldWrap} />
+          <PixelButton onPress={handleCreateHelpPost}>Share post</PixelButton>
         </View>
       )}
 
@@ -1297,9 +1297,9 @@ export default function MultiPlayerScreen() {
         body: 'No posts yet.',
         steps: ['Ask about one class', 'Share a useful study tip'],
         action: (
-          <ThemeButton variant="secondary" onPress={() => setShowFeedComposer(true)}>
+          <PixelButton variant="surface" onPress={() => setShowFeedComposer(true)}>
             Write first post
-          </ThemeButton>
+          </PixelButton>
         ),
       })}
     </View>
@@ -1423,14 +1423,14 @@ export default function MultiPlayerScreen() {
           </View>
         )}
 
-        <ThemeButton
+        <PixelButton
           size="lg"
           onPress={handleStartPartyFocus}
           leftIcon={<FontAwesome5 name="play" size={13} color={theme.onPrimary} />}
         >
           Start focus
-        </ThemeButton>
-        <ThemeButton variant="danger" onPress={handleLeaveParty}>Leave study group</ThemeButton>
+        </PixelButton>
+        <PixelButton variant="danger" onPress={handleLeaveParty}>Leave study group</PixelButton>
       </View>
     );
   };
@@ -1542,18 +1542,18 @@ export default function MultiPlayerScreen() {
             </View>
 
             <View style={styles.serverActionDock}>
-              <ThemeButton
+              <PixelButton
                 fullWidth
-                variant="secondary"
+                variant="surface"
                 onPress={() => handleMessageRoom(selectedRoom)}
                 accessibilityLabel={`Message ${selectedRoom.name}`}
                 leftIcon={<FontAwesome5 name="comment-dots" size={13} color={theme.text} />}
               >
                 Message
-              </ThemeButton>
-              <ThemeButton fullWidth disabled={joiningRoomId === selectedRoom.id} onPress={() => handleConfirmJoin(selectedRoom)}>
+              </PixelButton>
+              <PixelButton fullWidth disabled={joiningRoomId === selectedRoom.id} onPress={() => handleConfirmJoin(selectedRoom)}>
                 {joiningRoomId === selectedRoom.id ? 'Connecting...' : selectedRoom.approvalRequired ? 'Confirm request' : 'Confirm join'}
-              </ThemeButton>
+              </PixelButton>
             </View>
           </View>
         </View>
@@ -1570,9 +1570,9 @@ export default function MultiPlayerScreen() {
           <Text style={styles.countPill}>{studyRooms.length}</Text>
         </View>
 
-        <ThemeButton style={styles.createRoomButton} onPress={() => setShowRoomForm(current => !current)}>
+        <PixelButton style={styles.createRoomButton} onPress={() => setShowRoomForm(current => !current)}>
           {showRoomForm ? 'Cancel' : 'Create room'}
-        </ThemeButton>
+        </PixelButton>
 
         {showRoomForm && (
           <View style={styles.roomForm}>
@@ -1670,7 +1670,7 @@ export default function MultiPlayerScreen() {
               </View>
             </TouchableOpacity>
 
-            <ThemeButton onPress={handleCreateRoom}>Create room</ThemeButton>
+            <PixelButton onPress={handleCreateRoom}>Create room</PixelButton>
           </View>
         )}
 
@@ -1729,9 +1729,9 @@ export default function MultiPlayerScreen() {
           body: 'Create a room when you know the goal, time, and place.',
           steps: ['Add the class or exam', 'Pick time and place'],
           action: (
-            <ThemeButton variant="secondary" onPress={() => setShowRoomForm(true)}>
+            <PixelButton variant="surface" onPress={() => setShowRoomForm(true)}>
               Create first room
-            </ThemeButton>
+            </PixelButton>
           ),
         })}
       </View>
@@ -1878,9 +1878,9 @@ export default function MultiPlayerScreen() {
           {showProfileFilters && (
             <View style={styles.choiceRow}>
               {FILTER_OPTIONS.map(option => (
-                <ThemeChip key={option} selected={activeFilter === option} onPress={() => setActiveFilter(option)}>
+                <PixelBadge key={option} selected={activeFilter === option} onPress={() => setActiveFilter(option)}>
                   {option}
-                </ThemeChip>
+                </PixelBadge>
               ))}
             </View>
           )}
@@ -2018,9 +2018,24 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   heroCompact: { marginBottom: 14 },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
   heroCopy: { flex: 1 },
-  kicker: { color: theme.primary, fontSize: 12, fontWeight: '700', letterSpacing: 0, marginBottom: 6 },
+  kicker: {
+    color: theme.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
   heroIcon: { display: 'none' },
-  heading: { color: theme.text, fontSize: 24, fontWeight: '600', marginBottom: 6 },
+  heading: {
+    color: theme.text,
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
   description: { color: theme.muted, fontSize: 15, lineHeight: 22 },
   lobbySignals: { display: 'none' },
   lobbySignalValue: { color: theme.text, fontSize: 15, fontWeight: '700' },
@@ -2033,23 +2048,40 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     backgroundColor: theme.primary,
-    borderRadius: 9,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.3)',
+    borderLeftColor: 'rgba(255,255,255,0.3)',
+    borderBottomColor: 'rgba(0,0,0,0.3)',
+    borderRightColor: 'rgba(0,0,0,0.3)',
     paddingHorizontal: 22,
     paddingVertical: 16,
-    shadowColor: theme.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0,
-    shadowRadius: 6,
-    elevation: 0,
   },
-  beginButtonText: { color: theme.onPrimary, fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  beginButtonText: {
+    color: theme.onPrimary,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
   panel: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16 },
-  panelTitle: { color: theme.text, fontSize: 20, fontWeight: '600', marginBottom: 12 },
+  panelTitle: {
+    color: theme.text,
+    fontSize: 17,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
   input: {
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(0,0,0,0.32)',
+    borderLeftColor: 'rgba(0,0,0,0.32)',
+    borderBottomColor: 'rgba(255,255,255,0.14)',
+    borderRightColor: 'rgba(255,255,255,0.14)',
     color: theme.text,
     fontSize: 15,
     paddingHorizontal: 14,
@@ -2062,24 +2094,28 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   halfInput: { flex: 1 },
   sectionLabel: {
     color: theme.primary,
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.35,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.8,
     marginBottom: 10,
     marginTop: 4,
     textTransform: 'uppercase',
   },
   schoolList: { gap: 8 },
   schoolOption: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'transparent', borderRadius: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: theme.border, paddingHorizontal: 0, paddingVertical: 13 },
-  schoolOptionSwatches: { width: 34, height: 22, flexDirection: 'row', overflow: 'hidden', borderRadius: 7, borderWidth: 1, borderColor: theme.border },
+  schoolOptionSwatches: { width: 34, height: 22, flexDirection: 'row', overflow: 'hidden', borderRadius: 2, borderWidth: 1, borderColor: theme.border },
   schoolOptionSwatch: { flex: 1 },
   schoolOptionText: { color: theme.text, fontSize: 15, fontWeight: '600' },
   profileSection: { marginTop: 0 },
   profileSetupPanel: {
     backgroundColor: theme.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
     padding: 14,
     marginBottom: 16,
   },
@@ -2096,7 +2132,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   selectedSchoolTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   selectedSchoolLabel: { color: theme.primary, fontSize: 11, fontWeight: '700', marginBottom: 3, textTransform: 'uppercase' },
   selectedSchoolText: { color: theme.text, fontSize: 15, fontWeight: '700' },
-  schoolSwatches: { width: 48, height: 28, flexDirection: 'row', overflow: 'hidden', borderRadius: 8, borderWidth: 1, borderColor: theme.border },
+  schoolSwatches: { width: 48, height: 28, flexDirection: 'row', overflow: 'hidden', borderRadius: 2, borderWidth: 1, borderColor: theme.border },
   schoolSwatch: { flex: 1 },
   schoolConfirm: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16, marginBottom: 18 },
   schoolConfirmCopy: { flex: 1 },
@@ -2104,12 +2140,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   schoolConfirmText: { color: theme.muted, fontSize: 13, lineHeight: 19, maxWidth: 280 },
   onboardingNext: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 16, gap: 10 },
   profileComposerHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
-  profileAvatarButton: { width: 78, height: 78, borderRadius: 24 },
-  profileAvatarImage: { width: 78, height: 78, borderRadius: 24 },
+  profileAvatarButton: { width: 78, height: 78, borderRadius: 4 },
+  profileAvatarImage: { width: 78, height: 78, borderRadius: 4 },
   profileAvatarEmpty: {
     width: 78,
     height: 78,
-    borderRadius: 24,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surfaceAlt,
@@ -2123,7 +2159,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     bottom: -2,
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.primary,
@@ -2172,7 +2208,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   schoolSwitcherPanel: {
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.border,
     padding: 13,
@@ -2190,7 +2226,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   schoolSwitcherClose: {
     width: 34,
     height: 34,
-    borderRadius: 13,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surfaceAlt,
@@ -2205,7 +2241,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   socialIconButton: {
     width: 44,
     height: 44,
-    borderRadius: 16,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surfaceAlt,
@@ -2222,7 +2258,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   storyRing: {
     width: 62,
     height: 62,
-    borderRadius: 23,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -2232,14 +2268,14 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   storyAvatar: {
     width: 52,
     height: 52,
-    borderRadius: 19,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surfaceAlt,
     borderWidth: 1,
     borderColor: theme.border,
   },
-  storyImage: { width: 52, height: 52, borderRadius: 19 },
+  storyImage: { width: 52, height: 52, borderRadius: 4 },
   storyLabel: { width: '100%', color: theme.text, fontSize: 11, fontWeight: '700', textAlign: 'center' },
   socialTabBar: {
     flexDirection: 'row',
@@ -2253,7 +2289,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   socialTab: {
     flex: 1,
     minHeight: 42,
-    borderRadius: 14,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
@@ -2272,11 +2308,11 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '600', marginBottom: 3 },
   sectionHint: { color: theme.muted, fontSize: 13, lineHeight: 18, maxWidth: 260 },
   countPill: { display: 'none' },
-  filterToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 8, paddingHorizontal: 13, paddingVertical: 12, marginBottom: 10 },
+  filterToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 2, paddingHorizontal: 13, paddingVertical: 12, marginBottom: 10 },
   filterToggleText: { color: theme.text, fontSize: 13, fontWeight: '600' },
   profileCard: { borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 15 },
   friendCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: 1, borderTopColor: theme.border, paddingVertical: 13 },
-  avatar: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
+  avatar: { width: 44, height: 44, borderRadius: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt },
   avatarText: { color: theme.text, fontSize: 18, fontWeight: '700' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   profileTitleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -2287,63 +2323,63 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cardMajor: { color: theme.primary, fontSize: 13, fontWeight: '700', marginTop: 3 },
   cardFact: { color: theme.muted, fontSize: 13, lineHeight: 19, marginTop: 10 },
   cardSubtle: { color: theme.muted, fontSize: 12, lineHeight: 18, marginTop: 3 },
-  iconButton: { minWidth: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 8 },
+  iconButton: { minWidth: 44, height: 44, borderRadius: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 8 },
   iconButtonActive: { backgroundColor: theme.surface, borderColor: theme.primary },
-  messageButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 9 },
+  messageButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 9 },
   messageButtonText: { color: theme.text, fontSize: 12, fontWeight: '600' },
   metaChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
   metaChip: { color: theme.muted, paddingRight: 10, paddingVertical: 4, fontSize: 12, fontWeight: '700' },
   cardFooterActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 },
   approvalHint: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17, fontWeight: '700' },
-  blockButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: DANGER_RED, paddingHorizontal: 11, paddingVertical: 8 },
+  blockButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', borderRadius: 2, borderWidth: 1, borderColor: DANGER_RED, paddingHorizontal: 11, paddingVertical: 8 },
   blockButtonText: { color: DANGER_RED, fontSize: 12, fontWeight: '700' },
   tag: { color: theme.primary, borderBottomWidth: 1, borderBottomColor: theme.border, overflow: 'hidden', paddingHorizontal: 0, paddingVertical: 5, fontSize: 12, fontWeight: '700' },
   emptyPanel: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16, gap: 10 },
   emptyPanelFeatured: { padding: 18 },
-  emptyIconBubble: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, marginBottom: 2 },
+  emptyIconBubble: { width: 48, height: 48, borderRadius: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, marginBottom: 2 },
   emptyTitle: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 2 },
   emptyText: { color: theme.muted, fontSize: 14, lineHeight: 20 },
   emptyStepList: { gap: 8, marginTop: 4, marginBottom: 4 },
   emptyStep: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  emptyStepNumber: { width: 22, height: 22, borderRadius: 8, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: theme.text, backgroundColor: theme.surfaceAlt, fontSize: 12, fontWeight: '700' },
+  emptyStepNumber: { width: 22, height: 22, borderRadius: 2, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: theme.text, backgroundColor: theme.surfaceAlt, fontSize: 12, fontWeight: '700' },
   emptyStepText: { flex: 1, color: theme.text, fontSize: 13, lineHeight: 18, fontWeight: '700' },
   requestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   pendingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  feedCard: { backgroundColor: theme.surfaceAlt, borderRadius: 6, borderWidth: 1, borderColor: theme.border, padding: 15 },
-  feedKind: { alignSelf: 'flex-start', color: theme.primary, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border, borderRadius: 6, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: '700', marginBottom: 8 },
+  feedCard: { backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, padding: 15 },
+  feedKind: { alignSelf: 'flex-start', color: theme.primary, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border, borderRadius: 2, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: '700', marginBottom: 8 },
   commentList: { gap: 6, marginTop: 12 },
-  commentText: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, padding: 10, fontSize: 13, lineHeight: 18 },
+  commentText: { color: theme.text, backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, padding: 10, fontSize: 13, lineHeight: 18 },
   commentRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   commentInput: { flex: 1, marginBottom: 0 },
   roomForm: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 14 },
   partyCard: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16, gap: 12 },
   partyHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   partyTitle: { color: theme.text, fontSize: 20, fontWeight: '600', marginBottom: 3 },
-  multiplierBadge: { minWidth: 58, borderRadius: 10, backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center' },
+  multiplierBadge: { minWidth: 58, borderRadius: 2, backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 10, paddingVertical: 8, alignItems: 'center' },
   multiplierText: { color: theme.primary, fontSize: 16, fontWeight: '700' },
-  partyPeopleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 10 },
+  partyPeopleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, padding: 10 },
   avatarTrail: { flexDirection: 'row', alignItems: 'center' },
-  partyAvatar: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border },
+  partyAvatar: { width: 36, height: 36, borderRadius: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.border },
   partyTaskList: { gap: 8 },
-  partyTaskButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 12 },
+  partyTaskButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, padding: 12 },
   partyTaskButtonActive: { borderColor: theme.primary, backgroundColor: theme.surfaceAlt },
   partyTaskTitle: { color: theme.text, fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  activeAssignmentText: { alignSelf: 'flex-start', color: theme.primary, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border, borderRadius: 6, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: '700', marginTop: 7 },
+  activeAssignmentText: { alignSelf: 'flex-start', color: theme.primary, backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.border, borderRadius: 2, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: '700', marginTop: 7 },
   partyTaskDetails: { color: theme.muted, fontSize: 12, lineHeight: 17, marginTop: 6 },
-  hostPanel: { backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 14, gap: 10 },
+  hostPanel: { backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, padding: 14, gap: 10 },
   hostTitle: { color: theme.text, fontSize: 18, fontWeight: '700' },
   hostSub: { color: theme.muted, fontSize: 13, lineHeight: 18, marginTop: -6 },
-  hostRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surface, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 10 },
+  hostRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, backgroundColor: theme.surface, borderRadius: 2, borderWidth: 1, borderColor: theme.border, padding: 10 },
   hostActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  denyButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 12, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
+  denyButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, paddingHorizontal: 12, paddingVertical: 8 },
   denyButtonText: { color: theme.text, fontSize: 12, fontWeight: '700' },
-  removeButton: { minHeight: 44, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: DANGER_RED, paddingHorizontal: 12, paddingVertical: 8 },
+  removeButton: { minHeight: 44, justifyContent: 'center', borderRadius: 2, borderWidth: 1, borderColor: DANGER_RED, paddingHorizontal: 12, paddingVertical: 8 },
   removeButtonText: { color: DANGER_RED, fontSize: 12, fontWeight: '700' },
-  closeRoomButton: { alignItems: 'center', borderRadius: 14, backgroundColor: DANGER_RED, paddingHorizontal: 16, paddingVertical: 13, marginTop: 4 },
+  closeRoomButton: { alignItems: 'center', borderRadius: 2, backgroundColor: DANGER_RED, paddingHorizontal: 16, paddingVertical: 13, marginTop: 4 },
   closeRoomButtonText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700' },
-  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surfaceAlt, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 10 },
+  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.surfaceAlt, borderRadius: 2, borderWidth: 1, borderColor: theme.border, padding: 12, marginBottom: 10 },
   privacyRowActive: { backgroundColor: theme.surface, borderColor: theme.primary },
-  toggleDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: theme.border },
+  toggleDot: { width: 22, height: 22, borderRadius: 2, borderWidth: 2, borderColor: theme.border },
   toggleDotActive: { backgroundColor: theme.primary, borderColor: theme.primary },
   privacyTextWrap: { flex: 1 },
   privacyTitle: { color: theme.text, fontSize: 14, fontWeight: '700', marginBottom: 3 },
@@ -2352,7 +2388,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   privacySubActive: { color: theme.muted, opacity: 1 },
   serverPreview: {
     backgroundColor: theme.surface,
-    borderRadius: 18,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.border,
     overflow: 'hidden',
@@ -2371,7 +2407,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     right: 14,
     width: 40,
     height: 40,
-    borderRadius: 15,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surface,
@@ -2381,7 +2417,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   serverBadge: {
     width: 62,
     height: 62,
-    borderRadius: 22,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.primary,
@@ -2410,7 +2446,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     flex: 1,
     minHeight: 106,
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.border,
     padding: 12,
@@ -2426,7 +2462,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     flexDirection: 'row',
     gap: 11,
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.border,
     padding: 12,
@@ -2434,7 +2470,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   serverFocusIcon: {
     width: 38,
     height: 38,
-    borderRadius: 14,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surface,
@@ -2443,7 +2479,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   serverChatPreview: {
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.border,
     padding: 12,
@@ -2456,7 +2492,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     backgroundColor: theme.surfaceAlt,
-    borderRadius: 14,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.border,
     padding: 10,
@@ -2471,7 +2507,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   roomCard: {
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.border,
     padding: 12,
@@ -2480,7 +2516,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   roomPostAvatar: {
     width: 38,
     height: 38,
-    borderRadius: 14,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surfaceAlt,
@@ -2489,7 +2525,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   roomPostMedia: {
     minHeight: 118,
-    borderRadius: 14,
+    borderRadius: 2,
     backgroundColor: theme.surfaceAlt,
     borderWidth: 1,
     borderColor: theme.border,
@@ -2508,6 +2544,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   roomPostCaptionStrong: { color: theme.text, fontWeight: '800' },
   roomFooter: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   roomOpenText: { marginLeft: 'auto', color: theme.primary, fontSize: 13, fontWeight: '800' },
-  smallButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  smallButton: { minHeight: 44, justifyContent: 'center', backgroundColor: theme.primary, borderRadius: 2, paddingHorizontal: 12, paddingVertical: 8 },
   smallButtonText: { color: theme.onPrimary, fontSize: 12, fontWeight: '700' },
 });

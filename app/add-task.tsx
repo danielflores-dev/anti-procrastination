@@ -1,11 +1,11 @@
 import { SUBJECTS } from '@/constants/courseData';
-import { ThemeButton, ThemeField } from '@/components/ui/design-system';
+import { PIXEL_FONT, PixelButton, PixelField } from '@/components/pixel-ui';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import {
   Modal,
   Platform,
@@ -43,6 +43,7 @@ export default function AddTaskScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [estimatedHours, setEstimatedHours] = useState(1);
   const [errors, setErrors] = useState<{ name?: string; className?: string }>({});
+  const dateInputRef = useRef<any>(null);
 
   const [pickerVisible, setPickerVisible] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
@@ -108,7 +109,7 @@ export default function AddTaskScreen() {
         {/* Assignment name */}
         <View style={styles.fieldBlock}>
           <Text style={styles.question}>What are you working on?</Text>
-          <ThemeField
+          <PixelField
             placeholder="e.g. Chapter 5 essay"
             value={assignmentName}
             onChangeText={text => {
@@ -134,7 +135,7 @@ export default function AddTaskScreen() {
               <Text style={styles.browseLink}>Browse</Text>
             </TouchableOpacity>
           </View>
-          <ThemeField
+          <PixelField
             placeholder="e.g. Biology 101"
             value={className}
             onChangeText={text => {
@@ -150,58 +151,54 @@ export default function AddTaskScreen() {
         {/* Due date */}
         <View style={styles.fieldBlock}>
           <Text style={styles.question}>When is it due?</Text>
-          {Platform.OS === 'web' ? (
-            <View style={styles.dateTrigger}>
-              <FontAwesome5 name="calendar-alt" size={15} color={theme.primary} />
-              <Text style={styles.dateTriggerText}>{formatDateDisplay(dueDate)}</Text>
-              <FontAwesome5 name="chevron-down" size={11} color={theme.muted} />
-              <input
-                type="date"
-                value={dueDate.toISOString().split('T')[0]}
-                min={new Date().toISOString().split('T')[0]}
-                onChange={(e: any) => {
-                  if (e.target.value) {
-                    const d = new Date(e.target.value + 'T12:00:00');
-                    if (!isNaN(d.getTime())) setDueDate(d);
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  opacity: 0,
-                  cursor: 'pointer',
-                  width: '100%',
-                  height: '100%',
-                } as any}
-              />
-            </View>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={styles.dateTrigger}
-                onPress={() => setShowDatePicker(v => !v)}
-                activeOpacity={0.8}
-                accessibilityLabel={`Due date: ${formatDateDisplay(dueDate)}. Tap to change.`}
-                accessibilityRole="button"
-              >
-                <FontAwesome5 name="calendar-alt" size={15} color={theme.primary} />
-                <Text style={styles.dateTriggerText}>{formatDateDisplay(dueDate)}</Text>
-                <FontAwesome5 name={showDatePicker ? 'chevron-up' : 'chevron-down'} size={11} color={theme.muted} />
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={dueDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                  minimumDate={new Date()}
-                  onChange={(_, selected) => {
-                    if (Platform.OS === 'android') setShowDatePicker(false);
-                    if (selected) setDueDate(selected);
-                  }}
-                  style={styles.datePicker}
-                />
-              )}
-            </>
+          <TouchableOpacity
+            style={styles.dateTrigger}
+            onPress={() => {
+              if (Platform.OS === 'web') {
+                if (dateInputRef.current?.showPicker) {
+                  dateInputRef.current.showPicker();
+                } else {
+                  dateInputRef.current?.click();
+                }
+              } else {
+                setShowDatePicker(v => !v);
+              }
+            }}
+            activeOpacity={0.8}
+            accessibilityLabel={`Due date: ${formatDateDisplay(dueDate)}. Tap to change.`}
+            accessibilityRole="button"
+          >
+            <FontAwesome5 name="calendar-alt" size={15} color={theme.primary} />
+            <Text style={styles.dateTriggerText}>{formatDateDisplay(dueDate)}</Text>
+            <FontAwesome5 name="chevron-down" size={11} color={theme.muted} />
+          </TouchableOpacity>
+          {Platform.OS === 'web' && (
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={dueDate.toISOString().split('T')[0]}
+              min={new Date().toISOString().split('T')[0]}
+              onChange={(e: any) => {
+                if (e.target.value) {
+                  const d = new Date(e.target.value + 'T12:00:00');
+                  if (!isNaN(d.getTime())) setDueDate(d);
+                }
+              }}
+              style={{ position: 'fixed', top: 0, left: 0, opacity: 0, width: 1, height: 1, pointerEvents: 'none', colorScheme: 'dark' } as any}
+            />
+          )}
+          {Platform.OS !== 'web' && showDatePicker && (
+            <DateTimePicker
+              value={dueDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              minimumDate={new Date()}
+              onChange={(_, selected) => {
+                if (Platform.OS === 'android') setShowDatePicker(false);
+                if (selected) setDueDate(selected);
+              }}
+              style={styles.datePicker}
+            />
           )}
         </View>
 
@@ -232,12 +229,12 @@ export default function AddTaskScreen() {
           </View>
         </View>
 
-        <ThemeButton size="lg" style={styles.saveButton} onPress={() => handleSave(false)}>
+        <PixelButton size="lg" style={styles.saveButton} onPress={() => handleSave(false)}>
           Save assignment
-        </ThemeButton>
-        <ThemeButton variant="ghost" style={styles.focusButton} onPress={() => handleSave(true)}>
+        </PixelButton>
+        <PixelButton variant="ghost" style={styles.focusButton} onPress={() => handleSave(true)}>
           Save and start focus now
-        </ThemeButton>
+        </PixelButton>
       </ScrollView>
 
       <Modal
@@ -339,10 +336,11 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     justifyContent: 'center',
   },
   heading: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
     color: theme.text,
-    letterSpacing: -0.5,
+    letterSpacing: 0.5,
   },
 
   fieldBlock: {
@@ -372,14 +370,17 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
 
   dateTrigger: {
     backgroundColor: theme.surface,
-    borderRadius: 14,
+    borderRadius: 2,
     paddingHorizontal: 16,
     paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -398,22 +399,30 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.surface,
-    borderRadius: 16,
+    borderRadius: 2,
     padding: 12,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
   },
   adjBtn: {
     backgroundColor: theme.surfaceAlt,
     width: 56,
     height: 56,
-    borderRadius: 14,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
   },
-  adjBtnText: { color: theme.text, fontSize: 28, fontWeight: '300' },
+  adjBtnText: { color: theme.text, fontSize: 28, fontWeight: '400', fontFamily: PIXEL_FONT },
   hoursDisplay: { alignItems: 'center', gap: 4 },
-  hoursNumber: { color: theme.text, fontSize: 42, fontWeight: '800', letterSpacing: -1.5 },
+  hoursNumber: { color: theme.text, fontSize: 38, fontWeight: '800', fontFamily: PIXEL_FONT, letterSpacing: -1 },
   hoursSubtext: { color: theme.muted, fontSize: 12, fontWeight: '600' },
 
   saveButton: { marginBottom: 14 },
@@ -440,9 +449,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   modalTitle: {
     color: theme.text,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
   },
   pickerHint: {
     color: theme.muted,
@@ -466,10 +476,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   subjectCard: {
     width: '47%',
     backgroundColor: theme.surface,
-    borderRadius: 14,
+    borderRadius: 2,
     padding: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
     alignItems: 'flex-start',
     gap: 6,
   },
@@ -486,11 +499,14 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.surface,
-    borderRadius: 12,
+    borderRadius: 2,
     padding: 16,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
   },
   courseInfo: { flex: 1 },
   courseName: { color: theme.text, fontSize: 15, fontWeight: '600', marginBottom: 3 },

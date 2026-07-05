@@ -11,7 +11,24 @@
       "mcp__visualize__show_widget",
       "Bash(node -e \"const p = require\\('./package.json'\\); const deps = {...p.dependencies, ...p.devDependencies}; const keys = Object.keys\\(deps\\).filter\\(k => k.includes\\('date'\\) || k.includes\\('picker'\\) || k.includes\\('community'\\)\\); console.log\\(keys.length ? keys : 'none'\\); console.log\\(Object.keys\\(deps\\).filter\\(k => k.includes\\('expo'\\)\\).slice\\(0,10\\)\\);\")",
       "Bash(npx tsc *)",
-      "Bash(grep -v \"accessibilityLabel\\\\|import\\\\|//\\\\|^[0-9]*:  [a-z]\")"
+      "Bash(grep -v \"accessibilityLabel\\\\|import\\\\|//\\\\|^[0-9]*:  [a-z]\")",
+      "PowerShell(npx tsc --noEmit 2>$null)",
+      "PowerShell(if \\($?\\) { \"clean\" })",
+      "PowerShell(Remove-Item \"components\\\\PixelCityBackground.tsx\" -Confirm:$false)",
+      "PowerShell(npx tsc --noEmit)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8081/index.bundle?platform=web&dev=true&minify=false\" -UseBasicParsing -TimeoutSec 90; \"bundle OK, length: \" + $r.RawContentLength } catch { $body = $_.ErrorDetails.Message; if \\(-not $body\\) { $body = $_.Exception.Message }; $body.Substring\\(0, [Math]::Min\\(1500, $body.Length\\)\\) })",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&minify=false&lazy=true\" -UseBasicParsing -TimeoutSec 110; \"bundle OK, length: \" + $r.RawContentLength } catch { $body = $_.ErrorDetails.Message; if \\(-not $body\\) { $body = $_.Exception.Message }; $body.Substring\\(0, [Math]::Min\\(2000, $body.Length\\)\\) })",
+      "PowerShell(try { Invoke-WebRequest -Uri \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&minify=false&lazy=true\" -UseBasicParsing -TimeoutSec 110 | Out-Null } catch { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $body = $reader.ReadToEnd\\(\\); $body.Substring\\(0, [Math]::Min\\(2500, $body.Length\\)\\) })",
+      "PowerShell(Test-Path \"components\\\\pixel\\\\ui.tsx\"; \\(Get-Item \"components\\\\pixel\\\\ui.tsx\"\\).Length)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&minify=false&lazy=true\" -UseBasicParsing -TimeoutSec 110; \"bundle OK\" } catch { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $body = $reader.ReadToEnd\\(\\); \\($body | ConvertFrom-Json\\).message.Substring\\(0, 300\\) })",
+      "PowerShell(Move-Item \"components\\\\pixel\\\\ui.tsx\" \"components\\\\pixel-ui.tsx\")",
+      "PowerShell(Remove-Item \"components\\\\pixel\" -Recurse -Force -Confirm:$false)",
+      "PowerShell(npx tsc --noEmit 2>$null; if \\($?\\) { \"tsc clean\" }; try { $r = Invoke-WebRequest -Uri \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&minify=false&lazy=true\" -UseBasicParsing -TimeoutSec 110; \"bundle OK\" } catch { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $body = $reader.ReadToEnd\\(\\); \\($body | ConvertFrom-Json\\).message.Substring\\(0, 400\\) })",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 10; if \\($?\\) { \"---\" }; try { $r = Invoke-WebRequest -Uri \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&minify=false&lazy=true\" -UseBasicParsing -TimeoutSec 110; \"bundle OK\" } catch { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $body = $reader.ReadToEnd\\(\\); \\($body | ConvertFrom-Json\\).message.Substring\\(0, 400\\) })",
+      "PowerShell(\\(Get-Content \"app\\\\\\(tabs\\)\\\\shop.tsx\" | Measure-Object -Line\\).Lines; \\(Get-Content \"app\\\\\\(tabs\\)\\\\multi-player.tsx\" | Measure-Object -Line\\).Lines)",
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "PowerShell(\"---done---\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 15; \"---\"; try { $r = Invoke-WebRequest -Uri \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&minify=false&lazy=true\" -UseBasicParsing -TimeoutSec 110; \"bundle OK\" } catch { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $body = $reader.ReadToEnd\\(\\); \\($body | ConvertFrom-Json\\).message.Substring\\(0, 400\\) })"
     ]
   }
 }

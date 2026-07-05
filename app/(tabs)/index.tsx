@@ -1,3 +1,5 @@
+import { GOLD, PIXEL_FONT, PixelBadge, PixelHeading, PixelPanel, PixelProgress } from '@/components/pixel-ui';
+import { PixelSkyStrip } from '@/components/PixelWorld';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -164,13 +166,13 @@ export default function HomeScreen() {
     ? {
         streak: {
           icon: 'fire' as ComponentProps<typeof FontAwesome5>['name'],
-          color: '#F59E0B',
+          color: GOLD,
           title: 'Streak',
           text: 'Days in a row you finish a focus session. Study once today to keep it going.',
         },
         coins: {
           icon: 'coins' as ComponentProps<typeof FontAwesome5>['name'],
-          color: '#D9A441',
+          color: GOLD,
           title: 'Coins',
           text: 'Coins are rewards you earn after focus sessions, achievements, and group study.',
         },
@@ -185,60 +187,55 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={[styles.statCapsule, styles.streakCapsule]}
-          onPress={() => setActiveTopInfo(current => (current === 'streak' ? null : 'streak'))}
-          activeOpacity={0.85}
-          accessibilityLabel="Show streak details"
-        >
-          <FontAwesome5 name="fire" size={12} color="#F59E0B" />
-          <Text style={styles.statCapsuleText}>{streak}</Text>
-        </TouchableOpacity>
-        <View style={styles.topStatsRight}>
-          <TouchableOpacity
-            style={styles.statCapsule}
-            onPress={() => setActiveTopInfo(current => (current === 'coins' ? null : 'coins'))}
-            activeOpacity={0.85}
-            accessibilityLabel="Show coin details"
-          >
-            <FontAwesome5 name="coins" size={12} color="#D9A441" />
-            <Text style={styles.statCapsuleText}>{totalCoins}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.statCapsule}
-            onPress={() => setActiveTopInfo(current => (current === 'time' ? null : 'time'))}
-            activeOpacity={0.85}
-            accessibilityLabel="Show focus time details"
-          >
-            <FontAwesome5 name="clock" size={12} color={theme.primary} />
-            <Text style={styles.statCapsuleText}>{focusedMinutes}m</Text>
-          </TouchableOpacity>
+      {/* Time-of-day sky header */}
+      <PixelSkyStrip height={190}>
+        <View style={styles.skyContent}>
+          <View style={styles.skyTopRow}>
+            <Text style={styles.kicker}>Today</Text>
+            <PixelBadge
+              onPress={() => router.push({ pathname: '/(tabs)/multi-player', params: { start: 'school' } })}
+              accessibilityLabel={theme.school ? `School: ${theme.name}. Tap to switch.` : 'Pick your school'}
+            >
+              {theme.school ? theme.name : 'Pick school'}
+            </PixelBadge>
+          </View>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.date}>{formatDate()}</Text>
         </View>
+      </PixelSkyStrip>
+
+      {/* HUD stat counters */}
+      <View style={styles.hudRow}>
+        <PixelBadge
+          onPress={() => setActiveTopInfo(current => (current === 'streak' ? null : 'streak'))}
+          accessibilityLabel="Show streak details"
+          icon={<FontAwesome5 name="fire" size={12} color={GOLD} />}
+        >
+          {streak}
+        </PixelBadge>
+        <PixelBadge
+          onPress={() => setActiveTopInfo(current => (current === 'coins' ? null : 'coins'))}
+          accessibilityLabel="Show coin details"
+          icon={<FontAwesome5 name="coins" size={12} color={GOLD} />}
+        >
+          {totalCoins}
+        </PixelBadge>
+        <PixelBadge
+          onPress={() => setActiveTopInfo(current => (current === 'time' ? null : 'time'))}
+          accessibilityLabel="Show focus time details"
+          icon={<FontAwesome5 name="clock" size={12} color={theme.primary} />}
+        >
+          {`${focusedMinutes}m`}
+        </PixelBadge>
       </View>
 
       {activeTopDetail && (
-        <View
-          style={[
-            styles.statPopover,
-            activeTopInfo === 'streak' ? styles.statPopoverLeft : styles.statPopoverRight,
-          ]}
-        >
-          <View
-            style={[
-              styles.statPopoverArrow,
-              activeTopInfo === 'streak'
-                ? styles.statPopoverArrowLeft
-                : activeTopInfo === 'coins'
-                  ? styles.statPopoverArrowCoins
-                  : styles.statPopoverArrowTime,
-            ]}
-          />
-          <View style={styles.streakInfoHeader}>
+        <PixelPanel style={styles.statPanel}>
+          <View style={styles.statPanelHeader}>
             <FontAwesome5 name={activeTopDetail.icon} size={13} color={activeTopDetail.color} />
-            <Text style={styles.streakInfoTitle}>{activeTopDetail.title}</Text>
+            <Text style={styles.statPanelTitle}>{activeTopDetail.title}</Text>
             <TouchableOpacity
-              style={styles.streakCloseButton}
+              style={styles.statPanelClose}
               onPress={() => setActiveTopInfo(null)}
               activeOpacity={0.8}
               accessibilityLabel="Close stat details"
@@ -246,31 +243,13 @@ export default function HomeScreen() {
               <FontAwesome5 name="times" size={11} color={theme.muted} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.streakInfoText}>{activeTopDetail.text}</Text>
-        </View>
+          <Text style={styles.statPanelText}>{activeTopDetail.text}</Text>
+        </PixelPanel>
       )}
 
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.kicker}>Today</Text>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
-          <Text style={styles.date}>{formatDate()}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.schoolPill}
-          onPress={() => router.push({ pathname: '/(tabs)/multi-player', params: { start: 'school' } })}
-          activeOpacity={0.85}
-          accessibilityLabel={theme.school ? `School: ${theme.name}. Tap to switch.` : 'Pick your school'}
-          accessibilityRole="button"
-        >
-          <Text style={styles.schoolPillText}>{theme.school ? theme.name : 'Pick school'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.pathHeader}>
-        <Text style={styles.sectionTitle}>Study path</Text>
-        <Text style={styles.sectionHint}>Tap the next step.</Text>
-      </View>
+      <PixelHeading hint="Tap the next step." style={styles.sectionHeading}>
+        {"Study path"}
+      </PixelHeading>
 
       <View style={styles.path}>
         {todayStudyPlan.map((item, index) => {
@@ -286,20 +265,24 @@ export default function HomeScreen() {
                 accessibilityLabel={index === 0 && !nextTask ? 'Add assignment' : item.title}
                 accessibilityRole="button"
               >
-                <View style={[styles.pathNode, isActive && styles.pathNodeActive]}>
-                  <FontAwesome5
-                    name={item.icon}
-                    size={isActive ? 24 : 18}
-                    color={isActive ? theme.onPrimary : theme.primary}
-                  />
+                <View style={styles.nodeRim}>
+                  <View style={[styles.pathNode, isActive && styles.pathNodeActive]}>
+                    <FontAwesome5
+                      name={item.icon}
+                      size={isActive ? 24 : 18}
+                      color={isActive ? theme.onPrimary : theme.primary}
+                    />
+                  </View>
                 </View>
-                <View style={[styles.nodeLabel, isActive && styles.nodeLabelActive]}>
-                  <Text style={[styles.nodeTitle, isActive && styles.nodeTitleActive]} numberOfLines={2}>
-                    {index === 0 && !nextTask ? 'Add assignment' : item.title}
-                  </Text>
-                  <Text style={[styles.nodeDetail, isActive && styles.nodeDetailActive]} numberOfLines={2}>
-                    {item.detail}
-                  </Text>
+                <View style={[styles.nodeRim, styles.nodeLabelRim]}>
+                  <View style={[styles.nodeLabel, isActive && styles.nodeLabelActive]}>
+                    <Text style={[styles.nodeTitle, isActive && styles.nodeTitleActive]} numberOfLines={2}>
+                      {index === 0 && !nextTask ? 'Add assignment' : item.title}
+                    </Text>
+                    <Text style={styles.nodeDetail} numberOfLines={2}>
+                      {item.detail}
+                    </Text>
+                  </View>
                 </View>
               </TouchableOpacity>
             </View>
@@ -307,40 +290,38 @@ export default function HomeScreen() {
         })}
       </View>
 
-      <View style={styles.achievementSection}>
-        <View style={styles.achievementHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Achievements</Text>
-            <Text style={styles.sectionHint}>Small goals for extra coins.</Text>
-          </View>
-          <View style={styles.rewardBadge}>
-            <FontAwesome5 name="coins" size={12} color="#D9A441" />
-            <Text style={styles.rewardBadgeText}>Rewards</Text>
-          </View>
-        </View>
+      <View style={styles.achievementHeader}>
+        <PixelHeading hint="Small goals for extra coins.">Achievements</PixelHeading>
+        <PixelBadge icon={<FontAwesome5 name="coins" size={12} color={GOLD} />}>Rewards</PixelBadge>
+      </View>
 
-        <View style={styles.achievementList}>
-          {achievements.map(item => {
-            const complete = item.progress >= 1;
-            return (
-              <View key={item.id} style={styles.achievementRow}>
-                <View style={[styles.achievementIcon, complete && styles.achievementIconComplete]}>
-                  <FontAwesome5 name={complete ? 'check' : item.icon} size={14} color={complete ? theme.onPrimary : theme.primary} />
+      <View style={styles.achievementList}>
+        {achievements.map(item => {
+          const complete = item.progress >= 1;
+          return (
+            <PixelPanel key={item.id}>
+              <View style={styles.achievementRow}>
+                <View style={[styles.achievementIcon, complete && { backgroundColor: theme.primary }]}>
+                  <FontAwesome5
+                    name={complete ? 'check' : item.icon}
+                    size={14}
+                    color={complete ? theme.onPrimary : theme.primary}
+                  />
                 </View>
                 <View style={styles.achievementCopy}>
                   <View style={styles.achievementTopLine}>
                     <Text style={styles.achievementTitle}>{item.title}</Text>
                     <Text style={styles.achievementReward}>+{item.reward}</Text>
                   </View>
-                  <View style={styles.progressTrack}>
-                    <View style={[styles.progressFill, { width: `${Math.round(item.progress * 100)}%` }]} />
-                  </View>
-                  <Text style={styles.achievementProgress}>{complete ? 'Ready to claim' : item.current}</Text>
+                  <PixelProgress progress={item.progress} height={8} />
+                  <Text style={styles.achievementProgress}>
+                    {complete ? 'Ready to claim' : item.current}
+                  </Text>
                 </View>
               </View>
-            );
-          })}
-        </View>
+            </PixelPanel>
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -352,165 +333,90 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     backgroundColor: theme.background,
   },
   content: {
-    paddingTop: 24,
     paddingBottom: 118,
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
+  skyContent: {
+    flex: 1,
+    paddingTop: 54,
     paddingHorizontal: 20,
-    marginBottom: 14,
   },
-  topStatsRight: {
+  skyTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  statCapsule: {
-    minHeight: 34,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-    paddingHorizontal: 10,
+  kicker: {
+    color: '#F8FAFC',
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
   },
-  streakCapsule: {
-    borderColor: '#7A4E1D',
+  greeting: {
+    color: '#F8FAFC',
+    fontSize: 26,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
   },
-  statCapsuleText: {
-    color: theme.text,
+  date: {
+    color: '#E2E8F0',
     fontSize: 13,
     fontWeight: '700',
+    marginTop: 4,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
   },
-  statPopover: {
-    position: 'absolute',
-    top: 62,
-    zIndex: 20,
-    width: 270,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#7A4E1D',
-    backgroundColor: theme.surface,
-    paddingHorizontal: 13,
-    paddingVertical: 11,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    elevation: 8,
+  hudRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 20,
+    marginTop: -18,
+    marginBottom: 16,
   },
-  statPopoverLeft: {
-    left: 20,
+  statPanel: {
+    marginHorizontal: 20,
+    marginBottom: 16,
   },
-  statPopoverRight: {
-    right: 20,
-  },
-  statPopoverArrow: {
-    position: 'absolute',
-    top: -6,
-    width: 12,
-    height: 12,
-    borderLeftWidth: 1,
-    borderTopWidth: 1,
-    borderColor: '#7A4E1D',
-    backgroundColor: theme.surface,
-    transform: [{ rotate: '45deg' }],
-  },
-  statPopoverArrowLeft: {
-    left: 21,
-  },
-  statPopoverArrowCoins: {
-    right: 82,
-  },
-  statPopoverArrowTime: {
-    right: 24,
-  },
-  streakInfoHeader: {
+  statPanelHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 5,
   },
-  streakInfoTitle: {
+  statPanelTitle: {
     color: theme.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  streakCloseButton: {
+  statPanelClose: {
     marginLeft: 'auto',
     width: 28,
     height: 28,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.surfaceAlt,
   },
-  streakInfoText: {
+  statPanelText: {
     color: theme.muted,
     fontSize: 13,
     fontWeight: '600',
     lineHeight: 18,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 14,
+  sectionHeading: {
     paddingHorizontal: 20,
-    marginBottom: 18,
-  },
-  kicker: {
-    color: theme.primary,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.35,
-    marginBottom: 5,
-    textTransform: 'uppercase',
-  },
-  greeting: {
-    color: theme.text,
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  date: {
-    color: theme.muted,
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 3,
-  },
-  schoolPill: {
-    minHeight: 36,
-    justifyContent: 'center',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-    paddingHorizontal: 11,
-  },
-  schoolPillText: {
-    color: theme.text,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  pathHeader: {
-    paddingHorizontal: 20,
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    color: theme.text,
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 3,
-  },
-  sectionHint: {
-    color: theme.muted,
-    fontSize: 12,
-    fontWeight: '600',
+    marginBottom: 12,
   },
   path: {
     paddingHorizontal: 20,
@@ -526,7 +432,6 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     left: '50%',
     width: 4,
     marginLeft: -2,
-    borderRadius: 2,
     backgroundColor: theme.border,
   },
   pathNodeWrap: {
@@ -539,42 +444,51 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   pathNodeRight: {
     alignSelf: 'flex-end',
   },
+  nodeRim: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 2,
+    borderRadius: 4,
+  },
+  nodeLabelRim: {
+    marginTop: 12,
+  },
   pathNode: {
     width: 82,
     height: 72,
-    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: theme.border,
     backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
   },
   pathNodeActive: {
     width: 106,
     height: 90,
-    borderRadius: 32,
-    borderColor: theme.primary,
     backgroundColor: theme.primary,
-    shadowColor: theme.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 4,
+    borderTopColor: 'rgba(255,255,255,0.3)',
+    borderLeftColor: 'rgba(255,255,255,0.3)',
+    borderBottomColor: 'rgba(0,0,0,0.3)',
+    borderRightColor: 'rgba(0,0,0,0.3)',
   },
   nodeLabel: {
     minWidth: 230,
     maxWidth: 300,
     alignItems: 'center',
-    marginTop: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.border,
     backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
     paddingHorizontal: 16,
     paddingVertical: 13,
   },
   nodeLabelActive: {
-    borderColor: theme.primary,
     backgroundColor: theme.surfaceAlt,
   },
   nodeTitle: {
@@ -596,66 +510,33 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
-  nodeDetailActive: {
-    color: theme.text,
-  },
-  achievementSection: {
-    marginHorizontal: 20,
-    marginTop: 6,
-    borderTopWidth: 1,
-    borderColor: theme.border,
-    paddingTop: 18,
-  },
   achievementHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 12,
+    paddingHorizontal: 20,
     marginBottom: 12,
   },
-  rewardBadge: {
-    minHeight: 34,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-    paddingHorizontal: 10,
-  },
-  rewardBadgeText: {
-    color: theme.text,
-    fontSize: 12,
-    fontWeight: '700',
-  },
   achievementList: {
+    paddingHorizontal: 20,
     gap: 10,
   },
   achievementRow: {
-    minHeight: 78,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-    padding: 12,
   },
   achievementIcon: {
     width: 42,
     height: 42,
-    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.surfaceAlt,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  achievementIconComplete: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    borderLeftColor: 'rgba(255,255,255,0.12)',
+    borderBottomColor: 'rgba(0,0,0,0.3)',
+    borderRightColor: 'rgba(0,0,0,0.3)',
   },
   achievementCopy: {
     flex: 1,
@@ -674,20 +555,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontWeight: '800',
   },
   achievementReward: {
-    color: '#D9A441',
+    color: GOLD,
     fontSize: 13,
     fontWeight: '800',
-  },
-  progressTrack: {
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: theme.surfaceAlt,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-    backgroundColor: theme.primary,
+    fontFamily: PIXEL_FONT,
   },
   achievementProgress: {
     color: theme.muted,

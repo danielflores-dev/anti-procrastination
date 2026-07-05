@@ -1,7 +1,10 @@
 import { useCoins } from '@/context/CoinContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
+import { GOLD, PIXEL_FONT, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
+import { PixelSkyStrip } from '@/components/PixelWorld';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type ShopItem = {
   id: string;
@@ -100,116 +103,136 @@ export default function ShopScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.kicker}>Coins</Text>
-          <Text style={styles.heading}>Rewards</Text>
-        </View>
-        <View style={styles.balanceBadge}>
-          <Text style={styles.balanceText}>{coins}</Text>
-          <Text style={styles.balanceLabel}>coins</Text>
-        </View>
-      </View>
-      <Text style={styles.shelfLabel}>Available</Text>
-      {ITEMS.map(item => {
-        const isOwned = owned.has(item.id);
-        const canAfford = coins >= item.cost;
-        return (
-          <View key={item.id} style={[styles.card, isOwned && styles.cardOwned]}>
-            <View style={styles.rewardMain}>
-              <View style={styles.priceColumn}>
-                <Text style={[styles.cost, !canAfford && !isOwned && styles.costUnaffordable]}>
-                  {item.cost}
-                </Text>
-                <Text style={styles.priceLabel}>coins</Text>
-              </View>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemDesc}>{item.description}</Text>
-              </View>
+      <PixelSkyStrip height={132} style={styles.sky}>
+        <View style={styles.skyContent}>
+          <View style={styles.skyRow}>
+            <View>
+              <Text style={styles.kicker}>Coins</Text>
+              <Text style={styles.heading}>Rewards</Text>
             </View>
-
-            <View style={styles.cardBottom}>
-              <TouchableOpacity
-                style={[
-                  styles.buyBtn,
-                  isOwned && styles.buyBtnOwned,
-                  !canAfford && !isOwned && styles.buyBtnDisabled,
-                ]}
-                onPress={() => handleBuy(item)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.buyBtnText, isOwned && styles.buyBtnTextOwned]}>
-                  {isOwned ? 'Owned' : 'Buy'}
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.balanceRim}>
+              <View style={styles.balanceFace}>
+                <FontAwesome5 name="coins" size={13} color={GOLD} />
+                <Text style={styles.balanceText}>{coins}</Text>
+              </View>
             </View>
           </View>
-        );
-      })}
+        </View>
+      </PixelSkyStrip>
+
+      <View style={styles.body}>
+        <PixelHeading hint="Spend coins from focus sessions." style={styles.shelfHeading}>
+          Item shop
+        </PixelHeading>
+
+        {ITEMS.map(item => {
+          const isOwned = owned.has(item.id);
+          const canAfford = coins >= item.cost;
+          return (
+            <PixelPanel key={item.id} style={styles.card} tone={isOwned ? 'alt' : 'surface'}>
+              <View style={styles.rewardMain}>
+                <View style={[styles.priceBlock, { borderColor: isOwned ? theme.border : canAfford ? GOLD : theme.border }]}>
+                  <Text style={[styles.cost, (!canAfford || isOwned) && styles.costMuted]}>
+                    {item.cost}
+                  </Text>
+                  <Text style={styles.priceLabel}>coins</Text>
+                </View>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemDesc}>{item.description}</Text>
+                </View>
+                <PixelButton
+                  size="sm"
+                  variant={isOwned ? 'surface' : 'primary'}
+                  disabled={!canAfford && !isOwned}
+                  onPress={() => handleBuy(item)}
+                  accessibilityLabel={isOwned ? `${item.name}, owned` : `Buy ${item.name} for ${item.cost} coins`}
+                >
+                  {isOwned ? 'Owned' : 'Buy'}
+                </PixelButton>
+              </View>
+            </PixelPanel>
+          );
+        })}
+      </View>
     </ScrollView>
   );
 }
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.background },
-  container: { paddingHorizontal: 20, paddingTop: 44, paddingBottom: 118 },
-
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
-  kicker: { color: theme.primary, fontSize: 12, fontWeight: '700', letterSpacing: 0, marginBottom: 5 },
-  heading: { fontSize: 26, fontWeight: '700', color: theme.text },
-  balanceBadge: {
-    minWidth: 72,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.primary,
-    paddingHorizontal: 2,
-    paddingVertical: 6,
-    alignItems: 'flex-end',
+  container: { paddingBottom: 118 },
+  sky: { marginBottom: 16 },
+  skyContent: { flex: 1, paddingTop: 50, paddingHorizontal: 20 },
+  skyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  body: { paddingHorizontal: 20 },
+  kicker: {
+    color: '#F8FAFC',
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
   },
-  balanceText: { color: theme.text, fontSize: 16, fontWeight: '700' },
-  balanceLabel: { color: theme.muted, fontSize: 10, fontWeight: '700', marginTop: 1 },
-  shopIntro: { display: 'none' },
-  sub: { color: theme.muted, fontSize: 14, lineHeight: 20, marginBottom: 6 },
-  earn: { color: theme.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
-  shelfLabel: { color: theme.text, fontSize: 16, fontWeight: '700', marginBottom: 10 },
-
-  card: {
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-    paddingVertical: 14,
+  heading: {
+    color: '#F8FAFC',
+    fontSize: 24,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
   },
-  cardOwned: { backgroundColor: 'transparent', paddingHorizontal: 0, borderTopWidth: 1, marginBottom: 0 },
-  rewardMain: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
-  cardTop: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', marginBottom: 0 },
-  itemInitials: { display: 'none' },
-  itemInfo: { flex: 1 },
-  itemTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' },
-  itemName: { color: theme.text, fontSize: 16, fontWeight: '700' },
-  tag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  tagText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.35 },
-  itemDesc: { color: theme.muted, fontSize: 13, lineHeight: 19 },
-
-  priceColumn: { width: 50, alignItems: 'center' },
-  priceLabel: { color: theme.muted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginTop: 2 },
-  cardBottom: { alignItems: 'flex-end', gap: 8, marginTop: 10 },
-  cost: { color: theme.primary, fontSize: 15, fontWeight: '700' },
-  costUnaffordable: { color: theme.muted },
-
-  buyBtn: {
-    minHeight: 44,
-    minWidth: 86,
+  balanceRim: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 2,
+    borderRadius: 4,
+  },
+  balanceFace: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.primary,
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
+    gap: 7,
+    backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  buyBtnDisabled: { backgroundColor: theme.border },
-  buyBtnOwned: { backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: theme.primary },
-  buyBtnText: { color: theme.onPrimary, fontSize: 14, fontWeight: '700' },
-  buyBtnTextOwned: { color: theme.primary },
-
-  footer: { color: theme.muted, fontSize: 13, textAlign: 'center', marginTop: 12 },
+  balanceText: {
+    color: GOLD,
+    fontSize: 15,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+  },
+  shelfHeading: { marginBottom: 14 },
+  card: { marginBottom: 10 },
+  rewardMain: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  priceBlock: {
+    width: 54,
+    alignItems: 'center',
+    borderWidth: 2,
+    paddingVertical: 6,
+  },
+  cost: { color: GOLD, fontSize: 15, fontWeight: '800', fontFamily: PIXEL_FONT },
+  costMuted: { color: theme.muted },
+  priceLabel: {
+    color: theme.muted,
+    fontSize: 9,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  itemInfo: { flex: 1 },
+  itemName: { color: theme.text, fontSize: 15, fontWeight: '800', marginBottom: 3 },
+  itemDesc: { color: theme.muted, fontSize: 12, lineHeight: 17 },
 });

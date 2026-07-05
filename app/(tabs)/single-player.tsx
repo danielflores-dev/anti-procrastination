@@ -1,6 +1,7 @@
 import { Task, TaskProgress, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { ThemeButton } from '@/components/ui/design-system';
+import { GOLD, PIXEL_FONT, PixelBadge, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
+import { PixelSkyStrip } from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -23,13 +24,13 @@ function daysUntil(raw: string): number {
 
 function urgencyColor(hours: number): string {
   if (hours < 2) return DONE_GREEN;
-  if (hours < 5) return '#F59E0B';
+  if (hours < 5) return GOLD;
   return '#EF4444';
 }
 
 function progressColor(progress?: TaskProgress): string {
   if (progress === 'Done') return DONE_GREEN;
-  if (progress === 'Almost done') return '#F59E0B';
+  if (progress === 'Almost done') return GOLD;
   if (progress === 'Working') return '#6C63FF';
   return '#94A3B8';
 }
@@ -56,8 +57,6 @@ function AssignmentCard({
   const workloadColor = urgencyColor(task.estimatedHours);
   const progress = task.progress ?? 'Not started';
   const statusColor = progressColor(progress);
-  const steps = task.steps ?? [];
-  const doneSteps = steps.filter(step => step.done).length;
 
   const celebrateOpacity = useRef(new Animated.Value(0)).current;
   const celebrateScale = useRef(new Animated.Value(0.7)).current;
@@ -91,14 +90,14 @@ function AssignmentCard({
   }, [justDone, celebrateOpacity, celebrateScale]);
 
   return (
-    <View style={[styles.card, justDone && styles.cardDone]}>
+    <PixelPanel style={styles.cardRim} padding={14}>
       <View style={styles.cardTop}>
         <View style={styles.cardTitles}>
           <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
           <Text style={styles.cardClass}>{task.className}</Text>
         </View>
-        <View style={[styles.hourPill, { backgroundColor: workloadColor + '20' }]}>
-          <Text style={[styles.hourPillText, { color: workloadColor }]}>{task.estimatedHours}h</Text>
+        <View style={[styles.hourBlock, { borderColor: workloadColor }]}>
+          <Text style={[styles.hourBlockText, { color: workloadColor }]}>{task.estimatedHours}h</Text>
         </View>
       </View>
 
@@ -107,55 +106,17 @@ function AssignmentCard({
           <View style={[styles.workloadDot, { backgroundColor: workloadColor }]} />
           <Text style={styles.cardDue}>Due {task.dueDate}</Text>
         </View>
-        <Text style={[styles.cardDays, { color: days <= 1 ? '#EF4444' : days <= 2 ? '#F59E0B' : '#667085' }]}>
+        <Text style={[styles.cardDays, { color: days <= 1 ? '#EF4444' : days <= 2 ? GOLD : styles.cardDue.color }]}>
           {days === 0 ? 'Due today' : days === 1 ? '1 day left' : `${days} days left`}
         </Text>
       </View>
 
       <View style={styles.actionRow}>
-        <ThemeButton fullWidth onPress={onFocus}>Start focus</ThemeButton>
-        <ThemeButton variant="secondary" onPress={onProgress} textStyle={{ color: statusColor }}>
+        <PixelButton style={styles.actionFlex} onPress={onFocus}>Start focus</PixelButton>
+        <PixelButton variant="surface" onPress={onProgress} textStyle={{ color: statusColor }}>
           {progress}
-        </ThemeButton>
+        </PixelButton>
       </View>
-
-      {steps.length > 0 && (
-        <View style={styles.breakdownBox}>
-          <View style={styles.breakdownHeader}>
-            <Text style={styles.sectionMiniTitle}>Breakdown</Text>
-            <Text style={styles.breakdownCount}>{doneSteps}/{steps.length}</Text>
-          </View>
-          {steps.map(step => (
-            <TouchableOpacity
-              key={step.id}
-              style={styles.stepRow}
-              activeOpacity={0.8}
-              accessibilityLabel={`${step.done ? 'Unmark' : 'Mark'} step: ${step.title}`}
-              accessibilityRole="checkbox"
-            >
-              <View style={[styles.stepCheck, step.done && styles.stepCheckDone]}>
-                <Text style={styles.stepCheckText}>{step.done ? '✓' : ''}</Text>
-              </View>
-              <Text style={[styles.stepText, step.done && styles.stepTextDone]}>{step.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {!!task.studyPlan?.length && (
-        <View style={styles.planBox}>
-          <Text style={styles.sectionMiniTitle}>Study plan</Text>
-          {task.studyPlan.slice(0, 3).map(item => (
-            <View key={item.id} style={styles.planRow}>
-              <Text style={styles.planDate}>{item.dateLabel}</Text>
-              <View style={styles.planTextWrap}>
-                <Text style={styles.planFocus}>{item.focus}</Text>
-                <Text style={styles.planMinutes}>{item.minutes} min</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
 
       <Animated.View
         style={[styles.doneOverlay, { opacity: celebrateOpacity, transform: [{ scale: celebrateScale }] }]}
@@ -164,7 +125,7 @@ function AssignmentCard({
         <FontAwesome5 name="check-circle" size={22} color={DONE_GREEN} />
         <Text style={styles.doneOverlayText}>Done!</Text>
       </Animated.View>
-    </View>
+    </PixelPanel>
   );
 }
 
@@ -221,35 +182,39 @@ export default function SinglePlayerScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.kicker}>Work</Text>
-          <Text style={styles.greeting}>Assignments</Text>
-          <Text style={styles.date}>What needs focus.</Text>
+      <PixelSkyStrip height={132}>
+        <View style={styles.skyContent}>
+          <View style={styles.skyRow}>
+            <View>
+              <Text style={styles.kicker}>Work</Text>
+              <Text style={styles.greeting}>Assignments</Text>
+              <Text style={styles.date}>What needs focus.</Text>
+            </View>
+            <PixelBadge>{`${tasks.length}`}</PixelBadge>
+          </View>
         </View>
-        <View style={styles.countPill}>
-          <Text style={styles.countPillText}>{tasks.length}</Text>
-        </View>
-      </View>
+      </PixelSkyStrip>
 
       {tasks.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No assignments yet</Text>
           <Text style={styles.emptySub}>Add the next thing due.</Text>
           <View style={styles.emptyActions}>
-            <ThemeButton size="lg" onPress={() => router.push('/auto-add')}>
+            <PixelButton size="lg" onPress={() => router.push('/auto-add')}>
               Add assignment
-            </ThemeButton>
-            <ThemeButton size="lg" variant="secondary" onPress={() => router.push('/add-task')}>
+            </PixelButton>
+            <PixelButton size="lg" variant="surface" onPress={() => router.push('/add-task')}>
               Add manually
-            </ThemeButton>
+            </PixelButton>
           </View>
         </View>
       ) : (
         <View style={styles.queueArea}>
           <View style={styles.queueHeader}>
-            <Text style={styles.queueTitle}>Queue</Text>
-            <Text style={styles.queueHint}>{urgentCount > 0 ? `${urgentCount} urgent` : doneTasks.length > 0 ? `${doneTasks.length} done` : 'All on track'}</Text>
+            <PixelHeading>Queue</PixelHeading>
+            <Text style={styles.queueHint}>
+              {urgentCount > 0 ? `${urgentCount} urgent` : doneTasks.length > 0 ? `${doneTasks.length} done` : 'All on track'}
+            </Text>
           </View>
           <FlatList
             data={openTasks}
@@ -272,79 +237,101 @@ export default function SinglePlayerScreen() {
       )}
 
       <View style={styles.bottomBar}>
-        <ThemeButton fullWidth size="lg" variant="secondary" style={styles.autoBtn} onPress={() => router.push('/auto-add')}>
+        <PixelButton
+          variant="surface"
+          size="lg"
+          style={styles.autoBtn}
+          onPress={() => router.push('/auto-add')}
+        >
           Plan from photo
-        </ThemeButton>
-        <TouchableOpacity
+        </PixelButton>
+        <PixelButton
+          size="lg"
           style={styles.fab}
           onPress={() => router.push('/add-task')}
-          activeOpacity={0.85}
           accessibilityLabel="Add assignment manually"
-          accessibilityRole="button"
+          textStyle={styles.fabIcon}
         >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
+          +
+        </PixelButton>
       </View>
     </View>
   );
 }
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background, paddingTop: 36 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 16 },
-  kicker: { color: theme.primary, fontSize: 11, fontWeight: '600', letterSpacing: 0.2, marginBottom: 5, textTransform: 'uppercase' },
-  greeting: { fontSize: 24, fontWeight: '600', color: theme.text },
-  date: { fontSize: 13, color: theme.muted, marginTop: 4, fontWeight: '600', lineHeight: 18 },
-  countPill: { minWidth: 28, height: 32, alignItems: 'center', justifyContent: 'center' },
-  countPillText: { color: theme.muted, fontSize: 14, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: theme.background },
+  skyContent: { flex: 1, paddingTop: 50, paddingHorizontal: 20 },
+  skyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  kicker: {
+    color: '#F8FAFC',
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
+  },
+  greeting: {
+    color: '#F8FAFC',
+    fontSize: 24,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 0,
+  },
+  date: {
+    color: '#E2E8F0',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 3,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 0,
+  },
   queueArea: { flex: 1 },
-  queueHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10 },
-  queueTitle: { color: theme.text, fontSize: 18, fontWeight: '600' },
-  queueHint: { color: theme.muted, fontSize: 12, fontWeight: '600' },
+  queueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  queueHint: { color: theme.muted, fontSize: 12, fontWeight: '700', fontFamily: PIXEL_FONT },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 20, paddingBottom: 108 },
-  card: {
-    position: 'relative',
-    backgroundColor: theme.surface,
-    borderRadius: 0,
-    paddingVertical: 16,
-    paddingLeft: 0,
-    paddingRight: 2,
-    marginBottom: 0,
+  cardRim: { marginBottom: 12 },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+  cardTitles: { flex: 1, marginRight: 10 },
+  cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 3 },
+  cardClass: { color: theme.muted, fontSize: 13, fontWeight: '600' },
+  hourBlock: {
+    borderWidth: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  hourBlockText: { fontSize: 13, fontWeight: '800', fontFamily: PIXEL_FONT },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: theme.border,
   },
-  cardDone: {
-    borderTopColor: DONE_GREEN,
-  },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  cardTitles: { flex: 1, marginRight: 10 },
-  cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '600', marginBottom: 3 },
-  cardClass: { color: theme.muted, fontSize: 13, fontWeight: '600' },
-  hourPill: { borderRadius: 0, paddingHorizontal: 0, paddingVertical: 0, backgroundColor: 'transparent' },
-  hourPillText: { fontSize: 13, fontWeight: '700' },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.border },
   metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 },
-  workloadDot: { width: 8, height: 8, borderRadius: 4 },
+  workloadDot: { width: 8, height: 8 },
   cardDue: { color: theme.muted, fontSize: 12, fontWeight: '600' },
-  cardDays: { fontSize: 12, fontWeight: '700' },
+  cardDays: { fontSize: 12, fontWeight: '800', fontFamily: PIXEL_FONT },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  breakdownBox: { display: 'none' },
-  breakdownHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  sectionMiniTitle: { color: theme.text, fontSize: 13, fontWeight: '700' },
-  breakdownCount: { color: theme.muted, fontSize: 12, fontWeight: '700' },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 6 },
-  stepCheck: { width: 22, height: 22, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface },
-  stepCheckDone: { backgroundColor: DONE_GREEN, borderColor: DONE_GREEN },
-  stepCheckText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
-  stepText: { flex: 1, color: theme.text, fontSize: 13, fontWeight: '700' },
-  stepTextDone: { color: theme.muted, textDecorationLine: 'line-through' },
-  planBox: { display: 'none' },
-  planRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  planDate: { width: 66, color: theme.primary, fontSize: 12, fontWeight: '700' },
-  planTextWrap: { flex: 1 },
-  planFocus: { color: theme.text, fontSize: 13, fontWeight: '700', lineHeight: 17 },
-  planMinutes: { color: theme.muted, fontSize: 12, fontWeight: '700', marginTop: 2 },
+  actionFlex: { flex: 1 },
   doneOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
@@ -352,12 +339,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     backgroundColor: `${DONE_GREEN}14`,
-    borderRadius: 0,
   },
   doneOverlayText: {
     color: DONE_GREEN,
     fontSize: 20,
     fontWeight: '800',
+    fontFamily: PIXEL_FONT,
   },
   doneSection: {
     marginTop: 8,
@@ -376,21 +363,40 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     flex: 1,
     color: theme.muted,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   doneSectionCount: {
     color: theme.muted,
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: PIXEL_FONT,
     minWidth: 22,
     textAlign: 'right',
   },
   emptyState: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, paddingBottom: 92 },
-  emptyTitle: { color: theme.text, fontSize: 20, fontWeight: '600', marginBottom: 8 },
+  emptyTitle: { color: theme.text, fontSize: 20, fontWeight: '800', marginBottom: 8 },
   emptySub: { color: theme.muted, fontSize: 15, lineHeight: 22, maxWidth: 310 },
-  emptyActions: { gap: 10, marginTop: 22 },
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 24, paddingTop: 12, backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border },
-  autoBtn: { flex: 1, marginRight: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, alignItems: 'center' },
-  fab: { width: 56, height: 56, borderRadius: 10, backgroundColor: theme.primary, alignItems: 'center', justifyContent: 'center', shadowColor: theme.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0, shadowRadius: 0, elevation: 0 },
-  fabIcon: { color: theme.onPrimary, fontSize: 26, fontWeight: '300', lineHeight: 34, marginTop: -2 },
+  emptyActions: { gap: 12, marginTop: 22 },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    paddingTop: 12,
+    backgroundColor: theme.background,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  autoBtn: { flex: 1 },
+  fab: { width: 58 },
+  fabIcon: { fontSize: 24, fontWeight: '400', lineHeight: 26 },
 });

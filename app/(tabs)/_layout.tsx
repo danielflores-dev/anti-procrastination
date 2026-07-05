@@ -1,10 +1,11 @@
 import { useCoins } from '@/context/CoinContext';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { PIXEL_FONT } from '@/components/pixel-ui';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { type ComponentProps, useEffect, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, StyleSheet } from 'react-native';
 
 type TabIconName = ComponentProps<typeof FontAwesome5>['name'];
 
@@ -12,6 +13,7 @@ function TabIcon({ name, color, focused }: { name: TabIconName; color: string; f
   const scale = useRef(new Animated.Value(1)).current;
   const lift = useRef(new Animated.Value(0)).current;
   const reducedMotion = useReducedMotion();
+  const { theme } = useSchoolTheme();
 
   useEffect(() => {
     if (reducedMotion) {
@@ -36,11 +38,35 @@ function TabIcon({ name, color, focused }: { name: TabIconName; color: string; f
   }, [focused, lift, reducedMotion, scale]);
 
   return (
-    <Animated.View style={{ transform: [{ translateY: lift }, { scale }] }}>
-      <FontAwesome5 name={name} size={20} color={color} />
+    <Animated.View
+      style={[
+        iconStyles.tile,
+        focused && { ...iconStyles.tileFocused, backgroundColor: theme.surfaceAlt },
+        { transform: [{ translateY: lift }, { scale }] },
+      ]}
+    >
+      <FontAwesome5 name={name} size={18} color={color} />
     </Animated.View>
   );
 }
+
+const iconStyles = StyleSheet.create({
+  tile: {
+    width: 44,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 2,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  tileFocused: {
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+  },
+});
 
 export default function TabsLayout() {
   const { coins } = useCoins();
@@ -54,8 +80,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: theme.tabBar,
           borderTopColor: theme.border,
-          borderTopWidth: 1,
-          height: 76,
+          borderTopWidth: 2,
+          height: 78,
           paddingBottom: 14,
           paddingTop: 8,
           shadowColor: 'transparent',
@@ -66,7 +92,13 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: activeTint,
         tabBarInactiveTintColor: theme.tabInactive,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '500', letterSpacing: 0 },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '800',
+          fontFamily: PIXEL_FONT,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+        },
       }}
     >
       <Tabs.Screen
@@ -103,7 +135,14 @@ export default function TabsLayout() {
           title: 'Rewards',
           tabBarIcon: ({ color, focused }) => <TabIcon name="coins" color={color} focused={focused} />,
           tabBarBadge: coins > 0 ? coins : undefined,
-          tabBarBadgeStyle: { backgroundColor: theme.primary, color: theme.onPrimary, fontSize: 10, fontWeight: '700' },
+          tabBarBadgeStyle: {
+            backgroundColor: theme.primary,
+            color: theme.onPrimary,
+            fontSize: 9,
+            fontWeight: '700',
+            fontFamily: PIXEL_FONT,
+            borderRadius: 2,
+          },
         }}
       />
     </Tabs>

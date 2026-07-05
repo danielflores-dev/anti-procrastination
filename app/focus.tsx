@@ -2,7 +2,9 @@ import { useCoins } from '@/context/CoinContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { ThemeButton } from '@/components/ui/design-system';
+import { PixelButton } from '@/components/pixel-ui';
+import PixelConstruction from '@/components/PixelConstruction';
+import PixelWorld from '@/components/PixelWorld';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -33,67 +35,6 @@ function formatTime(seconds: number) {
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
   return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-}
-
-const RING_SIZE = 360;
-
-const sharedStyles = StyleSheet.create({
-  bgLayer: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  glow: { position: 'absolute', width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2 },
-  ring: { position: 'absolute', width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2, borderWidth: 2 },
-});
-
-function PulseRing({ delay, color }: { delay: number; color: string }) {
-  const scale = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 1, duration: 3000, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0, duration: 3000, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.6, duration: 0, useNativeDriver: true }),
-        ]),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [delay, opacity, scale]);
-
-  return (
-    <Animated.View style={[sharedStyles.ring, { borderColor: color, opacity, transform: [{ scale }] }]} />
-  );
-}
-
-function BreathingGlow({ color }: { color: string }) {
-  const scale = useRef(new Animated.Value(0.85)).current;
-  const opacity = useRef(new Animated.Value(0.15)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 1.15, duration: 2800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.35, duration: 2800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(scale, { toValue: 0.85, duration: 2800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.15, duration: 2800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        ]),
-      ])
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity, scale]);
-
-  return (
-    <Animated.View style={[sharedStyles.glow, { backgroundColor: color, opacity, transform: [{ scale }] }]} />
-  );
 }
 
 function CoinToast({ visible, amount }: { visible: boolean; amount: number }) {
@@ -237,9 +178,9 @@ export default function FocusScreen() {
       <View style={styles.notFoundContainer}>
         <Text style={styles.notFoundTitle}>Assignment not found</Text>
         <Text style={styles.notFoundBody}>This assignment may have been removed.</Text>
-        <ThemeButton onPress={() => router.back()} style={styles.notFoundBtn}>
+        <PixelButton onPress={() => router.back()} style={styles.notFoundBtn}>
           Back to assignments
-        </ThemeButton>
+        </PixelButton>
       </View>
     );
   }
@@ -287,12 +228,7 @@ export default function FocusScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      <View style={sharedStyles.bgLayer}>
-        <BreathingGlow color={color} />
-        <PulseRing delay={0} color={color} />
-        <PulseRing delay={1000} color={color} />
-        <PulseRing delay={2000} color={color} />
-      </View>
+      <PixelWorld reducedMotion={reducedMotion} />
 
       <View style={styles.topInfo}>
         <Text style={styles.className}>{focusTask.className}</Text>
@@ -319,9 +255,10 @@ export default function FocusScreen() {
 
       <CoinToast key={toastKey.current} visible={showToast} amount={lastCoinAmount} />
 
-      <View style={styles.timerWrapper}>
+      {/* Game-style timer panel */}
+      <View style={styles.timerPanel}>
         <Text
-          style={[styles.timer, { color: goalReached ? color : theme.text }]}
+          style={[styles.timer, { color: goalReached ? color : '#F8FAFC' }]}
           accessibilityLabel={`Timer: ${formatTime(elapsed)}`}
           accessibilityLiveRegion="polite"
         >
@@ -330,23 +267,26 @@ export default function FocusScreen() {
         <Text style={styles.goal}>
           {goalReached ? "Today's goal is done" : `Goal: ${formatTime(targetSeconds)}`}
         </Text>
+        <View
+          style={styles.progressBg}
+          accessibilityRole="progressbar"
+          accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
+          accessibilityLabel={`${progressPercent}% of today's ${targetHours} hour goal`}
+        >
+          <View style={[styles.progressFill, { width: `${progress * 100}%` as any, backgroundColor: color }]} />
+        </View>
+        <Text style={styles.progressLabel}>
+          {progressPercent}% of {"today's"} {targetHours}h goal
+        </Text>
+        {sessionCoins > 0 && (
+          <Text style={styles.sessionCoins}>+{sessionCoins} coins earned this session</Text>
+        )}
       </View>
 
-      <View
-        style={styles.progressBg}
-        accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
-        accessibilityLabel={`${progressPercent}% of today's ${targetHours} hour goal`}
-      >
-        <View style={[styles.progressFill, { width: `${progress * 100}%` as any, backgroundColor: color }]} />
+      {/* Construction site standing on the ground plane */}
+      <View style={styles.siteWrapper} pointerEvents="none">
+        <PixelConstruction progress={progress} running={running} reducedMotion={reducedMotion} />
       </View>
-      <Text style={styles.progressLabel}>
-        {progressPercent}% of {"today's"} {targetHours}h goal
-      </Text>
-
-      {sessionCoins > 0 && (
-        <Text style={styles.sessionCoins}>+{sessionCoins} coins earned this session</Text>
-      )}
 
       <View style={styles.controls}>
         <TouchableOpacity
@@ -470,8 +410,8 @@ export default function FocusScreen() {
               </View>
 
               <View style={styles.recapActions}>
-                <ThemeButton size="lg" onPress={finishSession}>Save and finish</ThemeButton>
-                <ThemeButton size="lg" variant="secondary" onPress={keepStudying}>Keep studying</ThemeButton>
+                <PixelButton size="lg" onPress={finishSession}>Save and finish</PixelButton>
+                <PixelButton size="lg" variant="surface" onPress={keepStudying}>Keep studying</PixelButton>
               </View>
             </Animated.View>
           </ScrollView>
@@ -514,21 +454,29 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   topInfo: {
     position: 'absolute',
-    top: 72,
+    top: 60,
+    alignSelf: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(8,12,24,0.66)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    maxWidth: '86%',
+    zIndex: 2,
   },
   className: {
-    color: theme.muted,
-    fontSize: 13,
-    fontWeight: '600',
+    color: '#CBD5E1',
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   assignmentName: {
-    color: theme.text,
-    fontSize: 20,
+    color: '#F8FAFC',
+    fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -536,13 +484,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 16,
-    backgroundColor: theme.surface,
-    marginTop: 12,
+    backgroundColor: 'rgba(15,23,42,0.6)',
+    marginTop: 10,
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
   partyBadgeText: {
-    color: theme.text,
+    color: '#F8FAFC',
     fontSize: 13,
     fontWeight: '800',
     marginBottom: 2,
@@ -552,7 +500,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontWeight: '800',
   },
   partyNames: {
-    color: theme.muted,
+    color: '#94A3B8',
     fontSize: 11,
     fontWeight: '700',
     marginTop: 4,
@@ -560,67 +508,93 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   coinBadge: {
     position: 'absolute',
-    top: 68,
-    right: 24,
+    top: 60,
+    right: 16,
     alignItems: 'flex-end',
+    backgroundColor: 'rgba(8,12,24,0.66)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    zIndex: 3,
   },
   coinBadgeText: {
     color: '#F59E0B',
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
   },
   coinNext: {
-    color: theme.muted,
+    color: '#94A3B8',
     fontSize: 11,
     marginTop: 2,
   },
-  timerWrapper: {
+  timerPanel: {
+    position: 'absolute',
+    top: 150,
+    alignSelf: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+    backgroundColor: 'rgba(8,12,24,0.66)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 26,
+    paddingVertical: 16,
+    zIndex: 2,
   },
   timer: {
-    fontSize: 72,
-    fontWeight: '200',
-    letterSpacing: 4,
+    fontSize: 44,
+    fontWeight: '300',
+    letterSpacing: 3,
   },
   goal: {
-    color: theme.muted,
-    fontSize: 14,
-    marginTop: 6,
+    color: '#CBD5E1',
+    fontSize: 13,
+    marginTop: 4,
+    marginBottom: 12,
   },
   progressBg: {
-    width: 260,
-    height: 4,
-    backgroundColor: theme.surface,
-    borderRadius: 2,
+    width: 220,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   progressFill: {
-    height: 4,
-    borderRadius: 2,
+    height: 6,
+    borderRadius: 3,
   },
   progressLabel: {
-    color: theme.muted,
+    color: '#CBD5E1',
     fontSize: 12,
-    marginBottom: 8,
   },
   sessionCoins: {
     color: '#F59E0B',
     fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 36,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  siteWrapper: {
+    position: 'absolute',
+    bottom: '22%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   controls: {
-    marginBottom: 24,
+    position: 'absolute',
+    bottom: 96,
+    alignSelf: 'center',
   },
   playBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 78,
+    height: 78,
+    borderRadius: 39,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(8,12,24,0.7)',
   },
   playIcon: {
     fontSize: 15,
@@ -628,15 +602,18 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   stopBtn: {
     position: 'absolute',
-    bottom: 44,
+    bottom: 36,
+    alignSelf: 'center',
     minHeight: 44,
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(8,12,24,0.55)',
+    borderRadius: 22,
   },
   stopText: {
-    color: theme.muted,
-    fontSize: 15,
-    fontWeight: '600',
+    color: '#E2E8F0',
+    fontSize: 14,
+    fontWeight: '700',
   },
   recapOverlay: {
     ...StyleSheet.absoluteFillObject,
