@@ -1,5 +1,6 @@
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { PIXEL_FONT, PixelBadge, PixelButton, PixelField } from '@/components/pixel-ui';
+import PixelBackdrop from '@/components/PixelBackdrop';
 import { useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -333,7 +334,7 @@ const STARTING_POSTS: HelpPost[] = [
 
 export default function MultiPlayerScreen() {
   const router = useRouter();
-  const { start } = useLocalSearchParams<{ start?: string }>();
+  const { start, t } = useLocalSearchParams<{ start?: string; t?: string }>();
   const { theme, setSchoolTheme } = useSchoolTheme();
   const { tasks } = useTasks();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -394,10 +395,16 @@ export default function MultiPlayerScreen() {
   }, [motionNotice]);
 
   useEffect(() => {
-    if (start === 'school' && !profileCreated) {
+    if (start !== 'school') return;
+    if (profileCreated) {
+      // Coming from the home school badge with a profile: open the switcher.
+      setActiveBrowseTab('Profiles');
+      setSchoolSearch('');
+      setShowSchoolSwitcher(true);
+    } else {
       setIsSearching(true);
     }
-  }, [profileCreated, start]);
+  }, [profileCreated, start, t]);
 
   const filteredSchools = useMemo(() => {
     const query = schoolSearch.trim().toLowerCase();
@@ -508,6 +515,14 @@ export default function MultiPlayerScreen() {
     setShowProfileSetup(false);
     setShowSchoolSwitcher(false);
     if (profileCreated) setMotionNotice(`Switched to ${school}`);
+  };
+
+  // Pre-profile: clear the selection and go back to the school picker.
+  const handleChangeSchool = () => {
+    setSelectedSchool('');
+    setSchoolSearch('');
+    setShowProfileSetup(false);
+    setIsSearching(true);
   };
 
   const clearProfileError = (field: ProfileField) => {
@@ -892,6 +907,15 @@ export default function MultiPlayerScreen() {
             <Text style={styles.selectedSchoolLabel}>School</Text>
             <Text style={styles.selectedSchoolText}>{selectedSchool}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.changeSchoolButton}
+            onPress={handleChangeSchool}
+            activeOpacity={0.8}
+            accessibilityLabel="Change your school"
+            accessibilityRole="button"
+          >
+            <Text style={styles.changeSchoolText}>Change</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.profileComposerHeader}>
@@ -1053,6 +1077,15 @@ export default function MultiPlayerScreen() {
             ))}
           </View>
         </View>
+        <TouchableOpacity
+          style={styles.changeSchoolButton}
+          onPress={handleChangeSchool}
+          activeOpacity={0.8}
+          accessibilityLabel="Change your school"
+          accessibilityRole="button"
+        >
+          <Text style={styles.changeSchoolText}>Not your school? Change it</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.onboardingNext}>
@@ -1901,7 +1934,9 @@ export default function MultiPlayerScreen() {
   const isSchoolConfirmation = !profileCreated && isSearching && !!selectedSchool && !showProfileSetup;
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+    <View style={styles.root}>
+      <PixelBackdrop />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       {!profileCreated && (
         <View style={[styles.hero, (isProfileSetup || isSchoolConfirmation) && styles.heroCompact]}>
           <View style={styles.heroTop}>
@@ -1999,14 +2034,16 @@ export default function MultiPlayerScreen() {
           )}
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const DANGER_RED = '#EF4444';
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.background },
+  root: { flex: 1, backgroundColor: theme.background },
+  scroll: { flex: 1 },
   container: { paddingHorizontal: 18, paddingTop: 36, paddingBottom: 118 },
   hero: {
     paddingTop: 4,
@@ -2130,6 +2167,21 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   selectedSchool: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 12, marginBottom: 18 },
   selectedSchoolTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  changeSchoolButton: {
+    minHeight: 44,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    marginLeft: 'auto',
+    paddingHorizontal: 4,
+  },
+  changeSchoolText: {
+    color: theme.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   selectedSchoolLabel: { color: theme.primary, fontSize: 11, fontWeight: '700', marginBottom: 3, textTransform: 'uppercase' },
   selectedSchoolText: { color: theme.text, fontSize: 15, fontWeight: '700' },
   schoolSwatches: { width: 48, height: 28, flexDirection: 'row', overflow: 'hidden', borderRadius: 2, borderWidth: 1, borderColor: theme.border },

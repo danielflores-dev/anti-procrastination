@@ -1,6 +1,7 @@
 import { Task, TaskProgress, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelBadge, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
+import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -182,6 +183,7 @@ export default function SinglePlayerScreen() {
 
   return (
     <View style={styles.container}>
+      <PixelBackdrop />
       <PixelSkyStrip height={132}>
         <View style={styles.skyContent}>
           <View style={styles.skyRow}>

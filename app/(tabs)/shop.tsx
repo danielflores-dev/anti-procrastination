@@ -1,6 +1,7 @@
 import { useCoins } from '@/context/CoinContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
+import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
@@ -102,7 +103,9 @@ export default function ShopScreen() {
   };
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+    <View style={styles.root}>
+      <PixelBackdrop />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <PixelSkyStrip height={132} style={styles.sky}>
         <View style={styles.skyContent}>
           <View style={styles.skyRow}>
@@ -155,12 +158,14 @@ export default function ShopScreen() {
           );
         })}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.background },
+  root: { flex: 1, backgroundColor: theme.background },
+  scroll: { flex: 1 },
   container: { paddingBottom: 118 },
   sky: { marginBottom: 16 },
   skyContent: { flex: 1, paddingTop: 50, paddingHorizontal: 20 },

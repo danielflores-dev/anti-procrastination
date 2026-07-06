@@ -1,4 +1,5 @@
 import { GOLD, PIXEL_FONT, PixelBadge, PixelHeading, PixelPanel, PixelProgress } from '@/components/pixel-ui';
+import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { StudySession, Task, useTasks } from '@/context/TaskContext';
@@ -186,15 +187,18 @@ export default function HomeScreen() {
     : null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <PixelBackdrop />
+      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.content}>
       {/* Time-of-day sky header */}
       <PixelSkyStrip height={190}>
         <View style={styles.skyContent}>
           <View style={styles.skyTopRow}>
             <Text style={styles.kicker}>Today</Text>
             <PixelBadge
-              onPress={() => router.push({ pathname: '/(tabs)/multi-player', params: { start: 'school' } })}
-              accessibilityLabel={theme.school ? `School: ${theme.name}. Tap to switch.` : 'Pick your school'}
+              onPress={() => router.push({ pathname: '/(tabs)/multi-player', params: { start: 'school', t: String(Date.now()) } })}
+              accessibilityLabel={theme.school ? `School: ${theme.name}. Tap to change your school.` : 'Pick your school'}
+              icon={<FontAwesome5 name="exchange-alt" size={10} color={theme.primary} />}
             >
               {theme.school ? theme.name : 'Pick school'}
             </PixelBadge>
@@ -323,7 +327,8 @@ export default function HomeScreen() {
           );
         })}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -331,6 +336,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
+  },
+  scrollArea: {
+    flex: 1,
   },
   content: {
     paddingBottom: 118,

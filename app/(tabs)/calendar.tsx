@@ -1,6 +1,7 @@
 import { Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelButton, PixelField, PixelPanel } from '@/components/pixel-ui';
+import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -216,7 +217,9 @@ export default function CalendarScreen() {
   };
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+    <View style={styles.root}>
+      <PixelBackdrop />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <PixelSkyStrip height={132} style={styles.sky}>
         <View style={styles.skyContent}>
           <Text style={styles.kicker}>This month</Text>
@@ -450,12 +453,14 @@ export default function CalendarScreen() {
           </PixelPanel>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const createStyles = (theme: SchoolTheme) => StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: theme.background },
+  root: { flex: 1, backgroundColor: theme.background },
+  scroll: { flex: 1 },
   container: { paddingBottom: 118 },
   sky: { marginBottom: 16 },
   skyContent: { flex: 1, paddingTop: 50, paddingHorizontal: 20 },
