@@ -1,13 +1,20 @@
-import { GOLD, PIXEL_FONT, PixelBadge, PixelHeading, PixelPanel, PixelProgress } from '@/components/pixel-ui';
+import { GOLD, PIXEL_FONT, PixelBadge, PixelButton, PixelHeading, PixelPanel, PixelProgress } from '@/components/pixel-ui';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
+import PixelConfettiBurst from '@/components/PixelConfetti';
 import { PixelSkyStrip } from '@/components/PixelWorld';
+import { useCoins } from '@/context/CoinContext';
+import { usePowerUps } from '@/context/PowerUpContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { StudySession, Task, useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type Href, useRouter } from 'expo-router';
-import { type ComponentProps, useMemo, useState } from 'react';
+import { type ComponentProps, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const CLAIMED_KEY = 'antiprocrastination.claimed-achievements.v1';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -33,8 +40,9 @@ function sessionDateKey(dateRaw: string): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function getStudyStreak(sessions: StudySession[]): number {
+function getStudyStreak(sessions: StudySession[], bridgedDates: string[] = []): number {
   const studiedDays = new Set(sessions.map(session => sessionDateKey(session.createdAt)));
+  bridgedDates.forEach(date => studiedDays.add(date));
   let streak = 0;
   const cursor = new Date();
 
@@ -127,15 +135,59 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
 export default function HomeScreen() {
   const router = useRouter();
   const { tasks, sessions } = useTasks();
+  const { coins, addCoins } = useCoins();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [activeTopInfo, setActiveTopInfo] = useState<TopStatInfo | null>(null);
+  const [claimedIds, setClaimedIds] = useState<string[]>([]);
+  const [claimedHydrated, setClaimedHydrated] = useState(false);
+  const [claimCelebration, setClaimCelebration] = useState<number | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(CLAIMED_KEY)
+      .then(saved => {
+        if (saved) setClaimedIds(JSON.parse(saved));
+      })
+      .catch(() => {})
+      .finally(() => setClaimedHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (!claimedHydrated) return;
+    AsyncStorage.setItem(CLAIMED_KEY, JSON.stringify(claimedIds)).catch(() => {});
+  }, [claimedIds, claimedHydrated]);
+
+  const reducedMotion = useReducedMotion();
+
+  const handleClaim = (id: string, reward: number) => {
+    if (claimedIds.includes(id)) return;
+    setClaimedIds(current => [...current, id]);
+    addCoins(reward);
+    if (!reducedMotion) setClaimCelebration(reward);
+  };
+
+  const { shields, bridgedDates, useShieldFor } = usePowerUps();
+
+  // A streak shield automatically covers yesterday if it would break the chain.
+  useEffect(() => {
+    if (shields <= 0) return;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dayBefore = new Date();
+    dayBefore.setDate(dayBefore.getDate() - 2);
+    const yesterdayKey = sessionDateKey(yesterday.toISOString());
+    const dayBeforeKey = sessionDateKey(dayBefore.toISOString());
+    const studied = new Set(sessions.map(session => sessionDateKey(session.createdAt)));
+    bridgedDates.forEach(date => studied.add(date));
+    if (!studied.has(yesterdayKey) && studied.has(dayBeforeKey)) {
+      useShieldFor(yesterdayKey);
+    }
+  }, [shields, sessions, bridgedDates, useShieldFor]);
 
   const openTasks = tasks.filter(task => task.progress !== 'Done');
   const nextTask = getNextTask(tasks);
-  const totalCoins = sessions.reduce((sum, session) => sum + session.coinsEarned, 0);
   const focusedMinutes = Math.round(sessions.reduce((sum, session) => sum + session.focusedSeconds, 0) / 60);
-  const streak = getStudyStreak(sessions);
+  const streak = getStudyStreak(sessions, bridgedDates);
   const todayStudyPlan = buildTodayStudyPlan(openTasks, sessions);
   const primaryRoute: Href = nextTask ? `/focus?id=${nextTask.id}` : '/auto-add';
   const achievements = [
@@ -223,7 +275,7 @@ export default function HomeScreen() {
           accessibilityLabel="Show coin details"
           icon={<FontAwesome5 name="coins" size={12} color={GOLD} />}
         >
-          {totalCoins}
+          {coins}
         </PixelBadge>
         <PixelBadge
           onPress={() => setActiveTopInfo(current => (current === 'time' ? null : 'time'))}
@@ -303,32 +355,55 @@ export default function HomeScreen() {
       <View style={styles.achievementList}>
         {achievements.map(item => {
           const complete = item.progress >= 1;
+          const claimed = claimedIds.includes(item.id);
+          const claimable = complete && !claimed;
           return (
             <PixelPanel key={item.id}>
               <View style={styles.achievementRow}>
-                <View style={[styles.achievementIcon, complete && { backgroundColor: theme.primary }]}>
+                <View style={[
+                  styles.achievementIcon,
+                  claimable && { backgroundColor: GOLD },
+                  claimed && { backgroundColor: theme.primary },
+                ]}>
                   <FontAwesome5
                     name={complete ? 'check' : item.icon}
                     size={14}
-                    color={complete ? theme.onPrimary : theme.primary}
+                    color={claimable ? '#1C1917' : claimed ? theme.onPrimary : theme.primary}
                   />
                 </View>
                 <View style={styles.achievementCopy}>
                   <View style={styles.achievementTopLine}>
                     <Text style={styles.achievementTitle}>{item.title}</Text>
-                    <Text style={styles.achievementReward}>+{item.reward}</Text>
+                    {!claimable && <Text style={styles.achievementReward}>+{item.reward}</Text>}
                   </View>
-                  <PixelProgress progress={item.progress} height={8} />
+                  <PixelProgress progress={item.progress} height={8} color={claimed ? '#22C55E' : undefined} />
                   <Text style={styles.achievementProgress}>
-                    {complete ? 'Ready to claim' : item.current}
+                    {claimed ? 'Claimed' : complete ? 'Ready to claim' : item.current}
                   </Text>
                 </View>
+                {claimable && (
+                  <PixelButton
+                    size="sm"
+                    onPress={() => handleClaim(item.id, item.reward)}
+                    accessibilityLabel={`Claim ${item.reward} coins for ${item.title}`}
+                  >
+                    {`+${item.reward}`}
+                  </PixelButton>
+                )}
               </View>
             </PixelPanel>
           );
         })}
       </View>
       </ScrollView>
+
+      {claimCelebration !== null && (
+        <PixelConfettiBurst
+          message={`+${claimCelebration} coins!`}
+          durationMs={1300}
+          onDone={() => setClaimCelebration(null)}
+        />
+      )}
     </ArcadeTabScreen>
   );
 }

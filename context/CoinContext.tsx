@@ -1,4 +1,7 @@
-import { createContext, useContext, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+const COINS_KEY = 'antiprocrastination.coins.v1';
 
 type CoinContextType = {
   coins: number;
@@ -14,6 +17,28 @@ const CoinContext = createContext<CoinContextType>({
 
 export function CoinProvider({ children }: { children: React.ReactNode }) {
   const [coins, setCoins] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(COINS_KEY);
+        if (saved) {
+          const parsed = Number(saved);
+          if (Number.isFinite(parsed) && parsed >= 0) setCoins(parsed);
+        }
+      } catch {
+        // Start fresh if storage is unreadable.
+      } finally {
+        setHydrated(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(COINS_KEY, String(coins)).catch(() => {});
+  }, [coins, hydrated]);
 
   const addCoins = (amount: number) => setCoins(c => c + amount);
 

@@ -126,6 +126,41 @@ const WALKER_B = [
   '...KK.KK....',
 ];
 
+// Celebration frames used when the goal is complete.
+const WORKER_CHEER_A = [
+  '.S........S.',
+  '.S..HHHH..S.',
+  '.S.HHHHHH.S.',
+  '.S.hhhhhh.S.',
+  '.S.SSooSS.S.',
+  '.SS.SSSS.SS.',
+  '..BBBBBBBB..',
+  '..BBBBBBBB..',
+  '..BsBBBBsB..',
+  '..b.BBBB.b..',
+  '...PPPP.....',
+  '...PP.PP....',
+  '...pp.pp....',
+  '..KKK.KKK...',
+]
+
+const WORKER_CHEER_B = [
+  '..S......S..',
+  '..S.HHHH.S..',
+  '..SHHHHHHS..',
+  '...hhhhhh...',
+  '...SSooSS...',
+  '...SSSSSS...',
+  '..BBBBBBBB..',
+  '..BsBBBBsB..',
+  '..b.BBBB.b..',
+  '...PPPP.....',
+  '...PPPP.....',
+  '...pp.pp....',
+  '..KK...KK...',
+  '............',
+]
+
 const MIXER = [
   '...MMMMM....',
   '..MMMMMMm...',
@@ -211,14 +246,20 @@ export default function PixelConstruction({ progress, running, reducedMotion, px
   const walkX = useRef(new Animated.Value(0)).current;
   const walkAnim = useRef<Animated.CompositeAnimation | null>(null);
 
+  const complete = progress >= 1;
+  // The site gets busier and faster as the session advances.
+  const stage = complete ? 4 : progress >= 0.75 ? 3 : progress >= 0.5 ? 2 : progress >= 0.25 ? 1 : 0;
+  const hammerMs = complete ? 460 : 520 - stage * 60; // 520 -> 340
+  const walkMs = 9500 - stage * 1100; // 9500 -> 5100
+
   useEffect(() => {
     if (running && !reducedMotion) {
-      frameTimer.current = setInterval(() => setFrame(f => (f + 1) % 2), 400);
+      frameTimer.current = setInterval(() => setFrame(f => (f + 1) % 2), hammerMs);
       walkX.setValue(0);
       walkAnim.current = Animated.loop(
         Animated.timing(walkX, {
           toValue: 1,
-          duration: 9000,
+          duration: walkMs,
           easing: Easing.linear,
           useNativeDriver: true,
         })
@@ -235,9 +276,8 @@ export default function PixelConstruction({ progress, running, reducedMotion, px
       if (frameTimer.current) clearInterval(frameTimer.current);
       walkAnim.current?.stop();
     };
-  }, [running, reducedMotion, walkX]);
+  }, [running, reducedMotion, walkX, hammerMs, walkMs]);
 
-  const complete = progress >= 1;
   const revealed = complete
     ? BUILDING_MAX_ROWS
     : Math.max(1, Math.floor(progress * BUILDING_MAX_ROWS));
@@ -246,13 +286,23 @@ export default function PixelConstruction({ progress, running, reducedMotion, px
   const buildingW = BUILDING_WIDTH * px;
   const buildingLeft = (SCENE_W - buildingW) / 2;
 
-  const workerLeft = frame === 0 ? WORKER_UP : WORKER_DOWN;
-  const workerRight = frame === 0 ? mirror(WORKER_DOWN) : mirror(WORKER_UP);
+  // At 100% the crew celebrates instead of hammering.
+  const workerLeft = complete
+    ? (frame === 0 ? WORKER_CHEER_A : WORKER_CHEER_B)
+    : (frame === 0 ? WORKER_UP : WORKER_DOWN);
+  const workerRight = complete
+    ? (frame === 0 ? WORKER_CHEER_B : WORKER_CHEER_A)
+    : (frame === 0 ? mirror(WORKER_DOWN) : mirror(WORKER_UP));
   const walker = frame === 0 ? WALKER_A : WALKER_B;
+  const walkerBack = frame === 0 ? mirror(WALKER_B) : mirror(WALKER_A);
 
   const walkTranslate = walkX.interpolate({
     inputRange: [0, 1],
     outputRange: [-SCENE_W / 2 + 20, SCENE_W / 2 - 40],
+  });
+  const walkBackTranslate = walkX.interpolate({
+    inputRange: [0, 1],
+    outputRange: [SCENE_W / 2 - 30, -SCENE_W / 2 + 10],
   });
 
   return (
@@ -267,18 +317,44 @@ export default function PixelConstruction({ progress, running, reducedMotion, px
         <Sprite rows={BRICK_PILE} px={px} />
       </View>
 
+      {/* Second hauler crossing behind the site, joins mid-session */}
+      {stage >= 2 && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            left: SCENE_W / 2 - 6 * px,
+            bottom: 14,
+            opacity: 0.85,
+            transform: [{ translateX: walkBackTranslate }],
+          }}
+        >
+          <Sprite rows={walkerBack} px={px} />
+        </Animated.View>
+      )}
+
       {/* Building, center */}
       <View style={{ position: 'absolute', left: buildingLeft, bottom: 8 }}>
         <Sprite rows={building} px={px} />
       </View>
 
-      {/* Hammering workers flanking the building */}
+      {/* Worker up on the scaffold in the final stretch */}
+      {stage === 3 && (
+        <View style={{ position: 'absolute', left: buildingLeft + 2 * px, bottom: 8 + revealed * px }}>
+          <Sprite rows={frame === 0 ? mirror(WORKER_DOWN) : mirror(WORKER_UP)} px={px} />
+        </View>
+      )}
+
+      {/* First worker is always on site */}
       <View style={{ position: 'absolute', left: buildingLeft - 13 * px, bottom: 6 }}>
         <Sprite rows={workerLeft} px={px} />
       </View>
-      <View style={{ position: 'absolute', left: buildingLeft + buildingW + px, bottom: 6 }}>
-        <Sprite rows={workerRight} px={px} />
-      </View>
+
+      {/* Second worker joins after the first quarter (and stays to celebrate) */}
+      {(stage >= 1 || complete) && (
+        <View style={{ position: 'absolute', left: buildingLeft + buildingW + px, bottom: 6 }}>
+          <Sprite rows={workerRight} px={px} />
+        </View>
+      )}
 
       {/* Traffic cone, front-right (lower = closer) */}
       <View style={{ position: 'absolute', right: 40, bottom: 0 }}>

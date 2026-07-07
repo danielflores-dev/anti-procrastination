@@ -1,4 +1,7 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+
+const SCHOOL_KEY = 'antiprocrastination.school.v1';
 
 export type SchoolTheme = {
   school: string | null;
@@ -166,6 +169,29 @@ const SchoolThemeContext = createContext<SchoolThemeContextValue | null>(null);
 
 export function SchoolThemeProvider({ children }: { children: ReactNode }) {
   const [school, setSchool] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(SCHOOL_KEY);
+        if (saved) setSchool(saved);
+      } catch {
+        // Fall back to the default theme.
+      } finally {
+        setHydrated(true);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (school) {
+      AsyncStorage.setItem(SCHOOL_KEY, school).catch(() => {});
+    } else {
+      AsyncStorage.removeItem(SCHOOL_KEY).catch(() => {});
+    }
+  }, [school, hydrated]);
 
   const theme = useMemo<SchoolTheme>(() => {
     if (!school) return DEFAULT_THEME;

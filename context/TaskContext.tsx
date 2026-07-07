@@ -1,4 +1,8 @@
-import { createContext, useContext, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+const TASKS_KEY = 'antiprocrastination.tasks.v1';
+const SESSIONS_KEY = 'antiprocrastination.sessions.v1';
 
 export type TaskProgress = 'Not started' | 'Working' | 'Almost done' | 'Done';
 
@@ -123,6 +127,36 @@ function generateStudyPlan(task: Pick<Task, 'assignmentName' | 'estimatedHours' 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Load saved data once on startup.
+  useEffect(() => {
+    (async () => {
+      try {
+        const [savedTasks, savedSessions] = await Promise.all([
+          AsyncStorage.getItem(TASKS_KEY),
+          AsyncStorage.getItem(SESSIONS_KEY),
+        ]);
+        if (savedTasks) setTasks(JSON.parse(savedTasks));
+        if (savedSessions) setSessions(JSON.parse(savedSessions));
+      } catch {
+        // Corrupt or unreadable storage: start fresh rather than crash.
+      } finally {
+        setHydrated(true);
+      }
+    })();
+  }, []);
+
+  // Persist on every change after the initial load.
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(TASKS_KEY, JSON.stringify(tasks)).catch(() => {});
+  }, [tasks, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)).catch(() => {});
+  }, [sessions, hydrated]);
 
   const addTask = (task: Omit<Task, 'id'>) => {
     const id = Date.now().toString();

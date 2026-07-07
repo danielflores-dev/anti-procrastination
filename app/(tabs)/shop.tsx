@@ -1,12 +1,16 @@
 import { useCoins } from '@/context/CoinContext';
+import { usePowerUps } from '@/context/PowerUpContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+const OWNED_KEY = 'antiprocrastination.shop-owned.v1';
 
 type ShopItem = {
   id: string;
@@ -66,14 +70,37 @@ const ITEMS: ShopItem[] = [
   },
 ];
 
+// Items that stack and get used up, instead of being owned once.
+const CONSUMABLES = new Set(['streak_shield', 'double_coins']);
+
 export default function ShopScreen() {
   const { coins, spendCoins } = useCoins();
+  const { doubleCharges, shields, addDoubleCharge, addShield } = usePowerUps();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [owned, setOwned] = useState<Set<string>>(new Set());
 
+  const consumableCount = (id: string) =>
+    id === 'streak_shield' ? shields : id === 'double_coins' ? doubleCharges : 0;
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(OWNED_KEY)
+      .then(saved => {
+        if (saved) setOwned(new Set(JSON.parse(saved)));
+      })
+      .catch(() => {})
+      .finally(() => setHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(OWNED_KEY, JSON.stringify([...owned])).catch(() => {});
+  }, [owned, hydrated]);
+
   const handleBuy = (item: ShopItem) => {
-    if (owned.has(item.id)) {
+    const isConsumable = CONSUMABLES.has(item.id);
+    if (!isConsumable && owned.has(item.id)) {
       Alert.alert('Already saved', `${item.name} is already yours.`);
       return;
     }
@@ -93,7 +120,14 @@ export default function ShopScreen() {
           text: 'Buy',
           onPress: () => {
             const ok = spendCoins(item.cost);
-            if (ok) {
+            if (!ok) return;
+            if (item.id === 'streak_shield') {
+              addShield();
+              Alert.alert('Streak save ready', 'It will automatically cover your next missed study day.');
+            } else if (item.id === 'double_coins') {
+              addDoubleCharge();
+              Alert.alert('Double coins armed', 'Your next focus session earns 2x coins.');
+            } else {
               setOwned(prev => new Set([...prev, item.id]));
               Alert.alert('Ready', `${item.name} is saved.`);
             }
@@ -130,7 +164,9 @@ export default function ShopScreen() {
         </PixelHeading>
 
         {ITEMS.map(item => {
-          const isOwned = owned.has(item.id);
+          const isConsumable = CONSUMABLES.has(item.id);
+          const count = consumableCount(item.id);
+          const isOwned = !isConsumable && owned.has(item.id);
           const canAfford = coins >= item.cost;
           return (
             <PixelPanel key={item.id} style={styles.card} tone={isOwned ? 'alt' : 'surface'}>
@@ -142,7 +178,14 @@ export default function ShopScreen() {
                   <Text style={styles.priceLabel}>coins</Text>
                 </View>
                 <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{item.name}</Text>
+                  <View style={styles.itemNameRow}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    {isConsumable && count > 0 && (
+                      <View style={styles.countBadge}>
+                        <Text style={styles.countBadgeText}>x{count}</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.itemDesc}>{item.description}</Text>
                 </View>
                 <PixelButton
@@ -239,6 +282,19 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     marginTop: 2,
   },
   itemInfo: { flex: 1 },
-  itemName: { color: theme.text, fontSize: 15, fontWeight: '800', marginBottom: 3 },
+  itemNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
+  itemName: { color: theme.text, fontSize: 15, fontWeight: '800' },
+  countBadge: {
+    backgroundColor: GOLD,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  countBadgeText: {
+    color: '#1C1917',
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+  },
   itemDesc: { color: theme.muted, fontSize: 12, lineHeight: 17 },
 });

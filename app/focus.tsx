@@ -1,4 +1,5 @@
 import { useCoins } from '@/context/CoinContext';
+import { usePowerUps } from '@/context/PowerUpContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -115,6 +116,7 @@ export default function FocusScreen() {
   const { tasks, addStudySession, updateHoursPerDay, updateProgress } = useTasks();
   const { theme } = useSchoolTheme();
   const { coins, addCoins } = useCoins();
+  const { doubleCharges, consumeDoubleCharge } = usePowerUps();
   const reducedMotion = useReducedMotion();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -152,7 +154,8 @@ export default function FocusScreen() {
   const color = focusTask ? hourColor(focusTask.estimatedHours) : theme.primary;
   const partyCount = Math.max(1, Number(partySize ?? '1') || 1);
   const isPartySession = partyCount > 1 || !!partyRoom;
-  const coinMultiplier = 1 + Math.max(0, partyCount - 1) * 0.5;
+  const boostActive = doubleCharges > 0;
+  const coinMultiplier = (1 + Math.max(0, partyCount - 1) * 0.5) * (boostActive ? 2 : 1);
   const partyNameList = partyNames ? partyNames.split(', ').filter(Boolean) : [];
   const focusTaskId = focusTask?.id;
   const focusTaskHours = focusTask?.hoursPerDay;
@@ -252,6 +255,7 @@ export default function FocusScreen() {
     if (task) {
       updateProgress(task.id, goalReached ? 'Done' : progressPercent >= 75 ? 'Almost done' : 'Working');
     }
+    if (boostActive && elapsed > 0) consumeDoubleCharge();
     setShowRecap(false);
     if (reducedMotion) {
       setElapsed(0);
@@ -297,6 +301,7 @@ export default function FocusScreen() {
 
       <View style={styles.coinBadge}>
         <Text style={styles.coinBadgeText}>{coins} coins</Text>
+        {boostActive && <Text style={styles.boostText}>2x boost active</Text>}
         {running && (
           <Text style={styles.coinNext}>+{coinMultiplier.toFixed(1)}x in {formatTime(nextCoinIn)}</Text>
         )}
@@ -588,6 +593,14 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     color: '#94A3B8',
     fontSize: 11,
     marginTop: 2,
+  },
+  boostText: {
+    color: '#F59E0B',
+    fontSize: 10,
+    fontWeight: '800',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   timerPanel: {
     position: 'absolute',

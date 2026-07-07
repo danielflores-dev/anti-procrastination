@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { PIXEL_FONT, PixelBadge, PixelButton, PixelField } from '@/components/pixel-ui';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
@@ -151,6 +152,7 @@ const SCHOOL_COLOR_SWATCHES: Record<string, [string, string]> = {
 
 const MEETING_OPTIONS = ['In person', 'Online', 'Either'];
 const STUDY_OPTIONS = ['Homework', 'Exam prep', 'Projects', 'Accountability'];
+const PROFILE_KEY = 'antiprocrastination.profile.v1';
 const BROWSE_TABS = ['Library rooms', 'Profiles', 'Feed'] as const;
 const FEED_KINDS: HelpPost['kind'][] = ['Help', 'Suggestion'];
 const MIN_STUDENT_AGE = 13;
@@ -392,6 +394,28 @@ export default function MultiPlayerScreen() {
     return () => clearTimeout(timeout);
   }, [motionNotice]);
 
+  // Restore a saved profile on startup.
+  useEffect(() => {
+    AsyncStorage.getItem(PROFILE_KEY)
+      .then(saved => {
+        if (!saved) return;
+        const p = JSON.parse(saved);
+        setName(p.name ?? '');
+        setMajor(p.major ?? '');
+        setAge(p.age ?? '');
+        setYear(p.year ?? '');
+        setCoolFact(p.coolFact ?? '');
+        setStudyGoal(p.studyGoal ?? '');
+        setAvailability(p.availability ?? '');
+        setMeetingPreference(p.meetingPreference ?? 'Either');
+        setStudyFocus(p.studyFocus ?? 'Homework');
+        setProfileImage(p.profileImage ?? null);
+        if (p.school) setSelectedSchool(p.school);
+        setProfileCreated(true);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (start !== 'school') return;
     if (profileCreated) {
@@ -537,6 +561,20 @@ export default function MultiPlayerScreen() {
     setProfileErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) return;
+
+    AsyncStorage.setItem(PROFILE_KEY, JSON.stringify({
+      name: nextName,
+      major: nextMajor,
+      age: nextAge,
+      year: nextYear,
+      coolFact: nextFact,
+      studyGoal: nextStudyGoal,
+      availability: nextAvailability,
+      meetingPreference,
+      studyFocus,
+      profileImage,
+      school: selectedSchool || theme.name,
+    })).catch(() => {});
 
     if (editingProfile) {
       setEditingProfile(false);
