@@ -1,6 +1,7 @@
 import { Task, TaskProgress, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelBadge, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
+import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -182,7 +183,7 @@ export default function SinglePlayerScreen() {
   ) : null;
 
   return (
-    <View style={styles.container}>
+    <ArcadeTabScreen index={1} style={styles.container}>
       <PixelBackdrop />
       <PixelSkyStrip height={132}>
         <View style={styles.skyContent}>
@@ -257,7 +258,7 @@ export default function SinglePlayerScreen() {
           +
         </PixelButton>
       </View>
-    </View>
+    </ArcadeTabScreen>
   );
 }
 

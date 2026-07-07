@@ -1,6 +1,7 @@
 import { useCoins } from '@/context/CoinContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
+import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -103,7 +104,7 @@ export default function ShopScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <ArcadeTabScreen index={4} style={styles.root}>
       <PixelBackdrop />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <PixelSkyStrip height={132} style={styles.sky}>
@@ -159,7 +160,7 @@ export default function ShopScreen() {
         })}
       </View>
       </ScrollView>
-    </View>
+    </ArcadeTabScreen>
   );
 }
 

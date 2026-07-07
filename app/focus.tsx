@@ -2,9 +2,11 @@ import { useCoins } from '@/context/CoinContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { PixelButton } from '@/components/pixel-ui';
-import PixelConstruction from '@/components/PixelConstruction';
+import { GOLD, PIXEL_FONT, PixelButton } from '@/components/pixel-ui';
+import PixelConstruction, { Sprite } from '@/components/PixelConstruction';
+import PixelConfettiBurst from '@/components/PixelConfetti';
 import PixelWorld from '@/components/PixelWorld';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -19,6 +21,42 @@ import {
 } from 'react-native';
 
 const COIN_INTERVAL = 30;
+
+// Pixel trophy shown when the daily goal is reached.
+const TROPHY = [
+  'k.kkkkkkk.k',
+  'kkHHHHHHHkk',
+  'k.HHHHHHH.k',
+  'kk.HHHHH.kk',
+  '..kHHHHHk..',
+  '...kHHHk...',
+  '....kHk....',
+  '....kHk....',
+  '..kHHHHHk..',
+  '..kwwwwwk..',
+];
+
+// Pixel coin stack for regular session recaps.
+const COIN_STACK = [
+  '....HHHH...',
+  '...HhhhhH..',
+  '....HHHH...',
+  '.HHHH.HHHH.',
+  'HhhhhHhhhhH',
+  '.HHHH.HHHH.',
+];
+
+// Static confetti squares around the trophy (positions inside the 230px wrap).
+const CONFETTI = [
+  { x: 14, y: 8, color: GOLD },
+  { x: 204, y: 14, color: '#22C55E' },
+  { x: 34, y: 44, color: '#EC4899' },
+  { x: 192, y: 48, color: GOLD },
+  { x: 64, y: 0, color: '#22C55E' },
+  { x: 156, y: 4, color: '#EC4899' },
+  { x: 4, y: 30, color: '#22C55E' },
+  { x: 218, y: 32, color: GOLD },
+];
 
 function hourColor(hours: number): string {
   if (hours < 2) return '#22C55E';
@@ -102,6 +140,8 @@ export default function FocusScreen() {
   const [showToast, setShowToast] = useState(false);
   const [lastCoinAmount, setLastCoinAmount] = useState(1);
   const [showRecap, setShowRecap] = useState(false);
+  const [showGoalAdjust, setShowGoalAdjust] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
   const [sessionGoalHours, setSessionGoalHours] = useState<number | null>(null);
   const recapAnim = useRef(new Animated.Value(0)).current;
   const toastKey = useRef(0);
@@ -151,6 +191,7 @@ export default function FocusScreen() {
   const handleStop = () => {
     setRunning(false);
     setSessionGoalHours(current => current ?? focusTask?.hoursPerDay ?? 1);
+    setShowGoalAdjust(false);
     setShowRecap(true);
   };
 
@@ -211,8 +252,18 @@ export default function FocusScreen() {
     if (task) {
       updateProgress(task.id, goalReached ? 'Done' : progressPercent >= 75 ? 'Almost done' : 'Working');
     }
-    setElapsed(0);
     setShowRecap(false);
+    if (reducedMotion) {
+      setElapsed(0);
+      router.back();
+      return;
+    }
+    setCelebrating(true);
+  };
+
+  const finishCelebration = () => {
+    setCelebrating(false);
+    setElapsed(0);
     router.back();
   };
 
@@ -221,8 +272,6 @@ export default function FocusScreen() {
     setShowRecap(false);
     setRunning(true);
   };
-
-  const accentColor = theme.school ? theme.secondary : theme.accent;
 
   return (
     <View style={styles.container}>
@@ -336,86 +385,97 @@ export default function FocusScreen() {
                 },
               ]}
             >
-              <View style={styles.recapHeader}>
-                <Text style={[styles.recapKicker, { color: accentColor }]}>Session recap</Text>
-                <Text style={styles.recapTitle}>{goalReached ? 'Goal complete' : 'Progress saved'}</Text>
-                <Text style={styles.recapSub} numberOfLines={2}>
-                  {focusTask.assignmentName}
+              {/* Result banner */}
+              <View style={[styles.recapBanner, { backgroundColor: goalReached ? GOLD : theme.primary }]}>
+                <Text style={[styles.recapBannerText, { color: goalReached ? '#1C1917' : theme.onPrimary }]}>
+                  {goalReached ? 'Goal complete!' : 'Session recap'}
                 </Text>
               </View>
 
-              <View style={styles.coinHero}>
-                <Text style={styles.coinHeroLabel}>You earned</Text>
-                <Text style={[styles.coinHeroValue, { color }]}>{sessionCoins} coins</Text>
-                <Text style={styles.coinHeroMeta}>
-                  {isPartySession ? `${coinMultiplier.toFixed(1)}x room bonus` : `${formatTime(elapsed)} focused`}
-                </Text>
-              </View>
-
-              <View style={styles.recapMetrics}>
-                <View style={styles.recapMetric}>
-                  <Text style={styles.recapMetricValue}>{formatTime(elapsed)}</Text>
-                  <Text style={styles.recapMetricLabel}>Time</Text>
+              <View style={styles.recapBody}>
+                {/* Trophy or coin stack, with confetti on a finished goal */}
+                <View style={styles.recapSpriteWrap}>
+                  {goalReached && CONFETTI.map((c, i) => (
+                    <View
+                      key={i}
+                      style={{ position: 'absolute', left: c.x, top: c.y, width: 5, height: 5, backgroundColor: c.color }}
+                    />
+                  ))}
+                  <Sprite rows={goalReached ? TROPHY : COIN_STACK} px={5} />
                 </View>
-                <View style={styles.recapMetric}>
-                  <Text style={styles.recapMetricValue}>{progressPercent}%</Text>
-                  <Text style={styles.recapMetricLabel}>Goal</Text>
+
+                <Text style={styles.recapSub} numberOfLines={2}>{focusTask.assignmentName}</Text>
+
+                {/* Coins earned + session summary in one block */}
+                <View style={styles.coinHero}>
+                  <Text style={styles.coinHeroLabel}>You earned</Text>
+                  <Text style={styles.coinHeroValue}>{sessionCoins}</Text>
+                  <Text style={styles.coinHeroMeta}>coins</Text>
+                  <Text style={styles.coinHeroSummary}>
+                    {`${formatTime(elapsed)} focused · ${progressPercent}% of goal${isPartySession ? ` · ${coinMultiplier.toFixed(1)}x bonus` : ''}`}
+                  </Text>
                 </View>
-              </View>
 
-              <View style={styles.recapNote}>
-                <Text style={styles.recapNoteText}>
-                  {focusMinutes < 10
-                    ? 'A short start still counts. Save it, or keep going for one more round.'
-                    : goalReached
-                      ? 'This assignment is on track for today.'
-                      : 'If this felt harder than expected, change the daily goal before saving.'}
-                </Text>
-              </View>
+                {focusMinutes < 10 && !goalReached && (
+                  <Text style={styles.recapNoteText}>
+                    A short start still counts. Save it, or keep going for one more round.
+                  </Text>
+                )}
 
-              <View style={styles.nextLoopCard}>
-                <Text style={[styles.nextLoopKicker, { color: accentColor }]}>Next</Text>
-                <Text style={styles.nextLoopText}>
-                  Save to keep your streak. Then pick the next assignment or rejoin a study room.
-                </Text>
-              </View>
-
-              <View style={styles.adjustHeader}>
-                <Text style={styles.adjustLabel}>Daily goal</Text>
-                <Text style={styles.adjustHint}>Change only if today felt off</Text>
-              </View>
-              <View style={styles.adjustRow}>
+                {/* Daily goal, collapsed by default */}
                 <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() => setSessionGoalHours(current => Math.max(0.5, Math.round(((current ?? newGoalHours) - 0.5) * 2) / 2))}
-                  activeOpacity={0.85}
-                  accessibilityLabel="Decrease daily goal"
+                  style={styles.adjustToggle}
+                  onPress={() => setShowGoalAdjust(v => !v)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={showGoalAdjust ? 'Hide daily goal settings' : 'Adjust daily goal'}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.adjustButtonText}>-</Text>
+                  <Text style={styles.adjustToggleText}>Daily goal: {newGoalHours}h</Text>
+                  <FontAwesome5 name={showGoalAdjust ? 'chevron-up' : 'chevron-down'} size={10} color={theme.muted} />
                 </TouchableOpacity>
-                <View style={styles.adjustValue}>
-                  <Text style={[styles.adjustHours, { color }]}>{newGoalHours}h</Text>
-                  <Text style={styles.adjustSub}>per study day</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() => setSessionGoalHours(current => Math.round(((current ?? newGoalHours) + 0.5) * 2) / 2)}
-                  activeOpacity={0.85}
-                  accessibilityLabel="Increase daily goal"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.adjustButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
 
-              <View style={styles.recapActions}>
-                <PixelButton size="lg" onPress={finishSession}>Save and finish</PixelButton>
-                <PixelButton size="lg" variant="surface" onPress={keepStudying}>Keep studying</PixelButton>
+                {showGoalAdjust && (
+                  <View style={styles.adjustRow}>
+                    <TouchableOpacity
+                      style={styles.adjustButton}
+                      onPress={() => setSessionGoalHours(current => Math.max(0.5, Math.round(((current ?? newGoalHours) - 0.5) * 2) / 2))}
+                      activeOpacity={0.85}
+                      accessibilityLabel="Decrease daily goal"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.adjustButtonText}>-</Text>
+                    </TouchableOpacity>
+                    <View style={styles.adjustValue}>
+                      <Text style={[styles.adjustHours, { color }]}>{newGoalHours}h</Text>
+                      <Text style={styles.adjustSub}>per study day</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.adjustButton}
+                      onPress={() => setSessionGoalHours(current => Math.round(((current ?? newGoalHours) + 0.5) * 2) / 2)}
+                      activeOpacity={0.85}
+                      accessibilityLabel="Increase daily goal"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.adjustButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <View style={styles.recapActions}>
+                  <PixelButton size="lg" onPress={finishSession}>Save and finish</PixelButton>
+                  <PixelButton size="lg" variant="surface" onPress={keepStudying}>Keep studying</PixelButton>
+                </View>
               </View>
             </Animated.View>
           </ScrollView>
         </Animated.View>
+      )}
+
+      {celebrating && (
+        <PixelConfettiBurst
+          message={goalReached ? 'Goal complete!' : 'Saved!'}
+          onDone={finishCelebration}
+        />
       )}
     </View>
   );
@@ -633,137 +693,107 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   recapCard: {
     width: '100%',
     maxWidth: 390,
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 20,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.16)',
+    borderLeftColor: 'rgba(255,255,255,0.16)',
+    borderBottomColor: 'rgba(0,0,0,0.45)',
+    borderRightColor: 'rgba(0,0,0,0.45)',
     backgroundColor: theme.surface,
-    borderColor: theme.border,
+    overflow: 'hidden',
   },
-  recapHeader: {
-    marginBottom: 14,
+  recapBanner: {
+    paddingVertical: 12,
+    alignItems: 'center',
   },
-  recapKicker: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+  recapBannerText: {
+    fontSize: 15,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
-    marginBottom: 7,
   },
-  recapTitle: {
-    fontSize: 25,
-    fontWeight: '900',
-    marginBottom: 5,
-    color: theme.text,
+  recapBody: {
+    padding: 18,
+  },
+  recapSpriteWrap: {
+    width: 230,
+    alignSelf: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 4,
   },
   recapSub: {
     fontSize: 14,
+    fontWeight: '700',
     lineHeight: 20,
     color: theme.muted,
+    textAlign: 'center',
+    marginBottom: 14,
   },
   coinHero: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 16,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(0,0,0,0.32)',
+    borderLeftColor: 'rgba(0,0,0,0.32)',
+    borderBottomColor: 'rgba(255,255,255,0.14)',
+    borderRightColor: 'rgba(255,255,255,0.14)',
+    paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     backgroundColor: theme.surfaceAlt,
-    borderColor: theme.border,
   },
   coinHeroLabel: {
-    fontSize: 12,
-    fontWeight: '900',
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 2,
     color: theme.muted,
   },
   coinHeroValue: {
-    fontSize: 34,
-    fontWeight: '900',
-    marginBottom: 2,
+    fontSize: 42,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: -1,
+    color: GOLD,
   },
   coinHeroMeta: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: theme.muted,
-  },
-  recapMetrics: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  recapMetric: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    backgroundColor: theme.surfaceAlt,
-    borderColor: theme.border,
-  },
-  recapMetricValue: {
-    fontSize: 19,
-    fontWeight: '900',
-    marginBottom: 3,
-    color: theme.text,
-  },
-  recapMetricLabel: {
     fontSize: 12,
-    fontWeight: '900',
-    textTransform: 'uppercase',
+    fontWeight: '700',
     color: theme.muted,
+    marginTop: 2,
   },
-  recapNote: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: theme.surfaceAlt,
-    borderColor: theme.border,
+  coinHeroSummary: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: PIXEL_FONT,
+    color: theme.text,
+    marginTop: 10,
   },
   recapNoteText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     lineHeight: 19,
-    color: theme.text,
-  },
-  nextLoopCard: {
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    paddingVertical: 12,
-    marginBottom: 16,
-    borderColor: theme.border,
-  },
-  nextLoopKicker: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 5,
-  },
-  nextLoopText: {
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 19,
-    color: theme.text,
-  },
-  adjustHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    gap: 12,
-    marginBottom: 10,
-  },
-  adjustLabel: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
     color: theme.muted,
+    textAlign: 'center',
+    marginBottom: 14,
   },
-  adjustHint: {
-    flex: 1,
+  adjustToggle: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  adjustToggleText: {
     fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'right',
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
     color: theme.muted,
   },
   adjustRow: {
@@ -775,24 +805,29 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   adjustButton: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
     backgroundColor: theme.surfaceAlt,
-    borderColor: theme.border,
   },
   adjustButtonText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
+    fontFamily: PIXEL_FONT,
     color: theme.text,
   },
   adjustValue: {
     alignItems: 'center',
   },
   adjustHours: {
-    fontSize: 30,
-    fontWeight: '900',
+    fontSize: 28,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
   },
   adjustSub: {
     fontSize: 12,

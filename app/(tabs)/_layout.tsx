@@ -21,17 +21,22 @@ function TabIcon({ name, color, focused }: { name: TabIconName; color: string; f
       lift.setValue(0);
       return;
     }
+    if (focused) {
+      // Arcade pop: the icon lands hard from slightly small and low.
+      scale.setValue(0.6);
+      lift.setValue(3);
+    }
     Animated.parallel([
       Animated.timing(scale, {
         toValue: 1,
-        duration: 180,
-        easing: Easing.out(Easing.quad),
+        duration: 200,
+        easing: Easing.out(Easing.exp),
         useNativeDriver: true,
       }),
       Animated.timing(lift, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.out(Easing.quad),
+        toValue: focused ? -1 : 0,
+        duration: 200,
+        easing: Easing.out(Easing.exp),
         useNativeDriver: true,
       }),
     ]).start();
@@ -77,6 +82,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        sceneStyle: { backgroundColor: theme.background },
         tabBarStyle: {
           backgroundColor: theme.tabBar,
           borderTopColor: theme.border,

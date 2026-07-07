@@ -1,6 +1,7 @@
 import { Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelButton, PixelField, PixelPanel } from '@/components/pixel-ui';
+import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { useRouter } from 'expo-router';
@@ -217,7 +218,7 @@ export default function CalendarScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <ArcadeTabScreen index={3} style={styles.root}>
       <PixelBackdrop />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <PixelSkyStrip height={132} style={styles.sky}>
@@ -454,7 +455,7 @@ export default function CalendarScreen() {
         )}
       </View>
       </ScrollView>
-    </View>
+    </ArcadeTabScreen>
   );
 }
 

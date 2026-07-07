@@ -1,5 +1,6 @@
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { PIXEL_FONT, PixelBadge, PixelButton, PixelField } from '@/components/pixel-ui';
+import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -150,8 +151,7 @@ const SCHOOL_COLOR_SWATCHES: Record<string, [string, string]> = {
 
 const MEETING_OPTIONS = ['In person', 'Online', 'Either'];
 const STUDY_OPTIONS = ['Homework', 'Exam prep', 'Projects', 'Accountability'];
-const BROWSE_TABS = ['Library rooms', 'Profiles', 'Friends', 'Feed'] as const;
-const FILTER_OPTIONS = ['All', 'Same major', 'Online', 'In person', 'Exam prep', 'Projects'];
+const BROWSE_TABS = ['Library rooms', 'Profiles', 'Feed'] as const;
 const FEED_KINDS: HelpPost['kind'][] = ['Help', 'Suggestion'];
 const MIN_STUDENT_AGE = 13;
 const MAX_STUDENT_AGE = 100;
@@ -159,7 +159,6 @@ const MAX_ROOM_CAPACITY = 20;
 const BROWSE_TAB_META: Record<(typeof BROWSE_TABS)[number], { label: string; icon: ComponentProps<typeof FontAwesome5>['name'] }> = {
   'Library rooms': { label: 'Rooms', icon: 'door-open' },
   Profiles: { label: 'People', icon: 'user-friends' },
-  Friends: { label: 'Friends', icon: 'user-check' },
   Feed: { label: 'Feed', icon: 'comment-alt' },
 };
 
@@ -340,6 +339,7 @@ export default function MultiPlayerScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [isSearching, setIsSearching] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [showSchoolSwitcher, setShowSchoolSwitcher] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
@@ -357,8 +357,6 @@ export default function MultiPlayerScreen() {
   const [studyFocus, setStudyFocus] = useState('Homework');
   const [showProfileExtras, setShowProfileExtras] = useState(false);
   const [activeBrowseTab, setActiveBrowseTab] = useState<(typeof BROWSE_TABS)[number]>('Library rooms');
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [showProfileFilters, setShowProfileFilters] = useState(false);
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [pendingFriendIds, setPendingFriendIds] = useState<string[]>([]);
   const [incomingFriendIds, setIncomingFriendIds] = useState<string[]>(['jordan']);
@@ -413,16 +411,8 @@ export default function MultiPlayerScreen() {
   }, [schoolSearch]);
 
   const filteredProfiles = useMemo(() => {
-    return SAMPLE_PROFILES.filter(profile => !blockedIds.includes(profile.id)).filter(profile => {
-      if (activeFilter === 'All') return true;
-      if (activeFilter === 'Same major') {
-        return major.trim() ? profile.major.toLowerCase().includes(major.trim().toLowerCase()) : true;
-      }
-      if (activeFilter === 'Online') return profile.meeting === 'Online' || profile.meeting === 'Either';
-      if (activeFilter === 'In person') return profile.meeting === 'In person' || profile.meeting === 'Either';
-      return profile.focus === activeFilter;
-    });
-  }, [activeFilter, blockedIds, major]);
+    return SAMPLE_PROFILES.filter(profile => !blockedIds.includes(profile.id));
+  }, [blockedIds]);
 
   const activePartyMembers = useMemo(() => {
     if (!activePartyRoom) return [];
@@ -461,36 +451,6 @@ export default function MultiPlayerScreen() {
   const selectedRoomMembers = selectedRoom
     ? SAMPLE_PROFILES.filter(profile => selectedRoom.memberIds.includes(profile.id))
     : [];
-  const campusStories = [
-    {
-      id: 'you',
-      label: profileHidden ? 'Hidden' : 'You',
-      icon: 'user' as ComponentProps<typeof FontAwesome5>['name'],
-      image: profileImage,
-      onPress: () => setProfileHidden(current => !current),
-    },
-    ...studyRooms.slice(0, 5).map(room => ({
-      id: room.id,
-      label: room.name.replace('Room ', ''),
-      icon: 'door-open' as ComponentProps<typeof FontAwesome5>['name'],
-      image: null,
-      onPress: () => {
-        setActiveBrowseTab('Library rooms');
-        setSelectedRoom(room);
-      },
-    })),
-    {
-      id: 'new-room',
-      label: 'Host',
-      icon: 'plus' as ComponentProps<typeof FontAwesome5>['name'],
-      image: null,
-      onPress: () => {
-        setActiveBrowseTab('Library rooms');
-        setShowRoomForm(true);
-      },
-    },
-  ];
-
   const pickProfileImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -578,6 +538,11 @@ export default function MultiPlayerScreen() {
 
     if (Object.keys(nextErrors).length > 0) return;
 
+    if (editingProfile) {
+      setEditingProfile(false);
+      setMotionNotice('Profile updated');
+      return;
+    }
     setProfileCreated(true);
   };
 
@@ -594,14 +559,6 @@ export default function MultiPlayerScreen() {
 
   const handleMessage = (profile: StudentProfile) => {
     Alert.alert('Message', `Message ${profile.name}.`);
-  };
-
-  const handleBlockStudent = (profile: StudentProfile) => {
-    setBlockedIds(current => current.includes(profile.id) ? current : [...current, profile.id]);
-    setFriendIds(current => current.filter(id => id !== profile.id));
-    setPendingFriendIds(current => current.filter(id => id !== profile.id));
-    setIncomingFriendIds(current => current.filter(id => id !== profile.id));
-    Alert.alert('Student blocked', `${profile.name} is hidden from profiles and friends.`);
   };
 
   const handleCreateRoom = () => {
@@ -907,15 +864,17 @@ export default function MultiPlayerScreen() {
             <Text style={styles.selectedSchoolLabel}>School</Text>
             <Text style={styles.selectedSchoolText}>{selectedSchool}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.changeSchoolButton}
-            onPress={handleChangeSchool}
-            activeOpacity={0.8}
-            accessibilityLabel="Change your school"
-            accessibilityRole="button"
-          >
-            <Text style={styles.changeSchoolText}>Change</Text>
-          </TouchableOpacity>
+          {!editingProfile && (
+            <TouchableOpacity
+              style={styles.changeSchoolButton}
+              onPress={handleChangeSchool}
+              activeOpacity={0.8}
+              accessibilityLabel="Change your school"
+              accessibilityRole="button"
+            >
+              <Text style={styles.changeSchoolText}>Change</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.profileComposerHeader}>
@@ -933,7 +892,7 @@ export default function MultiPlayerScreen() {
           </TouchableOpacity>
 
           <View style={styles.profileIntroCopy}>
-            <Text style={styles.profileTitle}>Create your profile</Text>
+            <Text style={styles.profileTitle}>{editingProfile ? 'Edit your profile' : 'Create your profile'}</Text>
             <Text style={[styles.profileSub, styles.profileIntroSub]}>Help classmates know who they are studying with.</Text>
           </View>
         </View>
@@ -1058,7 +1017,14 @@ export default function MultiPlayerScreen() {
         </View>
       )}
 
-      <PixelButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>Create profile</PixelButton>
+      <PixelButton size="lg" style={styles.compactActionButton} onPress={handleSaveProfile}>
+        {editingProfile ? 'Save changes' : 'Create profile'}
+      </PixelButton>
+      {editingProfile && (
+        <PixelButton variant="ghost" onPress={() => { setEditingProfile(false); setProfileErrors({}); }}>
+          Cancel
+        </PixelButton>
+      )}
     </View>
   );
 
@@ -1102,114 +1068,24 @@ export default function MultiPlayerScreen() {
     </View>
   );
 
-  const renderProfiles = () => (
-    <View style={styles.cardList}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Classmates</Text>
-          <Text style={styles.sectionHint}>Find people in your classes or major.</Text>
-        </View>
-        <Text style={styles.countPill}>{filteredProfiles.length}</Text>
-      </View>
-      {filteredProfiles.map(profile => {
-        const isFriend = friendIds.includes(profile.id);
-        const isPending = pendingFriendIds.includes(profile.id);
-        const approvalCopy = isFriend ? 'Friend added' : isPending ? 'Request sent' : '';
-        return (
-          <View key={profile.id} style={styles.profileCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.profileTitleRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
-                </View>
-                <View style={styles.profileHeadingText}>
-                  <Text style={styles.cardName}>{profile.name}</Text>
-                  <Text style={styles.cardMajor}>{profile.major}</Text>
-                </View>
-              </View>
-              <View style={styles.profileActions}>
-                <TouchableOpacity
-                  style={[styles.iconButton, (isFriend || isPending) && styles.iconButtonActive]}
-                  onPress={() => handleAddFriend(profile)}
-                  disabled={isFriend || isPending}
-                  accessibilityLabel={isFriend ? `${profile.name} is your friend` : isPending ? `Waiting for ${profile.name} to approve` : `Add ${profile.name} as a friend`}
-                >
-                  {isPending ? (
-                    <ActivityIndicator size="small" color={theme.primary} />
-                  ) : (
-                    <FontAwesome5
-                      name={isFriend ? 'check' : 'plus'}
-                      size={14}
-                      color={isFriend ? theme.primary : theme.text}
-                    />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.messageButton} onPress={() => handleMessage(profile)} accessibilityLabel={`Message ${profile.name}`}>
-                  <FontAwesome5 name="comment" size={12} color={theme.text} />
-                  <Text style={styles.messageButtonText}>Message</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <Text style={styles.cardFact}>{profile.fact}</Text>
-            <View style={styles.metaChipRow}>
-              <Text style={styles.metaChip}>{profile.year}</Text>
-              <Text style={styles.metaChip}>{profile.focus}</Text>
-              <Text style={styles.metaChip}>{profile.meeting}</Text>
-            </View>
-            <Text style={styles.cardSubtle}>Free {profile.availability.toLowerCase()}</Text>
-            <View style={styles.cardFooterActions}>
-              {!!approvalCopy && <Text style={styles.approvalHint}>{approvalCopy}</Text>}
-              <TouchableOpacity style={styles.blockButton} onPress={() => handleBlockStudent(profile)} accessibilityLabel={`Block ${profile.name}`}>
-                <Text style={styles.blockButtonText}>Block</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-      })}
-      {filteredProfiles.length === 0 && renderEmptyPanel({
-        icon: 'search',
-        title: 'No classmates match this filter',
-        body: 'No matches right now.',
-        steps: ['Switch to All', 'Try another study style'],
-        action: (
-          <PixelButton variant="surface" onPress={() => setActiveFilter('All')}>
-            Show all profiles
-          </PixelButton>
-        ),
-      })}
-    </View>
-  );
-
-  const renderFriends = () => {
-    const visibleProfiles = SAMPLE_PROFILES.filter(profile => !blockedIds.includes(profile.id));
-    const friends = visibleProfiles.filter(profile => friendIds.includes(profile.id));
-    const incomingRequests = visibleProfiles.filter(profile => incomingFriendIds.includes(profile.id));
-    const pendingRequests = visibleProfiles.filter(profile => pendingFriendIds.includes(profile.id));
+  const renderProfiles = () => {
+    const incomingRequests = filteredProfiles.filter(profile => incomingFriendIds.includes(profile.id));
 
     return (
       <View style={styles.cardList}>
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Friends</Text>
-            <Text style={styles.sectionHint}>People who accepted your request.</Text>
-          </View>
-          <Text style={styles.countPill}>{friends.length}</Text>
-        </View>
         {incomingRequests.length > 0 && (
-          <View style={styles.emptyPanel}>
-            <Text style={styles.emptyTitle}>Friend requests</Text>
+          <View style={styles.requestPanel}>
+            <Text style={styles.listLabel}>Friend requests</Text>
             {incomingRequests.map(profile => (
-              <View key={profile.id} style={styles.requestRow}>
-                <View style={styles.profileTitleRow}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
-                  </View>
-                  <View style={styles.profileHeadingText}>
-                    <Text style={styles.cardName}>{profile.name}</Text>
-                    <Text style={styles.cardMajor}>{profile.major}</Text>
-                  </View>
+              <View key={profile.id} style={styles.personRow}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
                 </View>
-                <TouchableOpacity style={styles.smallButton} onPress={() => handleApproveFriend(profile.id)} accessibilityLabel={`Approve ${profile.name}`}>
+                <View style={styles.personCopy}>
+                  <Text style={styles.cardName}>{profile.name}</Text>
+                  <Text style={styles.cardSubtle}>{profile.major}</Text>
+                </View>
+                <TouchableOpacity style={styles.smallButton} onPress={() => handleApproveFriend(profile.id)} accessibilityLabel={`Approve ${profile.name}`} accessibilityRole="button">
                   <Text style={styles.smallButtonText}>Approve</Text>
                 </TouchableOpacity>
               </View>
@@ -1217,49 +1093,47 @@ export default function MultiPlayerScreen() {
           </View>
         )}
 
-        {pendingRequests.length > 0 && (
-          <View style={styles.emptyPanel}>
-            <Text style={styles.emptyTitle}>Requests sent</Text>
-            {pendingRequests.map(profile => (
-              <View key={profile.id} style={styles.pendingRow}>
-                <ActivityIndicator size="small" color={theme.primary} />
-                <Text style={styles.emptyText}>{profile.name} has not accepted yet.</Text>
+        <Text style={styles.listLabel}>People — {filteredProfiles.length}</Text>
+        {filteredProfiles.map(profile => {
+          const isFriend = friendIds.includes(profile.id);
+          const isPending = pendingFriendIds.includes(profile.id);
+          return (
+            <View key={profile.id} style={styles.personRow}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
               </View>
-            ))}
-          </View>
-        )}
-
-        {friends.length > 0 ? (
-          friends.map(profile => (
-            <View key={profile.id} style={styles.friendCard}>
-              <View style={styles.profileTitleRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
-                </View>
-                <View style={styles.profileHeadingText}>
+              <View style={styles.personCopy}>
+                <View style={styles.personNameRow}>
                   <Text style={styles.cardName}>{profile.name}</Text>
-                  <Text style={styles.cardMajor}>{profile.major}</Text>
+                  {isFriend && <FontAwesome5 name="check-circle" size={11} color={theme.primary} />}
                 </View>
+                <Text style={styles.cardSubtle} numberOfLines={1}>
+                  {profile.major} · {profile.focus} · {profile.meeting}
+                </Text>
               </View>
-              <TouchableOpacity style={styles.messageButton} onPress={() => handleMessage(profile)} accessibilityLabel={`Message ${profile.name}`}>
-                <FontAwesome5 name="comment" size={12} color={theme.text} />
-                <Text style={styles.messageButtonText}>Message</Text>
+              <TouchableOpacity style={styles.iconButton} onPress={() => handleMessage(profile)} accessibilityLabel={`Message ${profile.name}`} accessibilityRole="button">
+                <FontAwesome5 name="comment" size={13} color={theme.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.iconButton, (isFriend || isPending) && styles.iconButtonActive]}
+                onPress={() => handleAddFriend(profile)}
+                disabled={isFriend || isPending}
+                accessibilityLabel={isFriend ? `${profile.name} is your friend` : isPending ? `Waiting for ${profile.name} to approve` : `Add ${profile.name} as a friend`}
+                accessibilityRole="button"
+              >
+                {isPending ? (
+                  <ActivityIndicator size="small" color={theme.primary} />
+                ) : (
+                  <FontAwesome5
+                    name={isFriend ? 'check' : 'user-plus'}
+                    size={13}
+                    color={isFriend ? theme.primary : theme.text}
+                  />
+                )}
               </TouchableOpacity>
             </View>
-          ))
-        ) : (
-          renderEmptyPanel({
-            icon: 'user-plus',
-            title: 'No friends yet',
-            body: 'Add someone you would actually study with.',
-            steps: ['Browse profiles', 'Send one request'],
-            action: (
-              <PixelButton variant="surface" onPress={() => setActiveBrowseTab('Profiles')}>
-                Browse profiles
-              </PixelButton>
-            ),
-          })
-        )}
+          );
+        })}
       </View>
     );
   };
@@ -1497,82 +1371,41 @@ export default function MultiPlayerScreen() {
               </View>
             </View>
 
-            <View style={styles.serverQuickGrid}>
-              <View style={styles.serverQuickItem}>
-                <FontAwesome5 name="clock" size={13} color={theme.primary} />
-                <Text style={styles.serverQuickLabel}>Time</Text>
-                <Text style={styles.serverQuickValue}>{selectedRoom.available}</Text>
-                <Text style={styles.serverQuickMuted}>{selectedRoom.duration}</Text>
+            <View style={styles.previewInfo}>
+              <View style={styles.previewInfoRow}>
+                <FontAwesome5 name="clock" size={12} color={theme.primary} />
+                <Text style={styles.previewInfoText}>{selectedRoom.available} · {selectedRoom.duration}</Text>
               </View>
-              <View style={styles.serverQuickItem}>
-                <FontAwesome5 name="map-marker-alt" size={13} color={theme.primary} />
-                <Text style={styles.serverQuickLabel}>Place</Text>
-                <Text style={styles.serverQuickValue}>{selectedRoom.floor}</Text>
-                <Text style={styles.serverQuickMuted}>{selectedRoom.capacity}</Text>
+              <View style={styles.previewInfoRow}>
+                <FontAwesome5 name="map-marker-alt" size={12} color={theme.primary} />
+                <Text style={styles.previewInfoText}>{selectedRoom.floor} · {selectedRoom.capacity}</Text>
               </View>
+              {!!selectedRoom.assignments[0] && (
+                <View style={styles.previewInfoRow}>
+                  <FontAwesome5 name="book-open" size={12} color={theme.primary} />
+                  <Text style={styles.previewInfoText} numberOfLines={1}>
+                    {selectedRoom.assignments[0].title} · {selectedRoom.assignments[0].goalHours}h
+                  </Text>
+                </View>
+              )}
             </View>
 
-            <View style={styles.serverSection}>
-              <View style={styles.serverSectionHeader}>
-                <FontAwesome5 name="hashtag" size={12} color={theme.muted} />
-                <Text style={styles.serverSectionTitle}>room-focus</Text>
-              </View>
-              {selectedRoom.assignments.slice(0, 1).map(assignment => (
-                <View key={assignment.id} style={styles.serverFocusCard}>
-                  <View style={styles.serverFocusIcon}>
-                    <FontAwesome5 name="book-open" size={14} color={theme.text} />
+            <Text style={styles.listLabel}>Members — {selectedRoomMembers.length}</Text>
+            {selectedRoomMembers.length > 0 ? (
+              selectedRoomMembers.map(profile => (
+                <View key={profile.id} style={styles.personRow}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
                   </View>
-                  <View style={styles.profileHeadingText}>
-                    <Text style={styles.partyTaskTitle}>{assignment.title}</Text>
-                    <Text style={styles.cardSubtle}>{assignment.className} • {assignment.goalHours}h • Added by {assignment.owner}</Text>
-                    <Text style={styles.partyTaskDetails}>{assignment.details}</Text>
+                  <View style={styles.personCopy}>
+                    <Text style={styles.cardName}>{profile.name}</Text>
+                    <Text style={styles.cardSubtle}>{profile.major}</Text>
                   </View>
                 </View>
-              ))}
-            </View>
-
-            <View style={styles.serverSection}>
-              <View style={styles.serverSectionHeader}>
-                <FontAwesome5 name="volume-up" size={12} color={theme.muted} />
-                <Text style={styles.serverSectionTitle}>study-lobby</Text>
-              </View>
-              <View style={styles.serverChatPreview}>
-                <Text style={styles.serverChatLine}>
-                  <Text style={styles.roomPostCaptionStrong}>{selectedRoom.host || 'Host'} </Text>
-                  opened this room for {selectedRoom.vibe.toLowerCase()}.
-                </Text>
-                <Text style={styles.serverChatLine}>
-                  Join when you are ready, or message the room first if you have a question.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.serverSection}>
-              <View style={styles.serverSectionHeader}>
-                <FontAwesome5 name="users" size={12} color={theme.muted} />
-                <Text style={styles.serverSectionTitle}>members</Text>
-                <Text style={styles.serverMemberCount}>{selectedRoomMembers.length}</Text>
-              </View>
-              <View style={styles.serverMemberList}>
-              {selectedRoomMembers.length > 0 ? (
-                <>
-                  {selectedRoomMembers.map(profile => (
-                    <View key={profile.id} style={styles.serverMemberRow}>
-                      <View style={styles.partyAvatar}>
-                        <Text style={styles.avatarText}>{profile.name.slice(0, 1)}</Text>
-                      </View>
-                      <View style={styles.profileHeadingText}>
-                        <Text style={styles.cardName}>{profile.name}</Text>
-                        <Text style={styles.cardSubtle}>{profile.major} • {profile.focus}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              ) : (
-                <Text style={styles.emptyText}>No students have joined yet.</Text>
-              )}
-              </View>
-            </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No students have joined yet.</Text>
+            )}
 
             <View style={styles.serverActionDock}>
               <PixelButton
@@ -1710,49 +1543,30 @@ export default function MultiPlayerScreen() {
         {studyRooms.map(room => (
           <TouchableOpacity
             key={room.id}
-            style={styles.roomCard}
+            style={styles.roomRow}
             onPress={() => setSelectedRoom(room)}
             activeOpacity={0.85}
-            accessibilityLabel={`Review ${room.name}`}
+            accessibilityLabel={`Open ${room.name}`}
+            accessibilityRole="button"
           >
-            <View style={styles.roomPostHeader}>
-              <View style={styles.profileTitleRow}>
-                <View style={styles.roomPostAvatar}>
-                  <FontAwesome5 name="door-open" size={14} color={theme.text} />
-                </View>
-                <View style={styles.profileHeadingText}>
-                  <Text style={styles.cardName}>{room.name}</Text>
-                  <Text style={styles.cardSubtle}>{room.available}</Text>
-                </View>
-              </View>
-              <FontAwesome5 name="ellipsis-h" size={14} color={theme.muted} />
+            <View style={styles.roomRowIcon}>
+              <FontAwesome5 name="door-open" size={15} color={theme.primary} />
             </View>
-            <View style={styles.roomPostMedia}>
-              <View style={styles.roomPostMediaTop}>
-                <Text style={styles.roomPostSubject}>{room.subject}</Text>
-                <Text style={styles.roomTimePill}>{room.duration}</Text>
+            <View style={styles.personCopy}>
+              <View style={styles.personNameRow}>
+                <Text style={styles.cardName} numberOfLines={1}>{room.name}</Text>
+                {room.friendsOnly && <FontAwesome5 name="lock" size={10} color={theme.muted} />}
               </View>
-              {!!room.assignments[0] && (
-                <Text style={styles.roomAssignmentPreview}>Focus: {room.assignments[0].title}</Text>
-              )}
-              <Text style={styles.roomPostMeta}>{room.floor} • {room.capacity} • {room.vibe}</Text>
-            </View>
-            <View style={styles.roomPostActions}>
-              <View style={styles.roomPostLeftActions}>
-                <FontAwesome5 name="users" size={15} color={theme.text} />
-                <Text style={styles.roomPostActionText}>{room.memberIds.length} studying</Text>
-              </View>
-              <Text style={styles.roomOpenText}>{room.approvalRequired ? 'Request' : 'Join'}</Text>
-            </View>
-            {!!room.assignments[0] && (
-              <Text style={styles.roomPostCaption}>
-                <Text style={styles.roomPostCaptionStrong}>{room.host || 'Campus'} </Text>
-                is working on {room.assignments[0].title.toLowerCase()}.
+              <Text style={styles.cardSubtle} numberOfLines={1}>
+                {room.subject} · {room.available}
               </Text>
-            )}
-            <View style={styles.roomFooter}>
-              {room.approvalRequired && <Text style={styles.tag}>Approval</Text>}
-              {room.friendsOnly && <Text style={styles.tag}>Friends</Text>}
+            </View>
+            <View style={styles.roomRowRight}>
+              <View style={styles.roomCountPill}>
+                <FontAwesome5 name="users" size={10} color={theme.muted} />
+                <Text style={styles.roomCountText}>{room.memberIds.length}</Text>
+              </View>
+              <Text style={styles.roomJoinText}>{room.approvalRequired ? 'Request' : 'Join'}</Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -1771,6 +1585,9 @@ export default function MultiPlayerScreen() {
     );
   };
   const renderBrowse = () => {
+    if (editingProfile) {
+      return renderProfileSetup();
+    }
     if (activeBrowseTab === 'Library rooms' && (selectedRoom || activePartyRoom)) {
       return renderStudyRooms();
     }
@@ -1794,6 +1611,19 @@ export default function MultiPlayerScreen() {
           <Text style={styles.socialTitle}>Study groups</Text>
         </View>
         <View style={styles.socialHeaderActions}>
+          <TouchableOpacity
+            style={styles.socialIconButton}
+            onPress={() => setEditingProfile(true)}
+            activeOpacity={0.85}
+            accessibilityLabel="Edit your profile"
+            accessibilityRole="button"
+          >
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.headerAvatar} />
+            ) : (
+              <FontAwesome5 name="user" size={14} color={theme.text} />
+            )}
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.socialIconButton}
             onPress={() => setProfileHidden(current => !current)}
@@ -1861,28 +1691,6 @@ export default function MultiPlayerScreen() {
         </View>
       )}
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.storyScroller}
-        contentContainerStyle={styles.storyRow}
-      >
-        {campusStories.map(story => (
-          <TouchableOpacity key={story.id} style={styles.storyItem} onPress={story.onPress} activeOpacity={0.86} accessibilityLabel={story.label} accessibilityRole="button">
-            <View style={styles.storyRing}>
-              {story.image ? (
-                <Image source={{ uri: story.image }} style={styles.storyImage} />
-              ) : (
-                <View style={styles.storyAvatar}>
-                  <FontAwesome5 name={story.icon} size={16} color={theme.text} />
-                </View>
-              )}
-            </View>
-            <Text style={styles.storyLabel} numberOfLines={1}>{story.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       <View style={styles.socialTabBar}>
         {BROWSE_TABS.map(tab => {
           const meta = BROWSE_TAB_META[tab];
@@ -1902,31 +1710,11 @@ export default function MultiPlayerScreen() {
         })}
       </View>
 
-      {activeBrowseTab === 'Profiles' && (
-        <>
-          <TouchableOpacity style={styles.filterToggle} onPress={() => setShowProfileFilters(current => !current)} activeOpacity={0.85} accessibilityLabel={showProfileFilters ? 'Hide filters' : activeFilter === 'All' ? 'Filter profiles' : `Filter: ${activeFilter}`} accessibilityRole="button">
-            <Text style={styles.filterToggleText}>{showProfileFilters ? 'Hide filters' : activeFilter === 'All' ? 'Filter profiles' : `Filter: ${activeFilter}`}</Text>
-            <FontAwesome5 name={showProfileFilters ? 'chevron-up' : 'sliders-h'} size={12} color={theme.text} />
-          </TouchableOpacity>
-          {showProfileFilters && (
-            <View style={styles.choiceRow}>
-              {FILTER_OPTIONS.map(option => (
-                <PixelBadge key={option} selected={activeFilter === option} onPress={() => setActiveFilter(option)}>
-                  {option}
-                </PixelBadge>
-              ))}
-            </View>
-          )}
-        </>
-      )}
-
       {activeBrowseTab === 'Profiles'
         ? renderProfiles()
-        : activeBrowseTab === 'Friends'
-          ? renderFriends()
-          : activeBrowseTab === 'Feed'
-            ? renderFeed()
-            : renderStudyRooms()}
+        : activeBrowseTab === 'Feed'
+          ? renderFeed()
+          : renderStudyRooms()}
     </>
     );
   };
@@ -1934,7 +1722,7 @@ export default function MultiPlayerScreen() {
   const isSchoolConfirmation = !profileCreated && isSearching && !!selectedSchool && !showProfileSetup;
 
   return (
-    <View style={styles.root}>
+    <ArcadeTabScreen index={2} style={styles.root}>
       <PixelBackdrop />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       {!profileCreated && (
@@ -2035,7 +1823,7 @@ export default function MultiPlayerScreen() {
         </View>
       )}
       </ScrollView>
-    </View>
+    </ArcadeTabScreen>
   );
 }
 
@@ -2304,6 +2092,11 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     backgroundColor: theme.primary,
     borderColor: theme.primary,
   },
+  headerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 2,
+  },
   storyScroller: { marginHorizontal: -18, marginTop: 14, marginBottom: 12 },
   storyRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 18, paddingRight: 28 },
   storyItem: { width: 70, alignItems: 'center', gap: 7 },
@@ -2356,6 +2149,100 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   socialTabText: { color: theme.muted, fontSize: 11, fontWeight: '700' },
   socialTabTextActive: { color: theme.onPrimary },
   cardList: { gap: 12 },
+  listLabel: {
+    color: theme.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  personRow: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  personCopy: { flex: 1 },
+  personNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  requestPanel: {
+    gap: 8,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+    padding: 10,
+  },
+  roomRow: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  roomRowIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+    borderLeftColor: 'rgba(255,255,255,0.12)',
+    borderBottomColor: 'rgba(0,0,0,0.3)',
+    borderRightColor: 'rgba(0,0,0,0.3)',
+  },
+  roomRowRight: { alignItems: 'flex-end', gap: 5 },
+  roomCountPill: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  roomCountText: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+  },
+  roomJoinText: {
+    color: theme.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  previewInfo: {
+    gap: 10,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(0,0,0,0.32)',
+    borderLeftColor: 'rgba(0,0,0,0.32)',
+    borderBottomColor: 'rgba(255,255,255,0.14)',
+    borderRightColor: 'rgba(255,255,255,0.14)',
+    padding: 14,
+  },
+  previewInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  previewInfoText: { flex: 1, color: theme.text, fontSize: 13, fontWeight: '700' },
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginTop: 2, marginBottom: 6 },
   sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '600', marginBottom: 3 },
   sectionHint: { color: theme.muted, fontSize: 13, lineHeight: 18, maxWidth: 260 },

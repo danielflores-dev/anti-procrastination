@@ -1,4 +1,5 @@
 import { GOLD, PIXEL_FONT, PixelBadge, PixelHeading, PixelPanel, PixelProgress } from '@/components/pixel-ui';
+import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
@@ -187,7 +188,7 @@ export default function HomeScreen() {
     : null;
 
   return (
-    <View style={styles.container}>
+    <ArcadeTabScreen index={0} style={styles.container}>
       <PixelBackdrop />
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.content}>
       {/* Time-of-day sky header */}
@@ -328,7 +329,7 @@ export default function HomeScreen() {
         })}
       </View>
       </ScrollView>
-    </View>
+    </ArcadeTabScreen>
   );
 }
 
