@@ -2,6 +2,7 @@ import { GOLD, PIXEL_FONT, PixelBadge, PixelButton, PixelHeading, PixelPanel, Pi
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
+import PixelCity from '@/components/PixelCity';
 import PixelConfettiBurst from '@/components/PixelConfetti';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { useCoins } from '@/context/CoinContext';
@@ -134,7 +135,7 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { tasks, sessions } = useTasks();
+  const { tasks, sessions, city } = useTasks();
   const { coins, addCoins } = useCoins();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -346,6 +347,13 @@ export default function HomeScreen() {
           );
         })}
       </View>
+
+      <PixelHeading hint="One building per finished assignment." style={styles.sectionHeading}>
+        Your city
+      </PixelHeading>
+      <PixelPanel tone="alt" padding={0} style={styles.cityPanel}>
+        <PixelCity buildings={city} />
+      </PixelPanel>
 
       <View style={styles.achievementHeader}>
         <PixelHeading hint="Small goals for extra coins.">Achievements</PixelHeading>
@@ -593,6 +601,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
     marginTop: 4,
+  },
+  cityPanel: {
+    marginHorizontal: 20,
+    marginBottom: 26,
   },
   achievementHeader: {
     flexDirection: 'row',

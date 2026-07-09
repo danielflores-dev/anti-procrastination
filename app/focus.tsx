@@ -6,6 +6,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { GOLD, PIXEL_FONT, PixelButton } from '@/components/pixel-ui';
 import PixelConstruction, { Sprite } from '@/components/PixelConstruction';
 import PixelConfettiBurst from '@/components/PixelConfetti';
+import { playCoin } from '@/components/sfx';
 import PixelWorld from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -185,6 +186,7 @@ export default function FocusScreen() {
       addCoins(newCoins);
       setSessionCoins(s => s + newCoins);
       setLastCoinAmount(newCoins);
+      playCoin();
       toastKey.current += 1;
       setShowToast(false);
       setTimeout(() => setShowToast(true), 10);

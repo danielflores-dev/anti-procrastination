@@ -2,6 +2,7 @@ import { useCoins } from '@/context/CoinContext';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { PIXEL_FONT } from '@/components/pixel-ui';
+import { tapHaptic } from '@/components/sfx';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { type ComponentProps, useEffect, useRef } from 'react';
@@ -25,6 +26,7 @@ function TabIcon({ name, color, focused }: { name: TabIconName; color: string; f
       // Arcade pop: the icon lands hard from slightly small and low.
       scale.setValue(0.6);
       lift.setValue(3);
+      tapHaptic();
     }
     Animated.parallel([
       Animated.timing(scale, {

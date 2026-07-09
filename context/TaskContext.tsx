@@ -1,8 +1,10 @@
+import { cancelTaskReminders, scheduleTaskReminders } from '@/components/reminders';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const TASKS_KEY = 'antiprocrastination.tasks.v1';
 const SESSIONS_KEY = 'antiprocrastination.sessions.v1';
+const CITY_KEY = 'antiprocrastination.city.v1';
 
 export type TaskProgress = 'Not started' | 'Working' | 'Almost done' | 'Done';
 
@@ -31,6 +33,17 @@ export type Task = {
   progress?: TaskProgress;
   steps?: TaskStep[];
   studyPlan?: StudyPlanItem[];
+  notificationIds?: string[];
+};
+
+// A building earned by finishing an assignment. Never removed.
+export type CityBuilding = {
+  id: string;          // the task that earned it
+  name: string;
+  className: string;
+  finishedAt: string;  // ISO date
+  size: 1 | 2 | 3;     // height class from estimated hours
+  seed: number;        // deterministic style variety
 };
 
 export type StudySession = {
@@ -50,6 +63,7 @@ export type StudySession = {
 type TaskContextType = {
   tasks: Task[];
   sessions: StudySession[];
+  city: CityBuilding[];
   addTask: (task: Omit<Task, 'id'>) => string;
   deleteTask: (id: string) => void;
   addStudySession: (session: Omit<StudySession, 'id' | 'createdAt'>) => void;
@@ -62,6 +76,7 @@ type TaskContextType = {
 const TaskContext = createContext<TaskContextType>({
   tasks: [],
   sessions: [],
+  city: [],
   addTask: () => '',
   deleteTask: () => {},
   addStudySession: () => {},
@@ -124,21 +139,35 @@ function generateStudyPlan(task: Pick<Task, 'assignmentName' | 'estimatedHours' 
   });
 }
 
+function buildingFor(task: Task): CityBuilding {
+  return {
+    id: task.id,
+    name: task.assignmentName,
+    className: task.className,
+    finishedAt: new Date().toISOString(),
+    size: task.estimatedHours < 2 ? 1 : task.estimatedHours < 5 ? 2 : 3,
+    seed: Math.floor(Math.random() * 1e9),
+  };
+}
+
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [city, setCity] = useState<CityBuilding[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   // Load saved data once on startup.
   useEffect(() => {
     (async () => {
       try {
-        const [savedTasks, savedSessions] = await Promise.all([
+        const [savedTasks, savedSessions, savedCity] = await Promise.all([
           AsyncStorage.getItem(TASKS_KEY),
           AsyncStorage.getItem(SESSIONS_KEY),
+          AsyncStorage.getItem(CITY_KEY),
         ]);
         if (savedTasks) setTasks(JSON.parse(savedTasks));
         if (savedSessions) setSessions(JSON.parse(savedSessions));
+        if (savedCity) setCity(JSON.parse(savedCity));
       } catch {
         // Corrupt or unreadable storage: start fresh rather than crash.
       } finally {
@@ -158,6 +187,22 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)).catch(() => {});
   }, [sessions, hydrated]);
 
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(CITY_KEY, JSON.stringify(city)).catch(() => {});
+  }, [city, hydrated]);
+
+  // Every task that reaches Done earns a permanent building, no matter which
+  // path finished it (progress button, focus goal, steps). Deleting the task
+  // later keeps the building: it was earned.
+  useEffect(() => {
+    if (!hydrated) return;
+    const missing = tasks.filter(t => t.progress === 'Done' && !city.some(b => b.id === t.id));
+    if (missing.length === 0) return;
+    const additions = missing.map(buildingFor);
+    setCity(prev => [...prev, ...additions.filter(a => !prev.some(b => b.id === a.id))]);
+  }, [tasks, city, hydrated]);
+
   const addTask = (task: Omit<Task, 'id'>) => {
     const id = Date.now().toString();
     setTasks(prev => [...prev, {
@@ -167,11 +212,22 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       studyPlan: task.studyPlan ?? generateStudyPlan(task),
       id,
     }]);
+    // Schedule due-date reminders in the background and attach their ids.
+    scheduleTaskReminders(task.assignmentName, task.className, task.dueDateRaw)
+      .then(notificationIds => {
+        if (notificationIds.length === 0) return;
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, notificationIds } : t));
+      })
+      .catch(() => {});
     return id;
   };
 
   const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+    setTasks(prev => {
+      const target = prev.find(t => t.id === id);
+      cancelTaskReminders(target?.notificationIds).catch(() => {});
+      return prev.filter(t => t.id !== id);
+    });
   };
 
   const addStudySession = (session: Omit<StudySession, 'id' | 'createdAt'>) => {
@@ -183,7 +239,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProgress = (id: string, progress: TaskProgress) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, progress } : t));
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      // A finished assignment no longer needs its reminders.
+      if (progress === 'Done' && t.notificationIds?.length) {
+        cancelTaskReminders(t.notificationIds).catch(() => {});
+        return { ...t, progress, notificationIds: undefined };
+      }
+      return { ...t, progress };
+    }));
   };
 
   const toggleTaskStep = (taskId: string, stepId: string) => {
@@ -217,7 +281,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <TaskContext.Provider value={{ tasks, sessions, addTask, deleteTask, addStudySession, updateProgress, toggleTaskStep, updateHoursPerDay, updateEstimatedHours }}>
+    <TaskContext.Provider value={{ tasks, sessions, city, addTask, deleteTask, addStudySession, updateProgress, toggleTaskStep, updateHoursPerDay, updateEstimatedHours }}>
       {children}
     </TaskContext.Provider>
   );

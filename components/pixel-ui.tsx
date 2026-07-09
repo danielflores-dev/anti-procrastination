@@ -1,3 +1,4 @@
+import { playClick, tapHaptic } from '@/components/sfx';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { ReactNode } from 'react';
 import {
@@ -87,9 +88,16 @@ export function PixelButton({
   style,
   textStyle,
   disabled,
+  onPressIn,
   ...props
 }: PixelButtonProps) {
   const { theme } = useSchoolTheme();
+
+  const handlePressIn: PixelButtonProps['onPressIn'] = event => {
+    playClick();
+    tapHaptic();
+    onPressIn?.(event);
+  };
 
   const face =
     variant === 'primary' ? theme.primary :
@@ -105,6 +113,7 @@ export function PixelButton({
       <Pressable
         disabled={disabled}
         accessibilityRole="button"
+        onPressIn={handlePressIn}
         style={({ pressed }) => [
           styles.ghost,
           sizeStyles[size],
@@ -127,6 +136,7 @@ export function PixelButton({
     <Pressable
       disabled={disabled}
       accessibilityRole="button"
+      onPressIn={handlePressIn}
       style={fullWidth ? styles.fullWidth : undefined}
       {...props}
     >

@@ -1,4 +1,5 @@
 import { PIXEL_FONT } from '@/components/pixel-ui';
+import { playFanfare, successHaptic } from '@/components/sfx';
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
@@ -43,6 +44,8 @@ export default function PixelConfettiBurst({ onDone, message = 'Saved!', duratio
   }, [width, height]);
 
   useEffect(() => {
+    playFanfare();
+    successHaptic();
     const anim = Animated.timing(progress, {
       toValue: 1,
       duration: durationMs,
