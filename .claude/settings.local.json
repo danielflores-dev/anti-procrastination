@@ -47,7 +47,10 @@
       "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 15; \"tsc done\"; npx expo export --platform web --output-dir \"$env:TEMP\\\\expo-verify\" 2>&1 | Select-Object -Last 2)",
       "PowerShell(git config status.showUntrackedFiles)",
       "PowerShell(\"---\")",
-      "PowerShell(git add -A)"
+      "PowerShell(git add -A)",
+      "PowerShell(git commit -F \"C:\\\\Users\\\\dorit\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-dorit-OneDrive-Desktop-AntiProcrastination\\\\66c1f3de-33f6-440f-85ef-232744ab29fc\\\\scratchpad\\\\commit-msg.txt\")",
+      "PowerShell(git add .claude/settings.local.json)",
+      "PowerShell(git commit -m \"update local tool permissions\")"
     ]
   }
 }
