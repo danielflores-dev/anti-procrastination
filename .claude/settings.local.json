@@ -37,7 +37,17 @@
       "PowerShell(npm ls expo-audio expo-haptics 2>&1)",
       "PowerShell(node \"C:\\\\Users\\\\dorit\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-dorit-OneDrive-Desktop-AntiProcrastination\\\\66c1f3de-33f6-440f-85ef-232744ab29fc\\\\scratchpad\\\\gen-sounds.js\")",
       "PowerShell(npx expo install expo-notifications 2>&1)",
-      "PowerShell(npm ls expo-notifications 2>&1)"
+      "PowerShell(npm ls expo-notifications 2>&1)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&minify=false&lazy=true\" -UseBasicParsing -TimeoutSec 170; \"bundle OK\" } catch { if \\($_.Exception.Response\\) { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $body = $reader.ReadToEnd\\(\\); \\($body | ConvertFrom-Json\\).message.Substring\\(0, 400\\) } else { \"no response: \" + $_.Exception.Message } })",
+      "PowerShell(npx expo export --platform web --output-dir \"$env:TEMP\\\\expo-verify\" 2>&1 | Select-Object -Last 6)",
+      "PowerShell(\"tsc done\")",
+      "PowerShell(npx expo export --platform web --output-dir \"$env:TEMP\\\\expo-verify\" 2>&1 | Select-Object -Last 3)",
+      "PowerShell(npx expo install expo-font \"@expo-google-fonts/silkscreen\" 2>&1)",
+      "PowerShell(npm ls expo-font \"@expo-google-fonts/silkscreen\" 2>&1)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 15; \"tsc done\"; npx expo export --platform web --output-dir \"$env:TEMP\\\\expo-verify\" 2>&1 | Select-Object -Last 2)",
+      "PowerShell(git config status.showUntrackedFiles)",
+      "PowerShell(\"---\")",
+      "PowerShell(git add -A)"
     ]
   }
 }

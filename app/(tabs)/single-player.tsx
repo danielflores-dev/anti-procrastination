@@ -46,12 +46,14 @@ function AssignmentCard({
   task,
   onFocus,
   onProgress,
+  onEdit,
   justDone,
   styles,
 }: {
   task: Task;
   onFocus: () => void;
   onProgress: () => void;
+  onEdit: () => void;
   justDone?: boolean;
   styles: ReturnType<typeof createStyles>;
 }) {
@@ -98,6 +100,15 @@ function AssignmentCard({
           <Text style={styles.cardAssignment} numberOfLines={1}>{task.assignmentName}</Text>
           <Text style={styles.cardClass}>{task.className}</Text>
         </View>
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={onEdit}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={`Edit ${task.assignmentName}`}
+          accessibilityRole="button"
+        >
+          <FontAwesome5 name="pen" size={11} color={styles.cardClass.color} />
+        </TouchableOpacity>
         <View style={[styles.hourBlock, { borderColor: workloadColor }]}>
           <Text style={[styles.hourBlockText, { color: workloadColor }]}>{task.estimatedHours}h</Text>
         </View>
@@ -177,6 +188,7 @@ export default function SinglePlayerScreen() {
           styles={styles}
           onFocus={() => router.push(`/focus?id=${task.id}`)}
           onProgress={() => handleProgress(task.id, task.progress)}
+          onEdit={() => router.push(`/add-task?id=${task.id}`)}
         />
       ))}
     </View>
@@ -233,6 +245,7 @@ export default function SinglePlayerScreen() {
                 justDone={item.id === justDoneId}
                 onFocus={() => router.push(`/focus?id=${item.id}`)}
                 onProgress={() => handleProgress(item.id, item.progress)}
+                onEdit={() => router.push(`/add-task?id=${item.id}`)}
               />
             )}
           />
@@ -314,6 +327,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   cardTitles: { flex: 1, marginRight: 10 },
   cardAssignment: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 3 },
   cardClass: { color: theme.muted, fontSize: 13, fontWeight: '600' },
+  editBtn: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
   hourBlock: {
     borderWidth: 2,
     paddingHorizontal: 8,

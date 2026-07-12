@@ -618,9 +618,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     zIndex: 2,
   },
   timer: {
-    fontSize: 44,
-    fontWeight: '300',
-    letterSpacing: 3,
+    fontSize: 34,
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 2,
   },
   goal: {
     color: '#CBD5E1',

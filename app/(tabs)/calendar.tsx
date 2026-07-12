@@ -4,9 +4,12 @@ import { GOLD, PIXEL_FONT, PixelButton, PixelField, PixelPanel } from '@/compone
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const SCHEDULE_KEY = 'antiprocrastination.schedule.v1';
 
 type ScheduleItem = {
   id: string;
@@ -114,6 +117,21 @@ export default function CalendarScreen() {
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+  const [scheduleHydrated, setScheduleHydrated] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(SCHEDULE_KEY)
+      .then(saved => {
+        if (saved) setScheduleItems(JSON.parse(saved));
+      })
+      .catch(() => {})
+      .finally(() => setScheduleHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (!scheduleHydrated) return;
+    AsyncStorage.setItem(SCHEDULE_KEY, JSON.stringify(scheduleItems)).catch(() => {});
+  }, [scheduleItems, scheduleHydrated]);
   const [formType, setFormType] = useState<'class' | 'event' | null>(null);
   const [itemTitle, setItemTitle] = useState('');
   const [itemDate, setItemDate] = useState(todayKey());

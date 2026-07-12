@@ -65,6 +65,7 @@ type TaskContextType = {
   sessions: StudySession[];
   city: CityBuilding[];
   addTask: (task: Omit<Task, 'id'>) => string;
+  updateTask: (id: string, updates: Partial<Pick<Task, 'assignmentName' | 'className' | 'dueDate' | 'dueDateRaw' | 'estimatedHours'>>) => void;
   deleteTask: (id: string) => void;
   addStudySession: (session: Omit<StudySession, 'id' | 'createdAt'>) => void;
   updateProgress: (id: string, progress: TaskProgress) => void;
@@ -78,6 +79,7 @@ const TaskContext = createContext<TaskContextType>({
   sessions: [],
   city: [],
   addTask: () => '',
+  updateTask: () => {},
   deleteTask: () => {},
   addStudySession: () => {},
   updateProgress: () => {},
@@ -222,6 +224,31 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return id;
   };
 
+  const updateTask = (id: string, updates: Partial<Pick<Task, 'assignmentName' | 'className' | 'dueDate' | 'dueDateRaw' | 'estimatedHours'>>) => {
+    const target = tasks.find(t => t.id === id);
+    if (!target) return;
+
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      const next = { ...t, ...updates };
+      if (updates.estimatedHours !== undefined || updates.dueDateRaw !== undefined) {
+        next.hoursPerDay = computeHoursPerDay(next.estimatedHours, next.dueDateRaw);
+      }
+      return next;
+    }));
+
+    // Old reminders point at the old name/date; replace them.
+    cancelTaskReminders(target.notificationIds).catch(() => {});
+    const merged = { ...target, ...updates };
+    scheduleTaskReminders(merged.assignmentName, merged.className, merged.dueDateRaw)
+      .then(notificationIds => {
+        setTasks(prev => prev.map(t => t.id === id
+          ? { ...t, notificationIds: notificationIds.length ? notificationIds : undefined }
+          : t));
+      })
+      .catch(() => {});
+  };
+
   const deleteTask = (id: string) => {
     setTasks(prev => {
       const target = prev.find(t => t.id === id);
@@ -281,7 +308,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <TaskContext.Provider value={{ tasks, sessions, city, addTask, deleteTask, addStudySession, updateProgress, toggleTaskStep, updateHoursPerDay, updateEstimatedHours }}>
+    <TaskContext.Provider value={{ tasks, sessions, city, addTask, updateTask, deleteTask, addStudySession, updateProgress, toggleTaskStep, updateHoursPerDay, updateEstimatedHours }}>
       {children}
     </TaskContext.Provider>
   );

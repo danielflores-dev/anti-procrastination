@@ -191,14 +191,33 @@ export default function HomeScreen() {
   const streak = getStudyStreak(sessions, bridgedDates);
   const todayStudyPlan = buildTodayStudyPlan(openTasks, sessions);
   const primaryRoute: Href = nextTask ? `/focus?id=${nextTask.id}` : '/auto-add';
-  const achievements = [
+  const finishedCount = city.length;
+  const sessionCount = sessions.length;
+  const earlyBird = sessions.some(s => new Date(s.createdAt).getHours() < 9 && s.focusedSeconds >= 300);
+  const studiedInGroup = sessions.some(s => !!s.partyRoom || s.coinMultiplier > 1);
+  const finishedEarly = city.some(building => {
+    const source = tasks.find(t => t.id === building.id);
+    if (!source) return false;
+    return new Date(source.dueDateRaw).getTime() - new Date(building.finishedAt).getTime() >= 2 * 86400000;
+  });
+
+  type Achievement = {
+    id: string;
+    title: string;
+    reward: number;
+    progress: number;
+    current: string;
+    icon: ComponentProps<typeof FontAwesome5>['name'];
+  };
+
+  const achievements: Achievement[] = [
     {
       id: 'focus-30',
       title: 'Study for 30 min',
       reward: 20,
       progress: Math.min(1, focusedMinutes / 30),
       current: `${Math.min(focusedMinutes, 30)}/30 min`,
-      icon: 'clock' as ComponentProps<typeof FontAwesome5>['name'],
+      icon: 'clock',
     },
     {
       id: 'focus-60',
@@ -206,7 +225,23 @@ export default function HomeScreen() {
       reward: 45,
       progress: Math.min(1, focusedMinutes / 60),
       current: `${Math.min(focusedMinutes, 60)}/60 min`,
-      icon: 'hourglass-half' as ComponentProps<typeof FontAwesome5>['name'],
+      icon: 'hourglass-half',
+    },
+    {
+      id: 'focus-300',
+      title: 'Study for 5 hours total',
+      reward: 120,
+      progress: Math.min(1, focusedMinutes / 300),
+      current: `${Math.min(focusedMinutes, 300)}/300 min`,
+      icon: 'graduation-cap',
+    },
+    {
+      id: 'sessions-10',
+      title: 'Finish 10 focus sessions',
+      reward: 90,
+      progress: Math.min(1, sessionCount / 10),
+      current: `${Math.min(sessionCount, 10)}/10 sessions`,
+      icon: 'redo',
     },
     {
       id: 'streak-3',
@@ -214,9 +249,73 @@ export default function HomeScreen() {
       reward: 60,
       progress: Math.min(1, streak / 3),
       current: `${Math.min(streak, 3)}/3 days`,
-      icon: 'fire' as ComponentProps<typeof FontAwesome5>['name'],
+      icon: 'fire',
+    },
+    {
+      id: 'streak-7',
+      title: 'Keep a 7 day streak',
+      reward: 150,
+      progress: Math.min(1, streak / 7),
+      current: `${Math.min(streak, 7)}/7 days`,
+      icon: 'fire-alt',
+    },
+    {
+      id: 'finish-1',
+      title: 'Raise your first building',
+      reward: 25,
+      progress: Math.min(1, finishedCount / 1),
+      current: `${Math.min(finishedCount, 1)}/1 finished`,
+      icon: 'building',
+    },
+    {
+      id: 'finish-5',
+      title: 'Grow your city to 5 buildings',
+      reward: 75,
+      progress: Math.min(1, finishedCount / 5),
+      current: `${Math.min(finishedCount, 5)}/5 finished`,
+      icon: 'city',
+    },
+    {
+      id: 'finish-10',
+      title: 'Grow your city to 10 buildings',
+      reward: 200,
+      progress: Math.min(1, finishedCount / 10),
+      current: `${Math.min(finishedCount, 10)}/10 finished`,
+      icon: 'archway',
+    },
+    {
+      id: 'early-bird',
+      title: 'Study before 9 AM',
+      reward: 40,
+      progress: earlyBird ? 1 : 0,
+      current: earlyBird ? 'Done' : 'Not yet',
+      icon: 'sun',
+    },
+    {
+      id: 'early-finish',
+      title: 'Finish something 2+ days early',
+      reward: 80,
+      progress: finishedEarly ? 1 : 0,
+      current: finishedEarly ? 'Done' : 'Not yet',
+      icon: 'flag-checkered',
+    },
+    {
+      id: 'group-study',
+      title: 'Study in a group session',
+      reward: 50,
+      progress: studiedInGroup ? 1 : 0,
+      current: studiedInGroup ? 'Done' : 'Not yet',
+      icon: 'user-friends',
     },
   ];
+
+  // Claimable first, then in-progress, claimed sink to the bottom.
+  const achievementRank = (a: Achievement) => {
+    const claimed = claimedIds.includes(a.id);
+    if (claimed) return 2;
+    return a.progress >= 1 ? 0 : 1;
+  };
+  const sortedAchievements = [...achievements].sort((a, b) => achievementRank(a) - achievementRank(b));
   const activeTopDetail = activeTopInfo
     ? {
         streak: {
@@ -361,7 +460,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.achievementList}>
-        {achievements.map(item => {
+        {sortedAchievements.map(item => {
           const complete = item.progress >= 1;
           const claimed = claimedIds.includes(item.id);
           const claimable = complete && !claimed;

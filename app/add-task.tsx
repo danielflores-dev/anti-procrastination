@@ -4,7 +4,7 @@ import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState, useRef } from 'react';
 import {
   Modal,
@@ -33,15 +33,20 @@ function defaultDueDate(): Date {
 
 export default function AddTaskScreen() {
   const router = useRouter();
-  const { addTask } = useTasks();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { tasks, addTask, updateTask } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const [assignmentName, setAssignmentName] = useState('');
-  const [className, setClassName] = useState('');
-  const [dueDate, setDueDate] = useState<Date>(defaultDueDate);
+  const editingTask = id ? tasks.find(t => t.id === id) ?? null : null;
+
+  const [assignmentName, setAssignmentName] = useState(editingTask?.assignmentName ?? '');
+  const [className, setClassName] = useState(editingTask?.className ?? '');
+  const [dueDate, setDueDate] = useState<Date>(() =>
+    editingTask ? new Date(editingTask.dueDateRaw) : defaultDueDate()
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [estimatedHours, setEstimatedHours] = useState(1);
+  const [estimatedHours, setEstimatedHours] = useState(editingTask?.estimatedHours ?? 1);
   const [errors, setErrors] = useState<{ name?: string; className?: string }>({});
   const dateInputRef = useRef<any>(null);
 
@@ -58,6 +63,23 @@ export default function AddTaskScreen() {
     if (Object.keys(nextErrors).length > 0) return;
 
     const dueDateRaw = dueDate.toISOString();
+
+    if (editingTask) {
+      updateTask(editingTask.id, {
+        assignmentName: assignmentName.trim(),
+        className: className.trim(),
+        dueDate: formatDateDisplay(dueDate),
+        dueDateRaw,
+        estimatedHours,
+      });
+      if (andFocus) {
+        router.replace(`/focus?id=${editingTask.id}`);
+      } else {
+        router.back();
+      }
+      return;
+    }
+
     const taskId = addTask({
       assignmentName: assignmentName.trim(),
       className: className.trim(),
@@ -103,7 +125,7 @@ export default function AddTaskScreen() {
           >
             <FontAwesome5 name="chevron-left" size={18} color={theme.primary} />
           </TouchableOpacity>
-          <Text style={styles.heading}>New assignment</Text>
+          <Text style={styles.heading}>{editingTask ? 'Edit assignment' : 'New assignment'}</Text>
         </View>
 
         {/* Assignment name */}
@@ -230,7 +252,7 @@ export default function AddTaskScreen() {
         </View>
 
         <PixelButton size="lg" style={styles.saveButton} onPress={() => handleSave(false)}>
-          Save assignment
+          {editingTask ? 'Save changes' : 'Save assignment'}
         </PixelButton>
         <PixelButton variant="ghost" style={styles.focusButton} onPress={() => handleSave(true)}>
           Save and start focus now

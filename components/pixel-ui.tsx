@@ -2,7 +2,6 @@ import { playClick, tapHaptic } from '@/components/sfx';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { ReactNode } from 'react';
 import {
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -22,11 +21,9 @@ import {
  * game HUDs. Buttons invert the bevel and sink when pressed.
  */
 
-export const PIXEL_FONT = Platform.select({
-  ios: 'Menlo',
-  android: 'monospace',
-  default: 'monospace',
-});
+// Real pixel typeface, loaded in the root layout. Every pixel-styled text in
+// the app routes through this constant.
+export const PIXEL_FONT = 'Silkscreen_700Bold';
 
 export const GOLD = '#F59E0B';
 export const DANGER = '#DC2626';
