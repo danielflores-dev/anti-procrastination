@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Sprite } from '@/components/PixelConstruction';
+import { type CityBuilding, useTasks } from '@/context/TaskContext';
 
 const PX = 6;
 // Ground plane starts at this fraction of screen height.
@@ -24,6 +25,18 @@ type PhaseTheme = {
   showStars: boolean;
   showClouds: boolean;
   cloudColor: string;
+};
+
+// Menacing storm used during exam boss battles, regardless of time of day.
+const BOSS_STORM: PhaseTheme = {
+  skyBands: ['#12041F', '#1F0733', '#360B3F', '#521026'],
+  groundBands: ['#2E1B24', '#271620', '#20121B', '#1A0E16', '#140A11'],
+  silhouetteBack: 'rgba(30,10,40,0.7)',
+  silhouetteFront: 'rgba(15,5,22,0.85)',
+  windowLit: 'rgba(239,68,68,0.55)',
+  showStars: true,
+  showClouds: false,
+  cloudColor: 'rgba(88,28,135,0.4)',
 };
 
 const PHASES: Record<DayPhase, PhaseTheme> = {
@@ -169,6 +182,40 @@ type Building = {
   windows: { x: number; y: number }[];
 };
 
+/**
+ * Turns the buildings the user earned into a silhouette skyline: same seed,
+ * same proportions as the city panel, laid out oldest-first from the left.
+ * Whatever street is left over gets filled with modest generic rooftops.
+ */
+export function cityToSkyline(cityList: CityBuilding[], screenWidth: number, unit: number, withWindows: boolean): Building[] {
+  const out: Building[] = [];
+  let x = unit;
+  for (const b of cityList) {
+    if (x > screenWidth + unit * 2) break;
+    const rand = seededRandom(b.seed);
+    const widthUnits = 7 + Math.floor(rand() * 4);
+    const heightUnits = 4 + b.size * 4 + Math.floor(rand() * 3);
+    const windows: Building['windows'] = [];
+    if (withWindows) {
+      for (let wy = 1; wy < heightUnits - 1; wy += 3) {
+        for (let wx = 1; wx < widthUnits - 1; wx += 3) {
+          if (rand() < 0.3) windows.push({ x: wx * unit, y: wy * unit });
+        }
+      }
+    }
+    out.push({ x, width: widthUnits * unit, height: heightUnits * unit, windows });
+    x += (widthUnits + 2) * unit;
+  }
+  const filler = seededRandom(777);
+  while (x < screenWidth + unit * 2) {
+    const widthUnits = 5 + Math.floor(filler() * 4);
+    const heightUnits = 3 + Math.floor(filler() * 4);
+    out.push({ x, width: widthUnits * unit, height: heightUnits * unit, windows: [] });
+    x += (widthUnits + 1 + Math.floor(filler() * 2)) * unit;
+  }
+  return out;
+}
+
 function generateSkyline(screenWidth: number, seed: number, minH: number, maxH: number, withWindows: boolean): Building[] {
   const rand = seededRandom(seed);
   const buildings: Building[] = [];
@@ -224,6 +271,7 @@ export function PixelSkyStrip({ height = 150, style, children }: {
   children?: ReactNode;
 }) {
   const { width: windowWidth } = useWindowDimensions();
+  const { city } = useTasks();
   const [width, setWidth] = useState(windowWidth);
   const [phase, setPhase] = useState<DayPhase>(() => getDayPhase(new Date().getHours()));
 
@@ -235,7 +283,10 @@ export function PixelSkyStrip({ height = 150, style, children }: {
   const theme = PHASES[phase];
   const bandH = height / theme.skyBands.length;
 
-  const skyline = useMemo(() => generateSkyline(width, 21, 3, 7, false), [width]);
+  const skyline = useMemo(
+    () => city.length > 0 ? cityToSkyline(city, width, 3, true) : generateSkyline(width, 21, 3, 7, false),
+    [city, width],
+  );
   const stars = useMemo(() => {
     const rand = seededRandom(55);
     return Array.from({ length: 14 }, () => ({
@@ -292,7 +343,21 @@ export function PixelSkyStrip({ height = 150, style, children }: {
               height: b.height,
               backgroundColor: theme.silhouetteFront,
             }}
-          />
+          >
+            {b.windows.map((w, wi) => (
+              <View
+                key={wi}
+                style={{
+                  position: 'absolute',
+                  left: w.x,
+                  bottom: w.y,
+                  width: 3,
+                  height: 3,
+                  backgroundColor: theme.windowLit,
+                }}
+              />
+            ))}
+          </View>
         ))}
       </View>
       {children}
@@ -300,23 +365,43 @@ export function PixelSkyStrip({ height = 150, style, children }: {
   );
 }
 
-export default function PixelWorld({ reducedMotion }: { reducedMotion?: boolean }) {
+export default function PixelWorld({ reducedMotion, boss }: { reducedMotion?: boolean; boss?: boolean }) {
   const { width, height } = useWindowDimensions();
+  const { city } = useTasks();
   const [phase, setPhase] = useState<DayPhase>(() => getDayPhase(new Date().getHours()));
+  const [lightning, setLightning] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setPhase(getDayPhase(new Date().getHours())), 60000);
     return () => clearInterval(t);
   }, []);
 
-  const theme = PHASES[phase];
+  // Occasional lightning flashes while a boss battle rages.
+  useEffect(() => {
+    if (!boss || reducedMotion) return;
+    let flashTimeout: ReturnType<typeof setTimeout> | null = null;
+    const strike = setInterval(() => {
+      setLightning(true);
+      flashTimeout = setTimeout(() => setLightning(false), 110);
+    }, 4200 + Math.random() * 2600);
+    return () => {
+      clearInterval(strike);
+      if (flashTimeout) clearTimeout(flashTimeout);
+      setLightning(false);
+    };
+  }, [boss, reducedMotion]);
+
+  const theme = boss ? BOSS_STORM : PHASES[phase];
   const horizonY = height * HORIZON;
   const skyBandH = horizonY / theme.skyBands.length;
   const groundH = height - horizonY;
   const groundBandH = groundH / theme.groundBands.length;
 
   const backRow = useMemo(() => generateSkyline(width, 7, 8, 16, false), [width]);
-  const frontRow = useMemo(() => generateSkyline(width, 42, 4, 10, true), [width]);
+  const frontRow = useMemo(
+    () => city.length > 0 ? cityToSkyline(city, width, 4, true) : generateSkyline(width, 42, 4, 10, true),
+    [city, width],
+  );
 
   const stars = useMemo(() => {
     const rand = seededRandom(99);
@@ -360,8 +445,12 @@ export default function PixelWorld({ reducedMotion }: { reducedMotion?: boolean 
         />
       ))}
 
-      {/* Sun or moon */}
-      {phase === 'night' ? (
+      {/* Sun or moon (blood moon during a boss battle) */}
+      {boss ? (
+        <View style={{ position: 'absolute', top: 80, right: 44 }}>
+          <PhaseSprite rows={MOON} px={PX} colors={{ M: '#EF4444', m: '#B91C1C' }} />
+        </View>
+      ) : phase === 'night' ? (
         <View style={{ position: 'absolute', top: 80, right: 44 }}>
           <PhaseSprite rows={MOON} px={PX} colors={{ M: '#E2E8F0', m: '#CBD5E1' }} />
         </View>
@@ -473,6 +562,11 @@ export default function PixelWorld({ reducedMotion }: { reducedMotion?: boolean 
           <PhaseSprite rows={BARRIER} px={3} colors={{ O: '#F97316', V: '#F8FAFC', k: '#1C1917' }} />
         </View>
       ))}
+
+      {/* Lightning flash */}
+      {lightning && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(226,232,240,0.22)' }]} />
+      )}
     </View>
   );
 }

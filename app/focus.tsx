@@ -1,10 +1,12 @@
 import { useCoins } from '@/context/CoinContext';
 import { usePowerUps } from '@/context/PowerUpContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { useTasks } from '@/context/TaskContext';
+import { getStudyStreak, useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { GOLD, PIXEL_FONT, PixelButton } from '@/components/pixel-ui';
+import PixelBoss from '@/components/PixelBoss';
 import PixelConstruction, { Sprite } from '@/components/PixelConstruction';
+import PixelDog from '@/components/PixelDog';
 import PixelConfettiBurst from '@/components/PixelConfetti';
 import { playCoin } from '@/components/sfx';
 import PixelWorld from '@/components/PixelWorld';
@@ -13,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  AppState,
   Easing,
   ScrollView,
   StatusBar,
@@ -23,6 +26,8 @@ import {
 } from 'react-native';
 
 const COIN_INTERVAL = 30;
+const FLAWLESS_BONUS = 10;
+const FLAWLESS_MIN_SECONDS = 600; // sessions under 10 min don't qualify
 
 // Pixel trophy shown when the daily goal is reached.
 const TROPHY = [
@@ -114,10 +119,10 @@ export default function FocusScreen() {
     className?: string;
     goalHours?: string;
   }>();
-  const { tasks, addStudySession, updateHoursPerDay, updateProgress } = useTasks();
+  const { tasks, sessions, addStudySession, updateHoursPerDay, updateProgress } = useTasks();
   const { theme } = useSchoolTheme();
   const { coins, addCoins } = useCoins();
-  const { doubleCharges, consumeDoubleCharge } = usePowerUps();
+  const { doubleCharges, consumeDoubleCharge, bridgedDates } = usePowerUps();
   const reducedMotion = useReducedMotion();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -133,6 +138,7 @@ export default function FocusScreen() {
           dueDateRaw: new Date().toISOString(),
           estimatedHours: Number(goalHours ?? '1') || 1,
           hoursPerDay: Number(goalHours ?? '1') || 1,
+          isExam: false,
         }
       : null
   );
@@ -146,11 +152,39 @@ export default function FocusScreen() {
   const [showGoalAdjust, setShowGoalAdjust] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
   const [sessionGoalHours, setSessionGoalHours] = useState<number | null>(null);
+  const [wasInterrupted, setWasInterrupted] = useState(false);
+  const [awayNotice, setAwayNotice] = useState<string | null>(null);
   const recapAnim = useRef(new Animated.Value(0)).current;
   const toastKey = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevCoinCount = useRef(0);
   const coinRemainder = useRef(0);
+  const runningRef = useRef(false);
+  const awayStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    runningRef.current = running;
+  }, [running]);
+
+  // Focus lock: leaving the app freezes the site; the crew waits.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', nextState => {
+      if (nextState !== 'active') {
+        if (runningRef.current) {
+          awayStartRef.current = Date.now();
+          setRunning(false);
+          setWasInterrupted(true);
+        }
+      } else if (awayStartRef.current) {
+        const awaySeconds = Math.round((Date.now() - awayStartRef.current) / 1000);
+        awayStartRef.current = null;
+        if (awaySeconds >= 5) {
+          setAwayNotice(`The crew waited ${formatTime(awaySeconds)} while you were gone.`);
+        }
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const color = focusTask ? hourColor(focusTask.estimatedHours) : theme.primary;
   const partyCount = Math.max(1, Number(partySize ?? '1') || 1);
@@ -239,6 +273,7 @@ export default function FocusScreen() {
   const focusMinutes = Math.floor(elapsed / 60);
   const progressPercent = Math.round(progress * 100);
   const newGoalHours = sessionGoalHours ?? focusTask.hoursPerDay;
+  const sessionFlawless = !wasInterrupted && elapsed >= FLAWLESS_MIN_SECONDS;
 
   const finishSession = () => {
     if (!focusTask) return;
@@ -248,16 +283,18 @@ export default function FocusScreen() {
       assignmentName: focusTask.assignmentName,
       className: focusTask.className,
       focusedSeconds: elapsed,
-      coinsEarned: sessionCoins,
+      coinsEarned: sessionCoins + (sessionFlawless ? FLAWLESS_BONUS : 0),
       goalHours: newGoalHours,
       progressPercent,
       coinMultiplier,
       partyRoom,
+      flawless: sessionFlawless,
     });
     if (task) {
       updateProgress(task.id, goalReached ? 'Done' : progressPercent >= 75 ? 'Almost done' : 'Working');
     }
     if (boostActive && elapsed > 0) consumeDoubleCharge();
+    if (sessionFlawless) addCoins(FLAWLESS_BONUS);
     setShowRecap(false);
     if (reducedMotion) {
       setElapsed(0);
@@ -283,10 +320,12 @@ export default function FocusScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      <PixelWorld reducedMotion={reducedMotion} />
+      <PixelWorld reducedMotion={reducedMotion} boss={!!focusTask.isExam} />
 
       <View style={styles.topInfo}>
-        <Text style={styles.className}>{focusTask.className}</Text>
+        <Text style={[styles.className, focusTask.isExam && styles.bossKicker]}>
+          {focusTask.isExam ? `Boss battle · ${focusTask.className}` : focusTask.className}
+        </Text>
         <Text style={styles.assignmentName}>{focusTask.assignmentName}</Text>
         {isPartySession && (
           <View style={[styles.partyBadge, { borderColor: color }]}>
@@ -313,6 +352,9 @@ export default function FocusScreen() {
 
       {/* Game-style timer panel */}
       <View style={styles.timerPanel}>
+        {awayNotice && (
+          <Text style={styles.awayText}>{awayNotice}</Text>
+        )}
         <Text
           style={[styles.timer, { color: goalReached ? color : '#F8FAFC' }]}
           accessibilityLabel={`Timer: ${formatTime(elapsed)}`}
@@ -339,15 +381,30 @@ export default function FocusScreen() {
         )}
       </View>
 
-      {/* Construction site standing on the ground plane */}
+      {/* Construction site (or exam boss arena) standing on the ground plane */}
       <View style={styles.siteWrapper} pointerEvents="none">
-        <PixelConstruction progress={progress} running={running} reducedMotion={reducedMotion} />
+        {focusTask.isExam ? (
+          <PixelBoss progress={progress} running={running} reducedMotion={reducedMotion} />
+        ) : (
+          <PixelConstruction progress={progress} running={running} reducedMotion={reducedMotion} />
+        )}
+        <View style={styles.dogWrap}>
+          <PixelDog
+            mood={goalReached ? 'party' : getStudyStreak(sessions, bridgedDates) >= 1 ? 'happy' : 'sad'}
+            running={running}
+            reducedMotion={reducedMotion}
+          />
+        </View>
       </View>
 
       <View style={styles.controls}>
         <TouchableOpacity
           style={[styles.playBtn, { borderColor: color }]}
-          onPress={() => setRunning(r => !r)}
+          onPress={() => {
+            setAwayNotice(null);
+            if (!running && elapsed === 0) setWasInterrupted(false);
+            setRunning(r => !r);
+          }}
           accessibilityLabel={running ? 'Pause session' : 'Start session'}
           accessibilityRole="button"
         >
@@ -395,7 +452,7 @@ export default function FocusScreen() {
               {/* Result banner */}
               <View style={[styles.recapBanner, { backgroundColor: goalReached ? GOLD : theme.primary }]}>
                 <Text style={[styles.recapBannerText, { color: goalReached ? '#1C1917' : theme.onPrimary }]}>
-                  {goalReached ? 'Goal complete!' : 'Session recap'}
+                  {goalReached ? (focusTask.isExam ? 'Boss defeated!' : 'Goal complete!') : 'Session recap'}
                 </Text>
               </View>
 
@@ -421,6 +478,9 @@ export default function FocusScreen() {
                   <Text style={styles.coinHeroSummary}>
                     {`${formatTime(elapsed)} focused · ${progressPercent}% of goal${isPartySession ? ` · ${coinMultiplier.toFixed(1)}x bonus` : ''}`}
                   </Text>
+                  {sessionFlawless && (
+                    <Text style={styles.flawlessText}>Flawless focus · +{FLAWLESS_BONUS} bonus</Text>
+                  )}
                 </View>
 
                 {focusMinutes < 10 && !goalReached && (
@@ -480,7 +540,7 @@ export default function FocusScreen() {
 
       {celebrating && (
         <PixelConfettiBurst
-          message={goalReached ? 'Goal complete!' : 'Saved!'}
+          message={goalReached ? (focusTask.isExam ? 'Boss defeated!' : 'Goal complete!') : 'Saved!'}
           onDone={finishCelebration}
         />
       )}
@@ -540,6 +600,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 4,
+  },
+  bossKicker: {
+    color: '#F87171',
+    fontFamily: PIXEL_FONT,
   },
   assignmentName: {
     color: '#F8FAFC',
@@ -617,6 +681,21 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     paddingVertical: 16,
     zIndex: 2,
   },
+  awayText: {
+    color: '#F87171',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+    maxWidth: 240,
+  },
+  flawlessText: {
+    color: '#22C55E',
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    marginTop: 6,
+  },
   timer: {
     fontSize: 34,
     fontFamily: PIXEL_FONT,
@@ -656,6 +735,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+  },
+  dogWrap: {
+    position: 'absolute',
+    bottom: -24,
+    left: '50%',
+    marginLeft: -182,
   },
   controls: {
     position: 'absolute',

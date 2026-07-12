@@ -47,6 +47,7 @@ export default function AddTaskScreen() {
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [estimatedHours, setEstimatedHours] = useState(editingTask?.estimatedHours ?? 1);
+  const [isExam, setIsExam] = useState(editingTask?.isExam ?? false);
   const [errors, setErrors] = useState<{ name?: string; className?: string }>({});
   const dateInputRef = useRef<any>(null);
 
@@ -71,6 +72,7 @@ export default function AddTaskScreen() {
         dueDate: formatDateDisplay(dueDate),
         dueDateRaw,
         estimatedHours,
+        isExam,
       });
       if (andFocus) {
         router.replace(`/focus?id=${editingTask.id}`);
@@ -88,6 +90,7 @@ export default function AddTaskScreen() {
       dueDateRaw,
       estimatedHours,
       hoursPerDay: computeHoursPerDay(estimatedHours, dueDateRaw),
+      isExam,
     });
 
     if (andFocus) {
@@ -250,6 +253,23 @@ export default function AddTaskScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Exam boss toggle */}
+        <TouchableOpacity
+          style={styles.examRow}
+          onPress={() => setIsExam(v => !v)}
+          activeOpacity={0.8}
+          accessibilityLabel={`Exam prep: ${isExam ? 'on' : 'off'}`}
+          accessibilityRole="switch"
+        >
+          <View style={[styles.examCheck, isExam && styles.examCheckOn]}>
+            {isExam && <FontAwesome5 name="skull" size={12} color="#FEE2E2" />}
+          </View>
+          <View style={styles.examCopy}>
+            <Text style={styles.examTitle}>This is an exam</Text>
+            <Text style={styles.examSub}>Focus sessions become a boss battle.</Text>
+          </View>
+        </TouchableOpacity>
 
         <PixelButton size="lg" style={styles.saveButton} onPress={() => handleSave(false)}>
           {editingTask ? 'Save changes' : 'Save assignment'}
@@ -447,6 +467,39 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   hoursNumber: { color: theme.text, fontSize: 38, fontWeight: '800', fontFamily: PIXEL_FONT, letterSpacing: -1 },
   hoursSubtext: { color: theme.muted, fontSize: 12, fontWeight: '600' },
 
+  examRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+    padding: 14,
+    marginBottom: 24,
+  },
+  examCheck: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(0,0,0,0.32)',
+    borderLeftColor: 'rgba(0,0,0,0.32)',
+    borderBottomColor: 'rgba(255,255,255,0.14)',
+    borderRightColor: 'rgba(255,255,255,0.14)',
+  },
+  examCheckOn: {
+    backgroundColor: '#B91C1C',
+  },
+  examCopy: { flex: 1 },
+  examTitle: { color: theme.text, fontSize: 15, fontWeight: '800' },
+  examSub: { color: theme.muted, fontSize: 12, fontWeight: '600', marginTop: 2 },
   saveButton: { marginBottom: 14 },
   focusButton: { marginBottom: 8 },
 

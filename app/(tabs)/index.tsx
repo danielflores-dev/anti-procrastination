@@ -8,7 +8,7 @@ import { PixelSkyStrip } from '@/components/PixelWorld';
 import { useCoins } from '@/context/CoinContext';
 import { usePowerUps } from '@/context/PowerUpContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { StudySession, Task, useTasks } from '@/context/TaskContext';
+import { getStudyStreak, sessionDateKey, StudySession, Task, useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type Href, useRouter } from 'expo-router';
@@ -16,6 +16,16 @@ import { type ComponentProps, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const CLAIMED_KEY = 'antiprocrastination.claimed-achievements.v1';
+const DAILY_KEY = 'antiprocrastination.daily-claims.v1';
+const COLLAPSED_KEY = 'antiprocrastination.home-collapsed.v1';
+
+function seededRandom(seed: number) {
+  let s = seed || 1;
+  return () => {
+    s = (s * 1664525 + 1013904223) % 4294967296;
+    return s / 4294967296;
+  };
+}
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -34,25 +44,6 @@ function formatDate(): string {
 
 function daysUntil(raw: string): number {
   return Math.max(0, Math.ceil((new Date(raw).getTime() - Date.now()) / 86400000));
-}
-
-function sessionDateKey(dateRaw: string): string {
-  const date = new Date(dateRaw);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function getStudyStreak(sessions: StudySession[], bridgedDates: string[] = []): number {
-  const studiedDays = new Set(sessions.map(session => sessionDateKey(session.createdAt)));
-  bridgedDates.forEach(date => studiedDays.add(date));
-  let streak = 0;
-  const cursor = new Date();
-
-  while (studiedDays.has(sessionDateKey(cursor.toISOString()))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  return streak;
 }
 
 type StudyPlanStep = {
@@ -143,6 +134,32 @@ export default function HomeScreen() {
   const [claimedIds, setClaimedIds] = useState<string[]>([]);
   const [claimedHydrated, setClaimedHydrated] = useState(false);
   const [claimCelebration, setClaimCelebration] = useState<number | null>(null);
+  const [dailyClaimed, setDailyClaimed] = useState<string[]>([]);
+  const [dailyHydrated, setDailyHydrated] = useState(false);
+  const [collapsed, setCollapsed] = useState<string[]>([]);
+  const [collapsedHydrated, setCollapsedHydrated] = useState(false);
+
+  const todayKey = sessionDateKey(new Date().toISOString());
+
+  useEffect(() => {
+    AsyncStorage.getItem(COLLAPSED_KEY)
+      .then(saved => {
+        if (saved) setCollapsed(JSON.parse(saved));
+      })
+      .catch(() => {})
+      .finally(() => setCollapsedHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (!collapsedHydrated) return;
+    AsyncStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsed)).catch(() => {});
+  }, [collapsed, collapsedHydrated]);
+
+  const toggleSection = (key: string) => {
+    setCollapsed(current => current.includes(key)
+      ? current.filter(k => k !== key)
+      : [...current, key]);
+  };
 
   useEffect(() => {
     AsyncStorage.getItem(CLAIMED_KEY)
@@ -157,6 +174,33 @@ export default function HomeScreen() {
     if (!claimedHydrated) return;
     AsyncStorage.setItem(CLAIMED_KEY, JSON.stringify(claimedIds)).catch(() => {});
   }, [claimedIds, claimedHydrated]);
+
+  // Daily quest claims only count for the day they were made.
+  useEffect(() => {
+    AsyncStorage.getItem(DAILY_KEY)
+      .then(saved => {
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        if (parsed.date === todayKey && Array.isArray(parsed.claimed)) {
+          setDailyClaimed(parsed.claimed);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setDailyHydrated(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!dailyHydrated) return;
+    AsyncStorage.setItem(DAILY_KEY, JSON.stringify({ date: todayKey, claimed: dailyClaimed })).catch(() => {});
+  }, [dailyClaimed, dailyHydrated, todayKey]);
+
+  const handleClaimDaily = (id: string, reward: number) => {
+    if (dailyClaimed.includes(id)) return;
+    setDailyClaimed(current => [...current, id]);
+    addCoins(reward);
+    if (!reducedMotion) setClaimCelebration(reward);
+  };
 
   const reducedMotion = useReducedMotion();
 
@@ -307,6 +351,14 @@ export default function HomeScreen() {
       current: studiedInGroup ? 'Done' : 'Not yet',
       icon: 'user-friends',
     },
+    {
+      id: 'flawless-1',
+      title: 'Finish a flawless session',
+      reward: 60,
+      progress: sessions.some(s => s.flawless) ? 1 : 0,
+      current: sessions.some(s => s.flawless) ? 'Done' : '10+ min without leaving',
+      icon: 'gem',
+    },
   ];
 
   // Claimable first, then in-progress, claimed sink to the bottom.
@@ -316,6 +368,118 @@ export default function HomeScreen() {
     return a.progress >= 1 ? 0 : 1;
   };
   const sortedAchievements = [...achievements].sort((a, b) => achievementRank(a) - achievementRank(b));
+
+  // ---- Daily quests: three goals drawn from today's date, reset at midnight.
+  const todaySessions = sessions.filter(s => sessionDateKey(s.createdAt) === todayKey);
+  const minutesToday = Math.round(todaySessions.reduce((sum, s) => sum + s.focusedSeconds, 0) / 60);
+  const coinsToday = todaySessions.reduce((sum, s) => sum + s.coinsEarned, 0);
+  const beforeNoon = todaySessions.some(s => new Date(s.createdAt).getHours() < 12);
+  const longSessionToday = todaySessions.some(s => s.focusedSeconds >= 1500);
+  const finishedToday = city.filter(b => sessionDateKey(b.finishedAt) === todayKey).length;
+  const hardestTask = [...openTasks].sort((a, b) => b.estimatedHours - a.estimatedHours)[0];
+  const workedHardest = !!hardestTask && todaySessions.some(s => s.taskId === hardestTask.id);
+
+  const questPool: Achievement[] = [
+    {
+      id: 'daily-20min',
+      title: 'Study 20 minutes today',
+      reward: 15,
+      progress: Math.min(1, minutesToday / 20),
+      current: `${Math.min(minutesToday, 20)}/20 min`,
+      icon: 'stopwatch',
+    },
+    {
+      id: 'daily-45min',
+      title: 'Study 45 minutes today',
+      reward: 25,
+      progress: Math.min(1, minutesToday / 45),
+      current: `${Math.min(minutesToday, 45)}/45 min`,
+      icon: 'stopwatch-20',
+    },
+    {
+      id: 'daily-2sessions',
+      title: 'Finish 2 focus sessions',
+      reward: 20,
+      progress: Math.min(1, todaySessions.length / 2),
+      current: `${Math.min(todaySessions.length, 2)}/2 sessions`,
+      icon: 'redo',
+    },
+    {
+      id: 'daily-noon',
+      title: 'Save a session before noon',
+      reward: 20,
+      progress: beforeNoon ? 1 : 0,
+      current: beforeNoon ? 'Done' : 'Not yet',
+      icon: 'sun',
+    },
+    {
+      id: 'daily-30coins',
+      title: 'Earn 30 coins from focus',
+      reward: 15,
+      progress: Math.min(1, coinsToday / 30),
+      current: `${Math.min(coinsToday, 30)}/30 coins`,
+      icon: 'coins',
+    },
+    {
+      id: 'daily-long',
+      title: 'One 25+ minute session',
+      reward: 20,
+      progress: longSessionToday ? 1 : 0,
+      current: longSessionToday ? 'Done' : 'Not yet',
+      icon: 'hourglass-half',
+    },
+    {
+      id: 'daily-finish',
+      title: 'Finish an assignment today',
+      reward: 30,
+      progress: Math.min(1, finishedToday / 1),
+      current: `${Math.min(finishedToday, 1)}/1 finished`,
+      icon: 'flag-checkered',
+    },
+    ...(hardestTask ? [{
+      id: 'daily-hardest',
+      title: 'Work on your hardest assignment',
+      reward: 25,
+      progress: workedHardest ? 1 : 0,
+      current: workedHardest ? 'Done' : hardestTask.assignmentName,
+      icon: 'mountain' as ComponentProps<typeof FontAwesome5>['name'],
+    }] : []),
+  ];
+
+  const questRand = seededRandom(Number(todayKey.replace(/-/g, '')));
+  const dailyQuests = [...questPool]
+    .map(quest => ({ quest, order: questRand() }))
+    .sort((a, b) => a.order - b.order)
+    .slice(0, 3)
+    .map(entry => entry.quest);
+
+  const dailyReady = dailyQuests.filter(q => q.progress >= 1 && !dailyClaimed.includes(q.id)).length;
+  const achievementsReady = achievements.filter(a => a.progress >= 1 && !claimedIds.includes(a.id)).length;
+
+  const renderSectionHeader = (key: string, title: string, hint: string, readyCount = 0) => {
+    const isCollapsed = collapsed.includes(key);
+    return (
+      <TouchableOpacity
+        style={[styles.sectionHeading, isCollapsed && styles.sectionHeadingCollapsed]}
+        onPress={() => toggleSection(key)}
+        activeOpacity={0.75}
+        accessibilityLabel={`${isCollapsed ? 'Show' : 'Hide'} ${title}`}
+        accessibilityRole="button"
+      >
+        <View style={styles.sectionHeaderRow}>
+          <PixelHeading hint={isCollapsed ? undefined : hint}>{title}</PixelHeading>
+          <View style={styles.sectionHeaderRight}>
+            {readyCount > 0 && (
+              <View style={styles.readyBadge}>
+                <Text style={styles.readyBadgeText}>{readyCount} ready</Text>
+              </View>
+            )}
+            <FontAwesome5 name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={11} color={theme.muted} />
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
   const activeTopDetail = activeTopInfo
     ? {
         streak: {
@@ -404,10 +568,9 @@ export default function HomeScreen() {
         </PixelPanel>
       )}
 
-      <PixelHeading hint="Tap the next step." style={styles.sectionHeading}>
-        {"Study path"}
-      </PixelHeading>
+      {renderSectionHeader('path', 'Study path', 'Tap the next step.')}
 
+      {!collapsed.includes('path') && (
       <View style={styles.path}>
         {todayStudyPlan.map((item, index) => {
           const isActive = index === 0;
@@ -446,19 +609,64 @@ export default function HomeScreen() {
           );
         })}
       </View>
+      )}
 
-      <PixelHeading hint="One building per finished assignment." style={styles.sectionHeading}>
-        Your city
-      </PixelHeading>
-      <PixelPanel tone="alt" padding={0} style={styles.cityPanel}>
-        <PixelCity buildings={city} />
-      </PixelPanel>
+      {renderSectionHeader('city', 'Your city', 'One building per finished assignment.')}
+      {!collapsed.includes('city') && (
+        <PixelPanel tone="alt" padding={0} style={styles.cityPanel}>
+          <PixelCity buildings={city} />
+        </PixelPanel>
+      )}
 
-      <View style={styles.achievementHeader}>
-        <PixelHeading hint="Small goals for extra coins.">Achievements</PixelHeading>
-        <PixelBadge icon={<FontAwesome5 name="coins" size={12} color={GOLD} />}>Rewards</PixelBadge>
+      {renderSectionHeader('daily', 'Daily quests', 'Three fresh goals every day.', dailyReady)}
+      {!collapsed.includes('daily') && (
+      <View style={[styles.achievementList, styles.dailyList]}>
+        {dailyQuests.map(item => {
+          const complete = item.progress >= 1;
+          const claimed = dailyClaimed.includes(item.id);
+          const claimable = complete && !claimed;
+          return (
+            <PixelPanel key={item.id}>
+              <View style={styles.achievementRow}>
+                <View style={[
+                  styles.achievementIcon,
+                  claimable && { backgroundColor: GOLD },
+                  claimed && { backgroundColor: theme.primary },
+                ]}>
+                  <FontAwesome5
+                    name={complete ? 'check' : item.icon}
+                    size={14}
+                    color={claimable ? '#1C1917' : claimed ? theme.onPrimary : theme.primary}
+                  />
+                </View>
+                <View style={styles.achievementCopy}>
+                  <View style={styles.achievementTopLine}>
+                    <Text style={styles.achievementTitle}>{item.title}</Text>
+                    {!claimable && <Text style={styles.achievementReward}>+{item.reward}</Text>}
+                  </View>
+                  <PixelProgress progress={item.progress} height={8} color={claimed ? '#22C55E' : undefined} />
+                  <Text style={styles.achievementProgress}>
+                    {claimed ? 'Claimed' : complete ? 'Ready to claim' : item.current}
+                  </Text>
+                </View>
+                {claimable && (
+                  <PixelButton
+                    size="sm"
+                    onPress={() => handleClaimDaily(item.id, item.reward)}
+                    accessibilityLabel={`Claim ${item.reward} coins for ${item.title}`}
+                  >
+                    {`+${item.reward}`}
+                  </PixelButton>
+                )}
+              </View>
+            </PixelPanel>
+          );
+        })}
       </View>
+      )}
 
+      {renderSectionHeader('achievements', 'Achievements', 'Small goals for extra coins.', achievementsReady)}
+      {!collapsed.includes('achievements') && (
       <View style={styles.achievementList}>
         {sortedAchievements.map(item => {
           const complete = item.progress >= 1;
@@ -502,6 +710,7 @@ export default function HomeScreen() {
           );
         })}
       </View>
+      )}
       </ScrollView>
 
       {claimCelebration !== null && (
@@ -609,6 +818,33 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 12,
   },
+  sectionHeadingCollapsed: {
+    marginBottom: 22,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  sectionHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingTop: 2,
+  },
+  readyBadge: {
+    backgroundColor: GOLD,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 2,
+  },
+  readyBadgeText: {
+    color: '#1C1917',
+    fontSize: 9,
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+  },
   path: {
     paddingHorizontal: 20,
   },
@@ -715,6 +951,9 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   achievementList: {
     paddingHorizontal: 20,
     gap: 10,
+  },
+  dailyList: {
+    marginBottom: 26,
   },
   achievementRow: {
     flexDirection: 'row',

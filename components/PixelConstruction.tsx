@@ -35,7 +35,7 @@ export const PALETTE: Record<string, string> = {
 };
 
 // Renders a sprite with run-length rows so long same-color stretches are one View.
-export function Sprite({ rows, px }: { rows: string[]; px: number }) {
+export function Sprite({ rows, px, palette = PALETTE }: { rows: string[]; px: number; palette?: Record<string, string> }) {
   return (
     <View>
       {rows.map((row, ri) => {
@@ -53,7 +53,7 @@ export function Sprite({ rows, px }: { rows: string[]; px: number }) {
                 style={{
                   width: run.len * px,
                   height: px,
-                  backgroundColor: run.ch === '.' ? 'transparent' : PALETTE[run.ch],
+                  backgroundColor: run.ch === '.' ? 'transparent' : palette[run.ch],
                 }}
               />
             ))}
@@ -64,7 +64,7 @@ export function Sprite({ rows, px }: { rows: string[]; px: number }) {
   );
 }
 
-const WORKER_UP = [
+export const WORKER_UP = [
   '....HHHH..TT',
   '...HHHHHH.TT',
   '...hhhhhh..t',
@@ -81,7 +81,7 @@ const WORKER_UP = [
   '..KKK.KKK...',
 ];
 
-const WORKER_DOWN = [
+export const WORKER_DOWN = [
   '....HHHH....',
   '...HHHHHH...',
   '...hhhhhh...',
@@ -127,7 +127,7 @@ const WALKER_B = [
 ];
 
 // Celebration frames used when the goal is complete.
-const WORKER_CHEER_A = [
+export const WORKER_CHEER_A = [
   '.S........S.',
   '.S..HHHH..S.',
   '.S.HHHHHH.S.',
@@ -144,7 +144,7 @@ const WORKER_CHEER_A = [
   '..KKK.KKK...',
 ]
 
-const WORKER_CHEER_B = [
+export const WORKER_CHEER_B = [
   '..S......S..',
   '..S.HHHH.S..',
   '..SHHHHHHS..',

@@ -34,6 +34,8 @@ export type Task = {
   steps?: TaskStep[];
   studyPlan?: StudyPlanItem[];
   notificationIds?: string[];
+  /** Exam prep: focus sessions become a boss battle. */
+  isExam?: boolean;
 };
 
 // A building earned by finishing an assignment. Never removed.
@@ -57,6 +59,8 @@ export type StudySession = {
   progressPercent: number;
   coinMultiplier: number;
   partyRoom?: string;
+  /** True when the user never left the app during the session. */
+  flawless?: boolean;
   createdAt: string;
 };
 
@@ -65,7 +69,7 @@ type TaskContextType = {
   sessions: StudySession[];
   city: CityBuilding[];
   addTask: (task: Omit<Task, 'id'>) => string;
-  updateTask: (id: string, updates: Partial<Pick<Task, 'assignmentName' | 'className' | 'dueDate' | 'dueDateRaw' | 'estimatedHours'>>) => void;
+  updateTask: (id: string, updates: Partial<Pick<Task, 'assignmentName' | 'className' | 'dueDate' | 'dueDateRaw' | 'estimatedHours' | 'isExam'>>) => void;
   deleteTask: (id: string) => void;
   addStudySession: (session: Omit<StudySession, 'id' | 'createdAt'>) => void;
   updateProgress: (id: string, progress: TaskProgress) => void;
@@ -139,6 +143,26 @@ function generateStudyPlan(task: Pick<Task, 'assignmentName' | 'estimatedHours' 
       focus: isLast ? `Final review for ${task.assignmentName}` : index === 0 ? 'Start with the easiest section' : 'Continue the next chunk',
     };
   });
+}
+
+export function sessionDateKey(dateRaw: string): string {
+  const date = new Date(dateRaw);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** Days in a row with at least one study session, counting shield-bridged days. */
+export function getStudyStreak(sessions: StudySession[], bridgedDates: string[] = []): number {
+  const studiedDays = new Set(sessions.map(session => sessionDateKey(session.createdAt)));
+  bridgedDates.forEach(date => studiedDays.add(date));
+  let streak = 0;
+  const cursor = new Date();
+
+  while (studiedDays.has(sessionDateKey(cursor.toISOString()))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
 }
 
 function buildingFor(task: Task): CityBuilding {
@@ -224,7 +248,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return id;
   };
 
-  const updateTask = (id: string, updates: Partial<Pick<Task, 'assignmentName' | 'className' | 'dueDate' | 'dueDateRaw' | 'estimatedHours'>>) => {
+  const updateTask = (id: string, updates: Partial<Pick<Task, 'assignmentName' | 'className' | 'dueDate' | 'dueDateRaw' | 'estimatedHours' | 'isExam'>>) => {
     const target = tasks.find(t => t.id === id);
     if (!target) return;
 

@@ -1,4 +1,6 @@
+import { cityToSkyline } from '@/components/PixelWorld';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
+import { useTasks } from '@/context/TaskContext';
 import { useMemo } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
@@ -20,6 +22,7 @@ function seededRandom(seed: number) {
 export default function PixelBackdrop() {
   const { width, height } = useWindowDimensions();
   const { theme } = useSchoolTheme();
+  const { city } = useTasks();
 
   const speckles = useMemo(() => {
     const rand = seededRandom(4242);
@@ -32,6 +35,14 @@ export default function PixelBackdrop() {
   }, [width, height]);
 
   const skyline = useMemo(() => {
+    if (city.length > 0) {
+      return cityToSkyline(city, width, 7, true).map(b => ({
+        x: b.x,
+        w: b.width,
+        h: b.height,
+        windows: b.windows,
+      }));
+    }
     const rand = seededRandom(1717);
     const buildings: { x: number; w: number; h: number; windows: { x: number; y: number }[] }[] = [];
     let x = -12;
@@ -48,7 +59,7 @@ export default function PixelBackdrop() {
       x += w + 6 + Math.floor(rand() * 14);
     }
     return buildings;
-  }, [width]);
+  }, [city, width]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">

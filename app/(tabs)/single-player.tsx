@@ -109,6 +109,11 @@ function AssignmentCard({
         >
           <FontAwesome5 name="pen" size={11} color={styles.cardClass.color} />
         </TouchableOpacity>
+        {task.isExam && (
+          <View style={styles.examTag}>
+            <Text style={styles.examTagText}>EXAM</Text>
+          </View>
+        )}
         <View style={[styles.hourBlock, { borderColor: workloadColor }]}>
           <Text style={[styles.hourBlockText, { color: workloadColor }]}>{task.estimatedHours}h</Text>
         </View>
@@ -333,6 +338,19 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
+  },
+  examTag: {
+    backgroundColor: '#B91C1C',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    marginRight: 8,
+    borderRadius: 2,
+  },
+  examTagText: {
+    color: '#FEE2E2',
+    fontSize: 9,
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
   },
   hourBlock: {
     borderWidth: 2,
