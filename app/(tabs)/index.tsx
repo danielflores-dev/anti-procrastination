@@ -620,46 +620,40 @@ export default function HomeScreen() {
 
       {renderSectionHeader('daily', 'Daily quests', 'Three fresh goals every day.', dailyReady)}
       {!collapsed.includes('daily') && (
-      <View style={[styles.achievementList, styles.dailyList]}>
+      <View style={styles.questRow}>
         {dailyQuests.map(item => {
           const complete = item.progress >= 1;
           const claimed = dailyClaimed.includes(item.id);
           const claimable = complete && !claimed;
           return (
-            <PixelPanel key={item.id}>
-              <View style={styles.achievementRow}>
-                <View style={[
-                  styles.achievementIcon,
-                  claimable && { backgroundColor: GOLD },
-                  claimed && { backgroundColor: theme.primary },
-                ]}>
-                  <FontAwesome5
-                    name={complete ? 'check' : item.icon}
-                    size={14}
-                    color={claimable ? '#1C1917' : claimed ? theme.onPrimary : theme.primary}
-                  />
-                </View>
-                <View style={styles.achievementCopy}>
-                  <View style={styles.achievementTopLine}>
-                    <Text style={styles.achievementTitle}>{item.title}</Text>
-                    {!claimable && <Text style={styles.achievementReward}>+{item.reward}</Text>}
-                  </View>
-                  <PixelProgress progress={item.progress} height={8} color={claimed ? '#22C55E' : undefined} />
-                  <Text style={styles.achievementProgress}>
-                    {claimed ? 'Claimed' : complete ? 'Ready to claim' : item.current}
-                  </Text>
-                </View>
-                {claimable && (
-                  <PixelButton
-                    size="sm"
-                    onPress={() => handleClaimDaily(item.id, item.reward)}
-                    accessibilityLabel={`Claim ${item.reward} coins for ${item.title}`}
-                  >
-                    {`+${item.reward}`}
-                  </PixelButton>
-                )}
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.questTile, claimable && styles.questTileReady]}
+              disabled={!claimable}
+              onPress={() => handleClaimDaily(item.id, item.reward)}
+              activeOpacity={0.8}
+              accessibilityLabel={claimable
+                ? `Claim ${item.reward} coins for ${item.title}`
+                : `${item.title}: ${claimed ? 'claimed' : item.current}`}
+              accessibilityRole="button"
+            >
+              <View style={[
+                styles.questIcon,
+                claimable && { backgroundColor: GOLD },
+                claimed && { backgroundColor: theme.primary },
+              ]}>
+                <FontAwesome5
+                  name={complete ? 'check' : item.icon}
+                  size={13}
+                  color={claimable ? '#1C1917' : claimed ? theme.onPrimary : theme.primary}
+                />
               </View>
-            </PixelPanel>
+              <Text style={styles.questTitle} numberOfLines={2}>{item.title}</Text>
+              <PixelProgress progress={item.progress} height={6} blocks={8} color={claimed ? '#22C55E' : undefined} />
+              <Text style={[styles.questMeta, claimable && styles.questMetaReady]} numberOfLines={1}>
+                {claimed ? 'Claimed' : claimable ? `Tap · +${item.reward}` : item.current}
+              </Text>
+            </TouchableOpacity>
           );
         })}
       </View>
@@ -781,11 +775,12 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
     marginTop: -18,
-    marginBottom: 16,
+    marginBottom: 28,
   },
   statPanel: {
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginTop: -12,
+    marginBottom: 28,
   },
   statPanelHeader: {
     flexDirection: 'row',
@@ -847,9 +842,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   path: {
     paddingHorizontal: 20,
+    marginBottom: 40,
   },
   pathRow: {
-    minHeight: 190,
+    minHeight: 172,
     position: 'relative',
   },
   pathLine: {
@@ -939,7 +935,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   },
   cityPanel: {
     marginHorizontal: 20,
-    marginBottom: 26,
+    marginBottom: 40,
   },
   achievementHeader: {
     flexDirection: 'row',
@@ -952,8 +948,56 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     paddingHorizontal: 20,
     gap: 10,
   },
-  dailyList: {
-    marginBottom: 26,
+  questRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    marginBottom: 40,
+  },
+  questTile: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+  },
+  questTileReady: {
+    borderTopColor: GOLD,
+    borderLeftColor: GOLD,
+    borderBottomColor: GOLD,
+    borderRightColor: GOLD,
+  },
+  questIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 2,
+  },
+  questTitle: {
+    color: theme.text,
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+    lineHeight: 15,
+    minHeight: 30,
+  },
+  questMeta: {
+    color: theme.muted,
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: PIXEL_FONT,
+  },
+  questMetaReady: {
+    color: GOLD,
   },
   achievementRow: {
     flexDirection: 'row',

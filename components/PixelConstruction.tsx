@@ -126,6 +126,24 @@ const WALKER_B = [
   '...KK.KK....',
 ];
 
+// Sitting on the ground, taking five. Shown while the session is paused.
+export const WORKER_BREAK = [
+  '............',
+  '............',
+  '....HHHH....',
+  '...HHHHHH...',
+  '...hhhhhh...',
+  '...SSooSS...',
+  '...SSSSSS...',
+  '..BBBBBBB...',
+  '.BBBBBBBBB..',
+  '.BsBBBBssB..',
+  '..PPPPPPP...',
+  '..PPPPPPKK..',
+  '..KK........',
+  '............',
+]
+
 // Celebration frames used when the goal is complete.
 export const WORKER_CHEER_A = [
   '.S........S.',
@@ -286,13 +304,18 @@ export default function PixelConstruction({ progress, running, reducedMotion, px
   const buildingW = BUILDING_WIDTH * px;
   const buildingLeft = (SCENE_W - buildingW) / 2;
 
-  // At 100% the crew celebrates instead of hammering.
-  const workerLeft = complete
-    ? (frame === 0 ? WORKER_CHEER_A : WORKER_CHEER_B)
-    : (frame === 0 ? WORKER_UP : WORKER_DOWN);
-  const workerRight = complete
-    ? (frame === 0 ? WORKER_CHEER_B : WORKER_CHEER_A)
-    : (frame === 0 ? mirror(WORKER_DOWN) : mirror(WORKER_UP));
+  // At 100% the crew celebrates instead of hammering; paused, they sit down.
+  const resting = !running && !complete;
+  const workerLeft = resting
+    ? WORKER_BREAK
+    : complete
+      ? (frame === 0 ? WORKER_CHEER_A : WORKER_CHEER_B)
+      : (frame === 0 ? WORKER_UP : WORKER_DOWN);
+  const workerRight = resting
+    ? mirror(WORKER_BREAK)
+    : complete
+      ? (frame === 0 ? WORKER_CHEER_B : WORKER_CHEER_A)
+      : (frame === 0 ? mirror(WORKER_DOWN) : mirror(WORKER_UP));
   const walker = frame === 0 ? WALKER_A : WALKER_B;
   const walkerBack = frame === 0 ? mirror(WALKER_B) : mirror(WALKER_A);
 
@@ -337,8 +360,8 @@ export default function PixelConstruction({ progress, running, reducedMotion, px
         <Sprite rows={building} px={px} />
       </View>
 
-      {/* Worker up on the scaffold in the final stretch */}
-      {stage === 3 && (
+      {/* Worker up on the scaffold in the final stretch (comes down for breaks) */}
+      {stage === 3 && !resting && (
         <View style={{ position: 'absolute', left: buildingLeft + 2 * px, bottom: 8 + revealed * px }}>
           <Sprite rows={frame === 0 ? mirror(WORKER_DOWN) : mirror(WORKER_UP)} px={px} />
         </View>

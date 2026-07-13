@@ -47,6 +47,19 @@ const DOG_SAD = [
   '..kk.....kk....',
 ];
 
+// Curled up on the dirt while the crew takes a break.
+const DOG_REST = [
+  '...............',
+  '...............',
+  '...............',
+  '...............',
+  '..........kNNk.',
+  'N.........kNoNk',
+  '.NkNNNNNNNNNNk.',
+  '.kNNNNNNNNNNNk.',
+  '..kk..kk..kk...',
+];
+
 // Goal reached: tongue out, bouncing.
 const DOG_PARTY_A = [
   '............kk.',
@@ -101,7 +114,9 @@ export default function PixelDog({ mood, running, reducedMotion, px = 4 }: Props
     };
   }, [running, reducedMotion, mood]);
 
+  const resting = !running && mood !== 'sad';
   const rows =
+    resting ? DOG_REST :
     mood === 'sad' ? DOG_SAD :
     mood === 'party'
       ? (frame === 0 ? DOG_PARTY_A : DOG_PARTY_B)

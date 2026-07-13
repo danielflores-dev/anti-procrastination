@@ -4,6 +4,7 @@ import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { getStudyStreak, useTasks } from '@/context/TaskContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { GOLD, PIXEL_FONT, PixelButton } from '@/components/pixel-ui';
+import PixelBird from '@/components/PixelBird';
 import PixelBoss from '@/components/PixelBoss';
 import PixelConstruction, { Sprite } from '@/components/PixelConstruction';
 import PixelDog from '@/components/PixelDog';
@@ -154,6 +155,8 @@ export default function FocusScreen() {
   const [sessionGoalHours, setSessionGoalHours] = useState<number | null>(null);
   const [wasInterrupted, setWasInterrupted] = useState(false);
   const [awayNotice, setAwayNotice] = useState<string | null>(null);
+  const [dogExcited, setDogExcited] = useState(false);
+  const dogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recapAnim = useRef(new Animated.Value(0)).current;
   const toastKey = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -221,6 +224,10 @@ export default function FocusScreen() {
       setSessionCoins(s => s + newCoins);
       setLastCoinAmount(newCoins);
       playCoin();
+      // The dog gets excited whenever coins drop.
+      setDogExcited(true);
+      if (dogTimerRef.current) clearTimeout(dogTimerRef.current);
+      dogTimerRef.current = setTimeout(() => setDogExcited(false), 1800);
       toastKey.current += 1;
       setShowToast(false);
       setTimeout(() => setShowToast(true), 10);
@@ -321,6 +328,7 @@ export default function FocusScreen() {
       <StatusBar barStyle="light-content" />
 
       <PixelWorld reducedMotion={reducedMotion} boss={!!focusTask.isExam} />
+      <PixelBird running={running} reducedMotion={reducedMotion} />
 
       <View style={styles.topInfo}>
         <Text style={[styles.className, focusTask.isExam && styles.bossKicker]}>
@@ -365,6 +373,11 @@ export default function FocusScreen() {
         <Text style={styles.goal}>
           {goalReached ? "Today's goal is done" : `Goal: ${formatTime(targetSeconds)}`}
         </Text>
+        {!running && elapsed > 0 && !goalReached && !showRecap && (
+          <Text style={styles.breakText}>
+            {focusTask.isExam ? 'The boss taps its claws...' : 'The crew is on break.'}
+          </Text>
+        )}
         <View
           style={styles.progressBg}
           accessibilityRole="progressbar"
@@ -390,7 +403,7 @@ export default function FocusScreen() {
         )}
         <View style={styles.dogWrap}>
           <PixelDog
-            mood={goalReached ? 'party' : getStudyStreak(sessions, bridgedDates) >= 1 ? 'happy' : 'sad'}
+            mood={goalReached || dogExcited ? 'party' : getStudyStreak(sessions, bridgedDates) >= 1 ? 'happy' : 'sad'}
             running={running}
             reducedMotion={reducedMotion}
           />
@@ -694,6 +707,13 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     fontFamily: PIXEL_FONT,
+    marginTop: 6,
+  },
+  breakText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '700',
+    fontStyle: 'italic',
     marginTop: 6,
   },
   timer: {
