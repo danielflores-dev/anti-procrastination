@@ -6,11 +6,8 @@ import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import { FontAwesome5 } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-
-const OWNED_KEY = 'antiprocrastination.shop-owned.v1';
 
 type ShopItem = {
   id: string;
@@ -78,32 +75,10 @@ export default function ShopScreen() {
   const { doubleCharges, shields, addDoubleCharge, addShield } = usePowerUps();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [owned, setOwned] = useState<Set<string>>(new Set());
-
   const consumableCount = (id: string) =>
     id === 'streak_shield' ? shields : id === 'double_coins' ? doubleCharges : 0;
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(OWNED_KEY)
-      .then(saved => {
-        if (saved) setOwned(new Set(JSON.parse(saved)));
-      })
-      .catch(() => {})
-      .finally(() => setHydrated(true));
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    AsyncStorage.setItem(OWNED_KEY, JSON.stringify([...owned])).catch(() => {});
-  }, [owned, hydrated]);
 
   const handleBuy = (item: ShopItem) => {
-    const isConsumable = CONSUMABLES.has(item.id);
-    if (!isConsumable && owned.has(item.id)) {
-      Alert.alert('Already saved', `${item.name} is already yours.`);
-      return;
-    }
     if (coins < item.cost) {
       Alert.alert(
         'Not enough coins',
@@ -127,9 +102,6 @@ export default function ShopScreen() {
             } else if (item.id === 'double_coins') {
               addDoubleCharge();
               Alert.alert('Double coins armed', 'Your next focus session earns 2x coins.');
-            } else {
-              setOwned(prev => new Set([...prev, item.id]));
-              Alert.alert('Ready', `${item.name} is saved.`);
             }
           },
         },
@@ -163,16 +135,14 @@ export default function ShopScreen() {
           Item shop
         </PixelHeading>
 
-        {ITEMS.map(item => {
-          const isConsumable = CONSUMABLES.has(item.id);
+        {ITEMS.filter(item => CONSUMABLES.has(item.id)).map(item => {
           const count = consumableCount(item.id);
-          const isOwned = !isConsumable && owned.has(item.id);
           const canAfford = coins >= item.cost;
           return (
-            <PixelPanel key={item.id} style={styles.card} tone={isOwned ? 'alt' : 'surface'}>
+            <PixelPanel key={item.id} style={styles.card}>
               <View style={styles.rewardMain}>
-                <View style={[styles.priceBlock, { borderColor: isOwned ? theme.border : canAfford ? GOLD : theme.border }]}>
-                  <Text style={[styles.cost, (!canAfford || isOwned) && styles.costMuted]}>
+                <View style={[styles.priceBlock, { borderColor: canAfford ? GOLD : theme.border }]}>
+                  <Text style={[styles.cost, !canAfford && styles.costMuted]}>
                     {item.cost}
                   </Text>
                   <Text style={styles.priceLabel}>coins</Text>
@@ -180,7 +150,7 @@ export default function ShopScreen() {
                 <View style={styles.itemInfo}>
                   <View style={styles.itemNameRow}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    {isConsumable && count > 0 && (
+                    {count > 0 && (
                       <View style={styles.countBadge}>
                         <Text style={styles.countBadgeText}>x{count}</Text>
                       </View>
@@ -190,17 +160,42 @@ export default function ShopScreen() {
                 </View>
                 <PixelButton
                   size="sm"
-                  variant={isOwned ? 'surface' : 'primary'}
-                  disabled={!canAfford && !isOwned}
+                  disabled={!canAfford}
                   onPress={() => handleBuy(item)}
-                  accessibilityLabel={isOwned ? `${item.name}, owned` : `Buy ${item.name} for ${item.cost} coins`}
+                  accessibilityLabel={`Buy ${item.name} for ${item.cost} coins`}
                 >
-                  {isOwned ? 'Owned' : 'Buy'}
+                  Buy
                 </PixelButton>
               </View>
             </PixelPanel>
           );
         })}
+
+        <PixelHeading hint="The crew is still building these." style={styles.lockedHeading}>
+          Under construction
+        </PixelHeading>
+
+        {ITEMS.filter(item => !CONSUMABLES.has(item.id)).map(item => (
+          <PixelPanel key={item.id} style={styles.card} tone="alt">
+            <View style={[styles.rewardMain, styles.lockedRow]}>
+              <View style={[styles.priceBlock, { borderColor: theme.border }]}>
+                <Text style={[styles.cost, styles.costMuted]}>{item.cost}</Text>
+                <Text style={styles.priceLabel}>coins</Text>
+              </View>
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemDesc}>{item.description}</Text>
+              </View>
+              <View
+                style={styles.lockedTag}
+                accessibilityLabel={`${item.name}, coming soon`}
+              >
+                <FontAwesome5 name="hammer" size={10} color={theme.muted} />
+                <Text style={styles.lockedTagText}>Soon</Text>
+              </View>
+            </View>
+          </PixelPanel>
+        ))}
       </View>
       </ScrollView>
     </ArcadeTabScreen>
@@ -263,7 +258,27 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontFamily: PIXEL_FONT,
   },
   shelfHeading: { marginBottom: 14 },
+  lockedHeading: { marginTop: 26, marginBottom: 14 },
   card: { marginBottom: 10 },
+  lockedRow: { opacity: 0.75 },
+  lockedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 2,
+  },
+  lockedTagText: {
+    color: theme.muted,
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   rewardMain: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   priceBlock: {
     width: 54,

@@ -52,7 +52,13 @@
       "PowerShell(git add .claude/settings.local.json)",
       "PowerShell(git commit -m \"update local tool permissions\")",
       "PowerShell(git push origin main 2>&1)",
-      "PowerShell(node .agents/skills/impeccable/scripts/load-context.mjs)"
+      "PowerShell(node .agents/skills/impeccable/scripts/load-context.mjs)",
+      "PowerShell(git push origin main)",
+      "PowerShell(npx impeccable --json app components 2>&1)",
+      "PowerShell(npx impeccable --json app components 2>$null | Out-File -Encoding utf8 \"$env:TEMP\\\\impeccable-scan.json\"; $j = Get-Content \"$env:TEMP\\\\impeccable-scan.json\" -Raw | ConvertFrom-Json; \"total: \" + $j.Count; $j | Group-Object antipattern | Sort-Object Count -Descending | ForEach-Object { \"$\\($_.Count\\) x $\\($_.Name\\) [$\\(\\($_.Group[0]\\).severity\\)]\" }; \"---files---\"; $j | Group-Object file | Sort-Object Count -Descending | Select-Object -First 8 | ForEach-Object { \"$\\($_.Count\\) - $\\(Split-Path $_.Name -Leaf\\)\" })",
+      "PowerShell($j = Get-Content \"$env:TEMP\\\\impeccable-scan.json\" -Raw | ConvertFrom-Json; $j | ForEach-Object { $_.ignoreValue } | Group-Object | Sort-Object Count -Descending | ForEach-Object { \"$\\($_.Count\\) x $\\($_.Name\\)\" })",
+      "Bash(cd \"/c/Users/dorit/OneDrive/Desktop/AntiProcrastination\" && npx impeccable live > /tmp/impeccable-live.log 2>&1 & *)",
+      "mcp__Claude_Browser__preview_start"
     ]
   }
 }

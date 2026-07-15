@@ -3,14 +3,10 @@ import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { PIXEL_FONT, PixelButton, PixelPanel } from '@/components/pixel-ui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FontAwesome5 } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState, useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Image,
   Modal,
   Platform,
   ScrollView,
@@ -31,8 +27,6 @@ type AIResult = {
   confidence: string;
   factors: { label: string; value: string }[];
 };
-
-const DropView = View as any;
 
 const SAMPLE_RESULT: AIResult = {
   assignmentName: 'Chapter 5 Reading Notes',
@@ -104,64 +98,16 @@ export default function AutoAddScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [step, setStep] = useState<Step>('pick');
-  const [imageUri, setImageUri] = useState<string | null>(null);
   const [result, setResult] = useState<AIResult | null>(null);
   const [adjustedHours, setAdjustedHours] = useState(1);
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const dateInputRef = useRef<any>(null);
 
-  const readAsBase64 = async (uri: string): Promise<string> => {
-    if (Platform.OS === 'web') {
-      const res = await fetch(uri);
-      const blob = await res.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    }
-    return FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
-  };
-
-  const pickImage = async (useCamera: boolean) => {
-    const permission = useCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert('Photo access needed', 'Allow photo access to read this assignment.');
-      return;
-    }
-
-    const pickerResult = useCamera
-      ? await ImagePicker.launchCameraAsync({ base64: true, quality: 0.7 })
-      : await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.7 });
-
-    if (!pickerResult.canceled && pickerResult.assets[0]) {
-      const asset = pickerResult.assets[0];
-      let base64: string;
-      if (asset.base64) {
-        base64 = asset.base64;
-      } else {
-        try {
-          base64 = await readAsBase64(asset.uri);
-        } catch {
-          Alert.alert('Could not read image', 'Try a clearer photo or choose another file.');
-          return;
-        }
-      }
-      setImageUri(asset.uri);
-      await analyzeImage(base64);
-    }
-  };
-
-  const analyzeImage = async (_base64?: string) => {
+  const startDemo = async () => {
     setStep('analyzing');
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    await new Promise(resolve => setTimeout(resolve, 600));
     setResult(SAMPLE_RESULT);
     setAdjustedHours(SAMPLE_RESULT.estimatedHours);
     setStep('review');
@@ -200,37 +146,12 @@ export default function AutoAddScreen() {
     adjustHours(delta);
   }, [result]);
 
-  const handleDrop = (event: any) => {
-    event.preventDefault();
-    setIsDragOver(false);
-    const file: File | undefined = event.nativeEvent?.dataTransfer?.files?.[0];
-    if (!file) {
-      Alert.alert('No file found', 'Drop an assignment image.');
-      return;
-    }
-    if (!file.type.startsWith('image/')) {
-      Alert.alert('Use an image file', 'Upload a PNG or JPG of your assignment.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      const base64 = dataUrl.split(',')[1];
-      setImageUri(dataUrl);
-      analyzeImage(base64);
-    };
-    reader.onerror = () => {
-      Alert.alert('Could not read file', 'Try uploading the image again.');
-    };
-    reader.readAsDataURL(file);
-  };
-
   if (step === 'analyzing') {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={styles.analyzingText}>Reading assignment...</Text>
-        <Text style={styles.analyzingSub}>Making a first time plan</Text>
+        <Text style={styles.analyzingText}>Loading the demo...</Text>
+        <Text style={styles.analyzingSub}>Sample data, not a real photo</Text>
       </View>
     );
   }
@@ -247,58 +168,42 @@ export default function AutoAddScreen() {
         >
           <FontAwesome5 name="chevron-left" size={18} color={theme.primary} />
         </TouchableOpacity>
-        <Text style={styles.heading}>Add first assignment</Text>
+        <Text style={styles.heading}>Plan from photo</Text>
       </View>
 
       {step === 'pick' && (
         <>
-          <Text style={styles.sub}>Add a photo of the assignment. You can change the time before focus starts.</Text>
+          <Text style={styles.sub}>
+            Soon you will snap a photo of an assignment and get a ready-made focus plan.
+          </Text>
 
-          {Platform.OS === 'web' && (
-            <DropView
-              style={[styles.dropZone, isDragOver && styles.dropZoneActive]}
-              onDragEnter={(e: any) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragOver={(e: any) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={handleDrop}
-              accessibilityLabel="Drop assignment photo here"
-              accessibilityRole="button"
-            >
-              <Text style={styles.dropIcon}>+</Text>
-              <Text style={styles.dropTitle}>{isDragOver ? 'Drop it here' : 'Drop assignment photo'}</Text>
-              <Text style={styles.dropSub}>PNG or JPG</Text>
-            </DropView>
-          )}
-
-          {Platform.OS !== 'web' && (
-            <PixelButton
-              size="lg"
-              style={styles.actionGap}
-              onPress={() => pickImage(true)}
-              accessibilityLabel="Take a photo of your assignment"
-            >
-              Take photo
-            </PixelButton>
-          )}
+          <View style={styles.constructionCard}>
+            <FontAwesome5 name="hard-hat" size={18} color={theme.primary} />
+            <View style={styles.constructionCopy}>
+              <Text style={styles.constructionTitle}>Photo reading is under construction</Text>
+              <Text style={styles.constructionText}>
+                The crew is still building this one. Try the demo below to see how it will work.
+              </Text>
+            </View>
+          </View>
 
           <PixelButton
             size="lg"
-            variant="surface"
             style={styles.actionGap}
-            onPress={() => pickImage(false)}
-            accessibilityLabel="Choose a photo from your library"
+            onPress={startDemo}
+            accessibilityLabel="Try a demo assignment plan with sample data"
           >
-            Choose photo
+            Try a demo plan
           </PixelButton>
 
           <PixelButton
             size="lg"
             variant="surface"
             style={styles.actionGap}
-            onPress={() => analyzeImage()}
-            accessibilityLabel="Use a sample assignment to try the feature"
+            onPress={() => router.replace('/add-task')}
+            accessibilityLabel="Add an assignment manually instead"
           >
-            Use sample assignment
+            Add manually instead
           </PixelButton>
 
           <PixelButton variant="ghost" onPress={() => router.back()}>Cancel</PixelButton>
@@ -307,14 +212,11 @@ export default function AutoAddScreen() {
 
       {step === 'review' && result && (
         <>
-          {imageUri && (
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.preview}
-              resizeMode="cover"
-              accessibilityLabel="Photo of your assignment"
-            />
-          )}
+          {/* Honest demo banner */}
+          <View style={styles.demoTag}>
+            <FontAwesome5 name="flask" size={11} color="#1C1917" />
+            <Text style={styles.demoTagText}>Demo plan · sample data</Text>
+          </View>
 
           {/* Assignment + class summary row */}
           <View style={styles.summaryRow}>
@@ -332,7 +234,7 @@ export default function AutoAddScreen() {
           {/* Time estimate hero */}
           <PixelPanel style={styles.estimateHeroRim} innerStyle={styles.estimateHero}>
             <View style={styles.estimateLabelRow}>
-              <Text style={styles.estimateLabel}>We think it'll take</Text>
+              <Text style={styles.estimateLabel}>The plan estimates</Text>
               <TouchableOpacity
                 onPress={() => setShowReasoning(true)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -543,11 +445,51 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
   },
-  preview: {
-    width: '100%',
-    height: 180,
-    borderRadius: 14,
-    marginBottom: 20,
+  constructionCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: theme.surface,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
+    borderBottomColor: 'rgba(0,0,0,0.32)',
+    borderRightColor: 'rgba(0,0,0,0.32)',
+    padding: 14,
+    marginBottom: 24,
+  },
+  constructionCopy: { flex: 1 },
+  constructionTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  constructionText: {
+    color: theme.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+  },
+  demoTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 2,
+    marginBottom: 14,
+  },
+  demoTagText: {
+    color: '#1C1917',
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 
   summaryRow: {
@@ -809,33 +751,4 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   actionGap: { marginBottom: 12 },
   saveAction: { marginTop: 28, marginBottom: 12 },
   focusAction: { marginBottom: 8 },
-  dropZone: {
-    borderWidth: 2,
-    borderColor: theme.border,
-    borderStyle: 'dashed',
-    borderRadius: 16,
-    paddingVertical: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    backgroundColor: theme.surface,
-  },
-  dropZoneActive: {
-    borderColor: theme.primary,
-    backgroundColor: theme.surfaceAlt,
-  },
-  dropIcon: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
-  dropTitle: {
-    color: theme.text,
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  dropSub: {
-    color: theme.muted,
-    fontSize: 13,
-  },
 });

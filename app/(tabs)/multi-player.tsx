@@ -595,8 +595,8 @@ export default function MultiPlayerScreen() {
     setFriendIds(current => current.includes(profileId) ? current : [...current, profileId]);
   };
 
-  const handleMessage = (profile: StudentProfile) => {
-    Alert.alert('Message', `Message ${profile.name}.`);
+  const handleMessage = (_profile: StudentProfile) => {
+    setMotionNotice('Messaging is under construction');
   };
 
   const handleCreateRoom = () => {
@@ -681,8 +681,8 @@ export default function MultiPlayerScreen() {
     Alert.alert('Room created', 'You are hosting this room.');
   };
 
-  const handleMessageRoom = (room: StudyRoom) => {
-    Alert.alert('Message room', `Message ${room.name} before joining.`);
+  const handleMessageRoom = (_room: StudyRoom) => {
+    setMotionNotice('Room messaging is under construction');
   };
 
   const handleConfirmJoin = (room: StudyRoom) => {
@@ -1131,7 +1131,13 @@ export default function MultiPlayerScreen() {
           </View>
         )}
 
-        <Text style={styles.listLabel}>People — {filteredProfiles.length}</Text>
+        <View style={styles.listLabelRow}>
+          <Text style={styles.listLabel}>People — {filteredProfiles.length}</Text>
+          <View style={styles.previewTag}>
+            <Text style={styles.previewTagText}>Campus preview</Text>
+          </View>
+        </View>
+        <Text style={styles.previewNote}>Sample classmates until your campus goes live.</Text>
         {filteredProfiles.map(profile => {
           const isFriend = friendIds.includes(profile.id);
           const isPending = pendingFriendIds.includes(profile.id);
@@ -1239,7 +1245,7 @@ export default function MultiPlayerScreen() {
       {helpPosts.length === 0 && renderEmptyPanel({
         icon: 'comments',
         title: 'No posts yet',
-        body: 'No posts yet.',
+        body: 'Ask for help with a class or share a tip that worked.',
         steps: ['Ask about one class', 'Share a useful study tip'],
         action: (
           <PixelButton variant="surface" onPress={() => setShowFeedComposer(true)}>
@@ -1468,8 +1474,13 @@ export default function MultiPlayerScreen() {
       <View style={styles.cardList}>
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Library rooms</Text>
-            <Text style={styles.sectionHint}>Pick a room with a clear time and goal.</Text>
+            <View style={styles.listLabelRow}>
+              <Text style={styles.sectionTitle}>Library rooms</Text>
+              <View style={styles.previewTag}>
+                <Text style={styles.previewTagText}>Campus preview</Text>
+              </View>
+            </View>
+            <Text style={styles.sectionHint}>Sample rooms until your campus goes live. Rooms you create are yours.</Text>
           </View>
           <Text style={styles.countPill}>{studyRooms.length}</Text>
         </View>
@@ -1775,28 +1786,7 @@ export default function MultiPlayerScreen() {
                 </Text>
               )}
             </View>
-            <View style={styles.heroIcon}>
-              <FontAwesome5 name="user-graduate" size={24} color={theme.onPrimary} />
-            </View>
           </View>
-          {!isProfileSetup && !isSchoolConfirmation && (
-            <View style={styles.lobbySignals}>
-              <View>
-                <Text style={styles.lobbySignalValue}>3</Text>
-                <Text style={styles.lobbySignalLabel}>rooms</Text>
-              </View>
-              <View style={styles.lobbySignalDivider} />
-              <View>
-                <Text style={styles.lobbySignalValue}>2</Text>
-                <Text style={styles.lobbySignalLabel}>friends</Text>
-              </View>
-              <View style={styles.lobbySignalDivider} />
-              <View>
-                <Text style={styles.lobbySignalValue}>Open</Text>
-                <Text style={styles.lobbySignalLabel}>study groups</Text>
-              </View>
-            </View>
-          )}
         </View>
       )}
 
@@ -2195,6 +2185,33 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginTop: 4,
+  },
+  listLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  previewTag: {
+    backgroundColor: theme.surfaceAlt,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+  },
+  previewTagText: {
+    color: theme.muted,
+    fontSize: 9,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  previewNote: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: -4,
   },
   personRow: {
     minHeight: 56,
