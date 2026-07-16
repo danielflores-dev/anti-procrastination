@@ -145,6 +145,11 @@ function generateStudyPlan(task: Pick<Task, 'assignmentName' | 'estimatedHours' 
   });
 }
 
+/** Days until due; negative when overdue (no clamp). */
+export function signedDaysUntil(dueDateRaw: string): number {
+  return Math.ceil((new Date(dueDateRaw).getTime() - Date.now()) / 86400000);
+}
+
 export function sessionDateKey(dateRaw: string): string {
   const date = new Date(dateRaw);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

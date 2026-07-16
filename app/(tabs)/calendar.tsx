@@ -1,4 +1,4 @@
-import { Task, useTasks } from '@/context/TaskContext';
+import { signedDaysUntil, Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelButton, PixelField, PixelPanel } from '@/components/pixel-ui';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
@@ -72,6 +72,7 @@ function TaskCard({
 }) {
   const color = hourColor(task.estimatedHours);
   const days = daysUntil(task.dueDateRaw);
+  const daysLate = task.progress !== 'Done' ? -signedDaysUntil(task.dueDateRaw) : 0;
 
   return (
     <PixelPanel tone="alt" style={styles.card}>
@@ -93,8 +94,10 @@ function TaskCard({
           <View style={[styles.workloadDot, { backgroundColor: color }]} />
           <Text style={styles.simpleTaskText}>Due {task.dueDate}</Text>
         </View>
-        <Text style={[styles.daysLeft, { color: days <= 1 ? DANGER_RED : days <= 3 ? GOLD : color }]}>
-          {days === 0 ? 'Due today' : days === 1 ? '1 day left' : `${days} days left`}
+        <Text style={[styles.daysLeft, { color: daysLate > 0 || days <= 1 ? DANGER_RED : days <= 3 ? GOLD : color }]}>
+          {daysLate > 0
+            ? `${daysLate} day${daysLate === 1 ? '' : 's'} late`
+            : days === 0 ? 'Due today' : days === 1 ? '1 day left' : `${days} days left`}
         </Text>
       </View>
 

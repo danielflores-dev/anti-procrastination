@@ -8,7 +8,7 @@ import { PixelSkyStrip } from '@/components/PixelWorld';
 import { useCoins } from '@/context/CoinContext';
 import { usePowerUps } from '@/context/PowerUpContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { getStudyStreak, sessionDateKey, StudySession, Task, useTasks } from '@/context/TaskContext';
+import { getStudyStreak, sessionDateKey, signedDaysUntil, StudySession, Task, useTasks } from '@/context/TaskContext';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type Href, useRouter } from 'expo-router';
@@ -52,6 +52,7 @@ type StudyPlanStep = {
   detail: string;
   icon: ComponentProps<typeof FontAwesome5>['name'];
   route: Href;
+  late?: boolean;
 };
 
 type TopStatInfo = 'streak' | 'coins' | 'time';
@@ -67,10 +68,15 @@ function getNextTask(tasks: Task[]): Task | null {
 }
 
 function duePhrase(task: Task): string {
-  const days = daysUntil(task.dueDateRaw);
-  if (days === 0) return `Due today, ${task.className}`;
-  if (days === 1) return `Due tomorrow, ${task.className}`;
-  return `Due in ${days} days, ${task.className}`;
+  const signed = signedDaysUntil(task.dueDateRaw);
+  if (signed < 0) return `${-signed} day${signed === -1 ? '' : 's'} late, ${task.className}`;
+  if (signed === 0) return `Due today, ${task.className}`;
+  if (signed === 1) return `Due tomorrow, ${task.className}`;
+  return `Due in ${signed} days, ${task.className}`;
+}
+
+function isLate(task: Task): boolean {
+  return signedDaysUntil(task.dueDateRaw) < 0 && task.progress !== 'Done';
 }
 
 function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): StudyPlanStep[] {
@@ -91,6 +97,7 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
           detail: `${duePhrase(firstTask)}. ${Math.round(firstTask.hoursPerDay * 60)} min.`,
           icon: 'play',
           route: `/focus?id=${firstTask.id}`,
+          late: isLate(firstTask),
         }
       : {
           id: 'first-add-assignment',
@@ -106,6 +113,7 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
           detail: duePhrase(secondTask),
           icon: 'clipboard-list',
           route: '/(tabs)/single-player',
+          late: isLate(secondTask),
         }
       : {
           id: 'then-schedule',
@@ -599,7 +607,7 @@ export default function HomeScreen() {
                     <Text style={[styles.nodeTitle, isActive && styles.nodeTitleActive]} numberOfLines={2}>
                       {index === 0 && !nextTask ? 'Add assignment' : item.title}
                     </Text>
-                    <Text style={styles.nodeDetail} numberOfLines={2}>
+                    <Text style={[styles.nodeDetail, item.late && styles.nodeDetailLate]} numberOfLines={2}>
                       {item.detail}
                     </Text>
                   </View>
@@ -614,7 +622,14 @@ export default function HomeScreen() {
       {renderSectionHeader('city', 'Your city', 'One building per finished assignment.')}
       {!collapsed.includes('city') && (
         <PixelPanel tone="alt" padding={0} style={styles.cityPanel}>
-          <PixelCity buildings={city} />
+          <PixelCity
+            buildings={city}
+            atRisk={openTasks.filter(isLate).map(task => ({
+              id: task.id,
+              name: task.assignmentName,
+              daysLate: -signedDaysUntil(task.dueDateRaw),
+            }))}
+          />
         </PixelPanel>
       )}
 
@@ -932,6 +947,10 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     lineHeight: 16,
     textAlign: 'center',
     marginTop: 4,
+  },
+  nodeDetailLate: {
+    color: '#F87171',
+    fontWeight: '800',
   },
   cityPanel: {
     marginHorizontal: 20,

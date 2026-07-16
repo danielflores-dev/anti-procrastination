@@ -22,6 +22,61 @@ function seededRandom(seed: number) {
   };
 }
 
+export type AtRiskPlot = {
+  id: string;
+  name: string;
+  daysLate: number;
+};
+
+// Stalled construction: grayed scaffold with rust creeping in.
+const RUST_SCAFFOLD = [
+  'LLLLLLLLLL',
+  'L..R...R.L',
+  'LLLLLLLLLL',
+  'L.R......L',
+  'LLLLLLLLLL',
+  'L....R.R.L',
+  'LLLLLLLLLL',
+  'L.R....R.L',
+  'LLLLLLLLLL',
+];
+
+const RUST_PALETTE: Record<string, string> = {
+  L: '#4B5563',
+  R: '#9A3412',
+};
+
+function RustPlot({ plot, selected, onPress }: {
+  plot: AtRiskPlot;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityLabel={`Stalled building from ${plot.name}, ${plot.daysLate} days late`}
+      accessibilityRole="button"
+      style={[styles.buildingWrap, selected && { borderWidth: 2, borderColor: '#EF4444' }]}
+    >
+      {RUST_SCAFFOLD.map((row, ri) => (
+        <View key={ri} style={{ flexDirection: 'row', height: PX }}>
+          {row.split('').map((ch, ci) => (
+            <View
+              key={ci}
+              style={{
+                width: PX,
+                height: PX,
+                backgroundColor: ch === '.' ? 'transparent' : RUST_PALETTE[ch],
+              }}
+            />
+          ))}
+        </View>
+      ))}
+    </TouchableOpacity>
+  );
+}
+
 function Building({ building, selected, onPress }: {
   building: CityBuilding;
   selected: boolean;
@@ -93,12 +148,16 @@ function Building({ building, selected, onPress }: {
   );
 }
 
-export default function PixelCity({ buildings }: { buildings: CityBuilding[] }) {
+export default function PixelCity({ buildings, atRisk = [] }: {
+  buildings: CityBuilding[];
+  atRisk?: AtRiskPlot[];
+}) {
   const { theme } = useSchoolTheme();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = buildings.find(b => b.id === selectedId) ?? null;
+  const selectedPlot = atRisk.find(p => p.id === selectedId) ?? null;
 
-  if (buildings.length === 0) {
+  if (buildings.length === 0 && atRisk.length === 0) {
     return (
       <View style={styles.empty}>
         <View style={styles.signPost}>
@@ -132,13 +191,29 @@ export default function PixelCity({ buildings }: { buildings: CityBuilding[] }) 
             onPress={() => setSelectedId(current => (current === building.id ? null : building.id))}
           />
         ))}
+        {atRisk.map(plot => (
+          <RustPlot
+            key={plot.id}
+            plot={plot}
+            selected={plot.id === selectedId}
+            onPress={() => setSelectedId(current => (current === plot.id ? null : plot.id))}
+          />
+        ))}
       </ScrollView>
       <View style={[styles.ground, { backgroundColor: GROUND }]} />
       <View style={[styles.ground, { backgroundColor: GROUND_DARK }]} />
       <View style={styles.caption}>
-        {selected ? (
+        {selectedPlot ? (
+          <Text style={[styles.captionText, { color: '#F87171' }]} numberOfLines={1}>
+            {selectedPlot.name} · {selectedPlot.daysLate} day{selectedPlot.daysLate === 1 ? '' : 's'} late · still saveable
+          </Text>
+        ) : selected ? (
           <Text style={[styles.captionText, { color: theme.text }]} numberOfLines={1}>
             {selected.name} · {selected.className} · {new Date(selected.finishedAt).toLocaleDateString()}
+          </Text>
+        ) : atRisk.length > 0 ? (
+          <Text style={[styles.captionText, { color: '#F87171' }]}>
+            {atRisk.length} stalled site{atRisk.length === 1 ? '' : 's'} · finish late work to save them
           </Text>
         ) : (
           <Text style={[styles.captionText, { color: theme.muted }]}>

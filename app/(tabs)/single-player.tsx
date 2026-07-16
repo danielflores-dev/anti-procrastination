@@ -1,4 +1,4 @@
-import { Task, TaskProgress, useTasks } from '@/context/TaskContext';
+import { signedDaysUntil, Task, TaskProgress, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
 import { GOLD, PIXEL_FONT, PixelBadge, PixelButton, PixelHeading, PixelPanel } from '@/components/pixel-ui';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
@@ -48,6 +48,9 @@ function AssignmentCard({
   onProgress,
   onEdit,
   justDone,
+  slipHint,
+  rescued,
+  onRescue,
   styles,
 }: {
   task: Task;
@@ -55,9 +58,14 @@ function AssignmentCard({
   onProgress: () => void;
   onEdit: () => void;
   justDone?: boolean;
+  slipHint?: string;
+  rescued?: boolean;
+  onRescue?: () => void;
   styles: ReturnType<typeof createStyles>;
 }) {
   const days = daysUntil(task.dueDateRaw);
+  const daysLate = -signedDaysUntil(task.dueDateRaw);
+  const isLate = daysLate > 0 && task.progress !== 'Done';
   const workloadColor = urgencyColor(task.estimatedHours);
   const progress = task.progress ?? 'Not started';
   const statusColor = progressColor(progress);
@@ -124,10 +132,38 @@ function AssignmentCard({
           <View style={[styles.workloadDot, { backgroundColor: workloadColor }]} />
           <Text style={styles.cardDue}>Due {task.dueDate}</Text>
         </View>
-        <Text style={[styles.cardDays, { color: days <= 1 ? '#EF4444' : days <= 2 ? GOLD : styles.cardDue.color }]}>
-          {days === 0 ? 'Due today' : days === 1 ? '1 day left' : `${days} days left`}
+        <Text style={[styles.cardDays, { color: isLate || days <= 1 ? '#EF4444' : days <= 2 ? GOLD : styles.cardDue.color }]}>
+          {isLate
+            ? `${daysLate} day${daysLate === 1 ? '' : 's'} late`
+            : days === 0 ? 'Due today' : days === 1 ? '1 day left' : `${days} days left`}
         </Text>
       </View>
+
+      {isLate && (
+        <View style={styles.lateStrip}>
+          <FontAwesome5 name="exclamation-triangle" size={11} color="#EF4444" />
+          <Text style={styles.lateStripText}>Past due. A focus session now still counts.</Text>
+        </View>
+      )}
+
+      {!isLate && (!!slipHint || rescued) && (
+        <View style={styles.slipStrip}>
+          <FontAwesome5 name="exclamation-triangle" size={11} color={GOLD} />
+          <Text style={styles.slipStripText} numberOfLines={2}>
+            {rescued ? 'New daily plan set' : slipHint}
+          </Text>
+          {!rescued && onRescue && (
+            <PixelButton
+              size="sm"
+              onPress={onRescue}
+              accessibilityLabel={`Rescue plan for ${task.assignmentName}`}
+            >
+              Rescue
+            </PixelButton>
+          )}
+          {rescued && <FontAwesome5 name="check" size={12} color="#22C55E" />}
+        </View>
+      )}
 
       <View style={styles.actionRow}>
         <PixelButton style={styles.actionFlex} onPress={onFocus}>Start focus</PixelButton>
@@ -149,11 +185,34 @@ function AssignmentCard({
 
 export default function SinglePlayerScreen() {
   const router = useRouter();
-  const { tasks, updateProgress } = useTasks();
+  const { tasks, sessions, updateProgress, updateHoursPerDay } = useTasks();
   const { theme } = useSchoolTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [justDoneId, setJustDoneId] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
+  const [rescuedIds, setRescuedIds] = useState<string[]>([]);
+
+  // A task is slipping when finishing on time now needs a meaningfully
+  // bigger daily commitment than the current plan.
+  const slipInfoFor = (task: Task) => {
+    const daysLeft = signedDaysUntil(task.dueDateRaw);
+    if (daysLeft < 1 || task.progress === 'Done') return null;
+    const loggedHours = sessions
+      .filter(s => s.taskId === task.id)
+      .reduce((sum, s) => sum + s.focusedSeconds, 0) / 3600;
+    const remaining = Math.max(0, task.estimatedHours - loggedHours);
+    if (remaining <= 0) return null;
+    const requiredPerDay = remaining / daysLeft;
+    if (requiredPerDay <= task.hoursPerDay + 0.24) return null;
+    const rounded = Math.max(0.5, Math.round(requiredPerDay * 2) / 2);
+    return { hours: rounded, hint: `Falling behind — needs ${rounded}h/day to finish on time` };
+  };
+
+  const handleRescue = (task: Task, hours: number) => {
+    updateHoursPerDay(task.id, hours);
+    setRescuedIds(current => [...current, task.id]);
+    setTimeout(() => setRescuedIds(current => current.filter(id => id !== task.id)), 2500);
+  };
 
   const openTasks = tasks.filter(task => task.progress !== 'Done');
   const doneTasks = tasks.filter(task => task.progress === 'Done');
@@ -243,16 +302,22 @@ export default function SinglePlayerScreen() {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             ListFooterComponent={doneSection}
-            renderItem={({ item }) => (
-              <AssignmentCard
-                task={item}
-                styles={styles}
-                justDone={item.id === justDoneId}
-                onFocus={() => router.push(`/focus?id=${item.id}`)}
-                onProgress={() => handleProgress(item.id, item.progress)}
-                onEdit={() => router.push(`/add-task?id=${item.id}`)}
-              />
-            )}
+            renderItem={({ item }) => {
+              const slip = slipInfoFor(item);
+              return (
+                <AssignmentCard
+                  task={item}
+                  styles={styles}
+                  justDone={item.id === justDoneId}
+                  slipHint={slip?.hint}
+                  rescued={rescuedIds.includes(item.id)}
+                  onRescue={slip ? () => handleRescue(item, slip.hours) : undefined}
+                  onFocus={() => router.push(`/focus?id=${item.id}`)}
+                  onProgress={() => handleProgress(item.id, item.progress)}
+                  onEdit={() => router.push(`/add-task?id=${item.id}`)}
+                />
+              );
+            }}
           />
         </View>
       )}
@@ -371,6 +436,38 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
   workloadDot: { width: 8, height: 8 },
   cardDue: { color: theme.muted, fontSize: 12, fontWeight: '600' },
   cardDays: { fontSize: 12, fontWeight: '800', fontFamily: PIXEL_FONT },
+  lateStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderRadius: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  lateStripText: {
+    flex: 1,
+    color: '#F87171',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  slipStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(245,158,11,0.12)',
+    borderRadius: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  slipStripText: {
+    flex: 1,
+    color: GOLD,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   actionFlex: { flex: 1 },
   doneOverlay: {
