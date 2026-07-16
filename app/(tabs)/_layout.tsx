@@ -1,4 +1,5 @@
 import { useCoins } from '@/context/CoinContext';
+import { useTasks } from '@/context/TaskContext';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { PIXEL_FONT } from '@/components/pixel-ui';
@@ -77,8 +78,10 @@ const iconStyles = StyleSheet.create({
 
 export default function TabsLayout() {
   const { coins } = useCoins();
+  const { tasks } = useTasks();
   const { theme } = useSchoolTheme();
   const activeTint = theme.primary;
+  const hasOpenWork = tasks.some(task => task.progress !== 'Done');
 
   return (
     <Tabs
@@ -121,6 +124,15 @@ export default function TabsLayout() {
         options={{
           title: 'Work',
           tabBarIcon: ({ color, focused }) => <TabIcon name="tasks" color={color} focused={focused} />,
+          tabBarBadge: hasOpenWork ? '!' : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: '#EF4444',
+            color: '#FEE2E2',
+            fontSize: 10,
+            fontWeight: '800',
+            fontFamily: PIXEL_FONT,
+            borderRadius: 2,
+          },
         }}
       />
       <Tabs.Screen
