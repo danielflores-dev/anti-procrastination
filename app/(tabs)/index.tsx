@@ -97,7 +97,7 @@ function buildTodayStudyPlan(openTasks: Task[], sessions: StudySession[]): Study
           title: 'Add work',
           detail: 'Add what is due next.',
           icon: 'plus',
-          route: '/auto-add',
+          route: '/add-task',
         },
     secondTask
       ? {
@@ -234,7 +234,7 @@ export default function HomeScreen() {
   const focusedMinutes = Math.round(sessions.reduce((sum, session) => sum + session.focusedSeconds, 0) / 60);
   const streak = getStudyStreak(sessions, bridgedDates);
   const todayStudyPlan = buildTodayStudyPlan(openTasks, sessions);
-  const primaryRoute: Href = nextTask ? `/focus?id=${nextTask.id}` : '/auto-add';
+  const primaryRoute: Href = nextTask ? `/focus?id=${nextTask.id}` : '/add-task';
   const finishedCount = city.length;
   const sessionCount = sessions.length;
   const earlyBird = sessions.some(s => new Date(s.createdAt).getHours() < 9 && s.focusedSeconds >= 300);

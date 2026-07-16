@@ -1095,8 +1095,8 @@ export default function MultiPlayerScreen() {
       <View style={styles.onboardingNext}>
         <Text style={styles.sectionLabel}>Next</Text>
         <Text style={styles.profileTitle}>Add your first assignment</Text>
-        <Text style={styles.profileSub}>Use a photo or enter it yourself. You can make a profile after that.</Text>
-        <PixelButton size="lg" style={styles.compactActionButton} onPress={() => router.push('/auto-add')}>
+        <Text style={styles.profileSub}>Takes about a minute. You can make a profile after that.</Text>
+        <PixelButton size="lg" style={styles.compactActionButton} onPress={() => router.push('/add-task')}>
           Add assignment
         </PixelButton>
         <PixelButton variant="surface" onPress={() => setShowProfileSetup(true)}>

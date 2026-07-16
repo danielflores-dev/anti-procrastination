@@ -1,6 +1,6 @@
 import { computeHoursPerDay, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { PIXEL_FONT, PixelButton, PixelPanel } from '@/components/pixel-ui';
+import { GOLD, PIXEL_FONT, PixelButton, PixelPanel } from '@/components/pixel-ui';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -477,7 +477,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: '#F59E0B',
+    backgroundColor: GOLD,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 2,

@@ -220,11 +220,11 @@ export default function SinglePlayerScreen() {
           <Text style={styles.emptyTitle}>No assignments yet</Text>
           <Text style={styles.emptySub}>Add the next thing due.</Text>
           <View style={styles.emptyActions}>
-            <PixelButton size="lg" onPress={() => router.push('/auto-add')}>
+            <PixelButton size="lg" onPress={() => router.push('/add-task')}>
               Add assignment
             </PixelButton>
-            <PixelButton size="lg" variant="surface" onPress={() => router.push('/add-task')}>
-              Add manually
+            <PixelButton size="lg" variant="surface" onPress={() => router.push('/auto-add')}>
+              Try the photo demo
             </PixelButton>
           </View>
         </View>
