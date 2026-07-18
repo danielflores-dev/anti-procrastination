@@ -219,7 +219,7 @@ export default function HomeScreen() {
     if (!reducedMotion) setClaimCelebration(reward);
   };
 
-  const { shields, bridgedDates, useShieldFor } = usePowerUps();
+  const { shields, bridgedDates, useShieldFor, unlocks } = usePowerUps();
 
   // A streak shield automatically covers yesterday if it would break the chain.
   useEffect(() => {
@@ -624,6 +624,7 @@ export default function HomeScreen() {
         <PixelPanel tone="alt" padding={0} style={styles.cityPanel}>
           <PixelCity
             buildings={city}
+            decorations={unlocks}
             atRisk={openTasks.filter(isLate).map(task => ({
               id: task.id,
               name: task.assignmentName,

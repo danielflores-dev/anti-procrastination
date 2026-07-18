@@ -1,9 +1,12 @@
 import { PIXEL_FONT } from '@/components/pixel-ui';
 import { playFanfare, successHaptic } from '@/components/sfx';
+import { usePowerUps } from '@/context/PowerUpContext';
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 const COLORS = ['#F59E0B', '#22C55E', '#EC4899', '#3B82F6', '#F8FAFC', '#FB923C'];
+// Every celebration rains gold once the shop upgrade is owned.
+const GOLD_COLORS = ['#F59E0B', '#FDE047', '#FBBF24', '#FACC15', '#F8FAFC', '#EAB308'];
 
 function seededRandom(seed: number) {
   let s = seed;
@@ -27,7 +30,9 @@ type Props = {
  */
 export default function PixelConfettiBurst({ onDone, message = 'Saved!', durationMs = 1500 }: Props) {
   const { width, height } = useWindowDimensions();
+  const { unlocks } = usePowerUps();
   const progress = useRef(new Animated.Value(0)).current;
+  const palette = unlocks.includes('gold_confetti') ? GOLD_COLORS : COLORS;
 
   const pieces = useMemo(() => {
     const rand = seededRandom((Date.now() % 100000) + 7);
@@ -37,11 +42,12 @@ export default function PixelConfettiBurst({ onDone, message = 'Saved!', duratio
       startY: height * 0.3 - rand() * 70,
       endY: height * 0.5 + rand() * height * 0.45,
       size: 4 + Math.floor(rand() * 5),
-      color: COLORS[Math.floor(rand() * COLORS.length)],
+      color: palette[Math.floor(rand() * palette.length)],
       spin: (rand() - 0.5) * 720,
       holdBack: rand() * 0.22,
     }));
-  }, [width, height]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width, height, palette]);
 
   useEffect(() => {
     playFanfare();

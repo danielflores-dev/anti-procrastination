@@ -87,10 +87,18 @@ const DOG_PARTY_B = [
 
 export type DogMood = 'happy' | 'sad' | 'party';
 
+// Tiny hard hat, sold in the shop. Sits on the head for every pose.
+const DOG_HAT = [
+  '.HHHH.',
+  'HHHHHH',
+];
+const HAT_PALETTE: Record<string, string> = { H: '#FACC15' };
+
 type Props = {
   mood: DogMood;
   running: boolean;
   reducedMotion?: boolean;
+  hardHat?: boolean;
   px?: number;
 };
 
@@ -98,7 +106,7 @@ type Props = {
  * The site dog. Wags along while you study, mopes when the streak is broken,
  * and bounces with its tongue out when the goal is hit.
  */
-export default function PixelDog({ mood, running, reducedMotion, px = 4 }: Props) {
+export default function PixelDog({ mood, running, reducedMotion, hardHat, px = 4 }: Props) {
   const [frame, setFrame] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -125,8 +133,16 @@ export default function PixelDog({ mood, running, reducedMotion, px = 4 }: Props
   // The party bounce lifts the whole pup off the ground every other frame.
   const bounce = mood === 'party' && frame === 0 ? 6 : 0;
 
+  // The head sits lower in the sad and resting poses.
+  const hatTop = resting ? px * 3 : mood === 'sad' ? px * 1 : -px;
+
   return (
     <View style={{ marginBottom: bounce }}>
+      {hardHat && (
+        <View style={{ position: 'absolute', left: 9 * px, top: hatTop, zIndex: 1 }}>
+          <Sprite rows={DOG_HAT} px={px} palette={HAT_PALETTE} />
+        </View>
+      )}
       <Sprite rows={rows} px={px} palette={DOG_PALETTE} />
     </View>
   );

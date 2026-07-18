@@ -10,26 +10,40 @@ type PowerUpContextType = {
   shields: number;
   /** Date keys (YYYY-MM-DD) that a shield already covered. Treated as studied days. */
   bridgedDates: string[];
+  /** Treats that put the dog in party mode for one whole session each. */
+  dogTreats: number;
+  /** One-time purchases: city decorations, dog gear, styles. */
+  unlocks: string[];
   addDoubleCharge: () => void;
   consumeDoubleCharge: () => boolean;
   addShield: () => void;
   useShieldFor: (dateKey: string) => boolean;
+  addDogTreat: () => void;
+  consumeDogTreat: () => boolean;
+  addUnlock: (id: string) => void;
 };
 
 const PowerUpContext = createContext<PowerUpContextType>({
   doubleCharges: 0,
   shields: 0,
   bridgedDates: [],
+  dogTreats: 0,
+  unlocks: [],
   addDoubleCharge: () => {},
   consumeDoubleCharge: () => false,
   addShield: () => {},
   useShieldFor: () => false,
+  addDogTreat: () => {},
+  consumeDogTreat: () => false,
+  addUnlock: () => {},
 });
 
 export function PowerUpProvider({ children }: { children: ReactNode }) {
   const [doubleCharges, setDoubleCharges] = useState(0);
   const [shields, setShields] = useState(0);
   const [bridgedDates, setBridgedDates] = useState<string[]>([]);
+  const [dogTreats, setDogTreats] = useState(0);
+  const [unlocks, setUnlocks] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -40,6 +54,8 @@ export function PowerUpProvider({ children }: { children: ReactNode }) {
         if (Number.isFinite(parsed.doubleCharges)) setDoubleCharges(parsed.doubleCharges);
         if (Number.isFinite(parsed.shields)) setShields(parsed.shields);
         if (Array.isArray(parsed.bridgedDates)) setBridgedDates(parsed.bridgedDates);
+        if (Number.isFinite(parsed.dogTreats)) setDogTreats(parsed.dogTreats);
+        if (Array.isArray(parsed.unlocks)) setUnlocks(parsed.unlocks);
       })
       .catch(() => {})
       .finally(() => setHydrated(true));
@@ -47,8 +63,11 @@ export function PowerUpProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    AsyncStorage.setItem(POWERUPS_KEY, JSON.stringify({ doubleCharges, shields, bridgedDates })).catch(() => {});
-  }, [doubleCharges, shields, bridgedDates, hydrated]);
+    AsyncStorage.setItem(
+      POWERUPS_KEY,
+      JSON.stringify({ doubleCharges, shields, bridgedDates, dogTreats, unlocks }),
+    ).catch(() => {});
+  }, [doubleCharges, shields, bridgedDates, dogTreats, unlocks, hydrated]);
 
   const addDoubleCharge = () => setDoubleCharges(c => c + 1);
 
@@ -67,8 +86,33 @@ export function PowerUpProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const addDogTreat = () => setDogTreats(t => t + 1);
+
+  const consumeDogTreat = (): boolean => {
+    if (dogTreats <= 0) return false;
+    setDogTreats(t => t - 1);
+    return true;
+  };
+
+  const addUnlock = (id: string) => {
+    setUnlocks(current => current.includes(id) ? current : [...current, id]);
+  };
+
   return (
-    <PowerUpContext.Provider value={{ doubleCharges, shields, bridgedDates, addDoubleCharge, consumeDoubleCharge, addShield, useShieldFor }}>
+    <PowerUpContext.Provider value={{
+      doubleCharges,
+      shields,
+      bridgedDates,
+      dogTreats,
+      unlocks,
+      addDoubleCharge,
+      consumeDoubleCharge,
+      addShield,
+      useShieldFor,
+      addDogTreat,
+      consumeDogTreat,
+      addUnlock,
+    }}>
       {children}
     </PowerUpContext.Provider>
   );

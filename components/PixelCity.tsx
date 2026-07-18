@@ -1,8 +1,54 @@
+import { Sprite } from '@/components/PixelConstruction';
 import { GOLD, PIXEL_FONT } from '@/components/pixel-ui';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import type { CityBuilding } from '@/context/TaskContext';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// Purchasable street decorations. Exported so the shop can render previews.
+export const DECOR_SPRITES: Record<string, { rows: string[]; palette: Record<string, string>; label: string }> = {
+  deco_tree: {
+    label: 'Street tree',
+    palette: { k: '#1C1917', G: '#22C55E', g: '#15803D', T: '#7C2D12' },
+    rows: [
+      '..kkk..',
+      '.kGGGk.',
+      'kGGGGGk',
+      'kGgGgGk',
+      '.kGGGk.',
+      '..kTk..',
+      '..kTk..',
+      '.kkTkk.',
+    ],
+  },
+  deco_lamp: {
+    label: 'Street lamp',
+    palette: { k: '#1C1917', L: '#6B7280', Y: '#FDE68A' },
+    rows: [
+      '.kkk.',
+      'kYYYk',
+      '.kkk.',
+      '..L..',
+      '..L..',
+      '..L..',
+      '..L..',
+      '.LLL.',
+    ],
+  },
+  deco_fountain: {
+    label: 'Fountain',
+    palette: { k: '#6B7280', s: '#9CA3AF', B: '#0EA5E9', b: '#7DD3FC' },
+    rows: [
+      '....b....',
+      '..b.b.b..',
+      '...bbb...',
+      '..kBBBk..',
+      '.kBBBBBk.',
+      '..kkkkk..',
+      '.sssssss.',
+    ],
+  },
+};
 
 const PX = 5;
 
@@ -148,16 +194,32 @@ function Building({ building, selected, onPress }: {
   );
 }
 
-export default function PixelCity({ buildings, atRisk = [] }: {
+export default function PixelCity({ buildings, atRisk = [], decorations = [] }: {
   buildings: CityBuilding[];
   atRisk?: AtRiskPlot[];
+  decorations?: string[];
 }) {
   const { theme } = useSchoolTheme();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = buildings.find(b => b.id === selectedId) ?? null;
   const selectedPlot = atRisk.find(p => p.id === selectedId) ?? null;
 
-  if (buildings.length === 0 && atRisk.length === 0) {
+  const ownedDecor = decorations.filter(id => DECOR_SPRITES[id]);
+
+  // Weave decorations between buildings so the street feels lived-in.
+  const street: ({ type: 'building'; building: CityBuilding } | { type: 'decor'; id: string })[] = [];
+  let decorIndex = 0;
+  buildings.forEach((building, i) => {
+    street.push({ type: 'building', building });
+    if ((i + 1) % 2 === 0 && decorIndex < ownedDecor.length) {
+      street.push({ type: 'decor', id: ownedDecor[decorIndex++] });
+    }
+  });
+  while (decorIndex < ownedDecor.length) {
+    street.push({ type: 'decor', id: ownedDecor[decorIndex++] });
+  }
+
+  if (buildings.length === 0 && atRisk.length === 0 && ownedDecor.length === 0) {
     return (
       <View style={styles.empty}>
         <View style={styles.signPost}>
@@ -183,13 +245,17 @@ export default function PixelCity({ buildings, atRisk = [] }: {
         style={styles.scroller}
         contentContainerStyle={styles.row}
       >
-        {buildings.map(building => (
+        {street.map((item, i) => item.type === 'building' ? (
           <Building
-            key={building.id}
-            building={building}
-            selected={building.id === selectedId}
-            onPress={() => setSelectedId(current => (current === building.id ? null : building.id))}
+            key={item.building.id}
+            building={item.building}
+            selected={item.building.id === selectedId}
+            onPress={() => setSelectedId(current => (current === item.building.id ? null : item.building.id))}
           />
+        ) : (
+          <View key={`decor-${i}`} accessibilityLabel={DECOR_SPRITES[item.id].label}>
+            <Sprite rows={DECOR_SPRITES[item.id].rows} px={PX} palette={DECOR_SPRITES[item.id].palette} />
+          </View>
         ))}
         {atRisk.map(plot => (
           <RustPlot

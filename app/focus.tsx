@@ -123,7 +123,7 @@ export default function FocusScreen() {
   const { tasks, sessions, addStudySession, updateHoursPerDay, updateProgress } = useTasks();
   const { theme } = useSchoolTheme();
   const { coins, addCoins } = useCoins();
-  const { doubleCharges, consumeDoubleCharge, bridgedDates } = usePowerUps();
+  const { doubleCharges, consumeDoubleCharge, bridgedDates, dogTreats, consumeDogTreat, unlocks } = usePowerUps();
   const reducedMotion = useReducedMotion();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -156,6 +156,7 @@ export default function FocusScreen() {
   const [wasInterrupted, setWasInterrupted] = useState(false);
   const [awayNotice, setAwayNotice] = useState<string | null>(null);
   const [dogExcited, setDogExcited] = useState(false);
+  const [treatActive, setTreatActive] = useState(false);
   const dogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recapAnim = useRef(new Animated.Value(0)).current;
   const toastKey = useRef(0);
@@ -313,6 +314,7 @@ export default function FocusScreen() {
 
   const finishCelebration = () => {
     setCelebrating(false);
+    setTreatActive(false);
     setElapsed(0);
     router.back();
   };
@@ -351,6 +353,7 @@ export default function FocusScreen() {
       <View style={styles.coinBadge}>
         <Text style={styles.coinBadgeText}>{coins} coins</Text>
         {boostActive && <Text style={styles.boostText}>2x boost active</Text>}
+        {treatActive && <Text style={[styles.boostText, { color: '#F472B6' }]}>Dog treat active</Text>}
         {running && (
           <Text style={styles.coinNext}>+{coinMultiplier.toFixed(1)}x in {formatTime(nextCoinIn)}</Text>
         )}
@@ -403,9 +406,10 @@ export default function FocusScreen() {
         )}
         <View style={styles.dogWrap}>
           <PixelDog
-            mood={goalReached || dogExcited ? 'party' : getStudyStreak(sessions, bridgedDates) >= 1 ? 'happy' : 'sad'}
+            mood={goalReached || dogExcited || treatActive ? 'party' : getStudyStreak(sessions, bridgedDates) >= 1 ? 'happy' : 'sad'}
             running={running}
             reducedMotion={reducedMotion}
+            hardHat={unlocks.includes('dog_hardhat')}
           />
         </View>
       </View>
@@ -415,7 +419,11 @@ export default function FocusScreen() {
           style={[styles.playBtn, { borderColor: color }]}
           onPress={() => {
             setAwayNotice(null);
-            if (!running && elapsed === 0) setWasInterrupted(false);
+            if (!running && elapsed === 0) {
+              setWasInterrupted(false);
+              // A treat bought in the shop makes the dog party all session.
+              if (consumeDogTreat()) setTreatActive(true);
+            }
             setRunning(r => !r);
           }}
           accessibilityLabel={running ? 'Pause session' : 'Start session'}
