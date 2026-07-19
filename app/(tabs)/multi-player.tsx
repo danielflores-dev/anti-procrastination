@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { PIXEL_FONT, PixelBadge, PixelButton, PixelField } from '@/components/pixel-ui';
+import { PIXEL_FONT, PixelBadge, PixelButton, PixelConfirm, PixelField } from '@/components/pixel-ui';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { useTasks } from '@/context/TaskContext';
@@ -11,7 +11,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Easing,
   Image,
@@ -342,6 +341,8 @@ export default function MultiPlayerScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [roomConfirm, setRoomConfirm] = useState<'leave' | 'close' | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [showSchoolSwitcher, setShowSchoolSwitcher] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
@@ -478,7 +479,7 @@ export default function MultiPlayerScreen() {
   const pickProfileImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Photo access needed', 'Allow photo access to add a profile picture.');
+      setMotionNotice('Allow photo access to add a profile picture');
       return;
     }
 
@@ -678,7 +679,7 @@ export default function MultiPlayerScreen() {
     setFriendsOnly(false);
     setRoomErrors({});
     setShowRoomForm(false);
-    Alert.alert('Room created', 'You are hosting this room.');
+    setMotionNotice('Room created — you are the host');
   };
 
   const handleMessageRoom = (_room: StudyRoom) => {
@@ -719,7 +720,7 @@ export default function MultiPlayerScreen() {
   const handleStartPartyFocus = () => {
     const selectedAssignment = activePartyAssignments.find(assignment => assignment.id === partyTaskId);
     if (!selectedAssignment) {
-      Alert.alert('Choose work', 'Pick what the room is focusing on.');
+      setMotionNotice('Pick what the room is focusing on first');
       return;
     }
 
@@ -748,7 +749,7 @@ export default function MultiPlayerScreen() {
     setPartyTaskId(null);
     setActiveBrowseTab('Library rooms');
     setSelectedRoom(null);
-    Alert.alert('Left study group', 'You left the room.');
+    setMotionNotice('You left the room');
   };
 
   const updateActivePartyRoom = (updater: (room: StudyRoom) => StudyRoom) => {
@@ -787,12 +788,12 @@ export default function MultiPlayerScreen() {
     setPartyTaskId(null);
     setActiveBrowseTab('Library rooms');
     setSelectedRoom(null);
-    Alert.alert('Room closed', 'This room is no longer listed.');
+    setMotionNotice('Room closed');
   };
 
   const handleCreateHelpPost = () => {
     if (!helpTopic.trim() || !helpDetails.trim()) {
-      Alert.alert('Add a topic', 'Add a topic and a note.');
+      setMotionNotice('Add a topic and a note first');
       return;
     }
 
@@ -1362,13 +1363,13 @@ export default function MultiPlayerScreen() {
                     <Text style={styles.cardSubtle}>{member.major}</Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.removeButton} onPress={() => handleRemoveRoomMember(member.id)} accessibilityLabel={`Remove ${member.name} from room`} accessibilityRole="button">
+                <TouchableOpacity style={styles.removeButton} onPress={() => setRemoveTarget({ id: member.id, name: member.name })} accessibilityLabel={`Remove ${member.name} from room`} accessibilityRole="button">
                   <Text style={styles.removeButtonText}>Remove</Text>
                 </TouchableOpacity>
               </View>
             ))}
 
-            <TouchableOpacity style={styles.closeRoomButton} onPress={handleCloseRoom} activeOpacity={0.85} accessibilityLabel="Close this study room" accessibilityRole="button">
+            <TouchableOpacity style={styles.closeRoomButton} onPress={() => setRoomConfirm('close')} activeOpacity={0.85} accessibilityLabel="Close this study room" accessibilityRole="button">
               <Text style={styles.closeRoomButtonText}>Close room</Text>
             </TouchableOpacity>
           </View>
@@ -1381,7 +1382,7 @@ export default function MultiPlayerScreen() {
         >
           Start focus
         </PixelButton>
-        <PixelButton variant="danger" onPress={handleLeaveParty}>Leave study group</PixelButton>
+        <PixelButton variant="danger" onPress={() => setRoomConfirm('leave')}>Leave study group</PixelButton>
       </View>
     );
   };
@@ -1851,6 +1852,35 @@ export default function MultiPlayerScreen() {
         </View>
       )}
       </ScrollView>
+
+      <PixelConfirm
+        visible={roomConfirm !== null}
+        title={roomConfirm === 'close' ? 'Close this room?' : 'Leave study group?'}
+        message={roomConfirm === 'close'
+          ? 'The room disappears for everyone in it.'
+          : 'You can rejoin from the room list anytime.'}
+        confirmLabel={roomConfirm === 'close' ? 'Close room' : 'Leave'}
+        danger
+        onConfirm={() => {
+          if (roomConfirm === 'close') handleCloseRoom();
+          else handleLeaveParty();
+          setRoomConfirm(null);
+        }}
+        onCancel={() => setRoomConfirm(null)}
+      />
+
+      <PixelConfirm
+        visible={removeTarget !== null}
+        title={removeTarget ? `Remove ${removeTarget.name}?` : ''}
+        message="They can request to join again later."
+        confirmLabel="Remove"
+        danger
+        onConfirm={() => {
+          if (removeTarget) handleRemoveRoomMember(removeTarget.id);
+          setRemoveTarget(null);
+        }}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </ArcadeTabScreen>
   );
 }

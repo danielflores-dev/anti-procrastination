@@ -1,13 +1,13 @@
 import { signedDaysUntil, Task, useTasks } from '@/context/TaskContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
-import { GOLD, PIXEL_FONT, PixelButton, PixelField, PixelPanel } from '@/components/pixel-ui';
+import { GOLD, PIXEL_FONT, PixelButton, PixelConfirm, PixelField, PixelPanel } from '@/components/pixel-ui';
 import ArcadeTabScreen from '@/components/ArcadeTabScreen';
 import PixelBackdrop from '@/components/PixelBackdrop';
 import { PixelSkyStrip } from '@/components/PixelWorld';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const SCHEDULE_KEY = 'antiprocrastination.schedule.v1';
 
@@ -227,15 +227,10 @@ export default function CalendarScreen() {
     setFormType(null);
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
+
   const confirmDeleteTask = (task: Task) => {
-    Alert.alert(
-      'Delete assignment?',
-      `Remove ${task.assignmentName} from your schedule?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete assignment', style: 'destructive', onPress: () => deleteTask(task.id) },
-      ],
-    );
+    setDeleteTarget(task);
   };
 
   return (
@@ -476,6 +471,19 @@ export default function CalendarScreen() {
         )}
       </View>
       </ScrollView>
+
+      <PixelConfirm
+        visible={deleteTarget !== null}
+        title="Delete assignment?"
+        message={deleteTarget ? `${deleteTarget.assignmentName} will be removed from your schedule. This can't be undone.` : undefined}
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => {
+          if (deleteTarget) deleteTask(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </ArcadeTabScreen>
   );
 }

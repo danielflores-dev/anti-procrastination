@@ -2,6 +2,7 @@ import { playClick, tapHaptic } from '@/components/sfx';
 import { useSchoolTheme } from '@/context/SchoolThemeContext';
 import { ReactNode } from 'react';
 import {
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -239,6 +240,64 @@ export function PixelProgress({ progress, color, blocks = 12, height = 10, style
   );
 }
 
+// ------------------------------------------------------------- PixelConfirm
+
+type PixelConfirmProps = {
+  visible: boolean;
+  title: string;
+  message?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  /** Destructive actions get the red confirm button. */
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  /** Optional preview content (e.g. a sprite) shown above the title. */
+  children?: ReactNode;
+};
+
+/**
+ * In-world replacement for Alert.alert confirms, which are a no-op on web.
+ * Renders a beveled pixel card over a dimmed backdrop.
+ */
+export function PixelConfirm({
+  visible,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  danger,
+  onConfirm,
+  onCancel,
+  children,
+}: PixelConfirmProps) {
+  const { theme } = useSchoolTheme();
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={styles.confirmBackdrop}>
+        <View style={styles.confirmRim}>
+          <View style={[styles.confirmFace, { backgroundColor: theme.surface }]}>
+            {children ? <View style={styles.confirmPreview}>{children}</View> : null}
+            <Text style={[styles.confirmTitle, { color: theme.text }]}>{title}</Text>
+            {!!message && <Text style={[styles.confirmMessage, { color: theme.muted }]}>{message}</Text>}
+            <PixelButton
+              size="lg"
+              variant={danger ? 'danger' : 'primary'}
+              onPress={onConfirm}
+              accessibilityLabel={`${confirmLabel}: ${title}`}
+            >
+              {confirmLabel}
+            </PixelButton>
+            <PixelButton variant="ghost" onPress={onCancel}>
+              {cancelLabel}
+            </PixelButton>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // --------------------------------------------------------------- PixelField
 
 type PixelFieldProps = TextInputProps & {
@@ -434,6 +493,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 16,
     marginTop: 5,
+  },
+  confirmBackdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    paddingHorizontal: 32,
+  },
+  confirmRim: {
+    backgroundColor: RIM,
+    padding: 2,
+    borderRadius: 4,
+    width: '100%',
+    maxWidth: 320,
+  },
+  confirmFace: {
+    borderRadius: 2,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderTopColor: 'rgba(255,255,255,0.16)',
+    borderLeftColor: 'rgba(255,255,255,0.16)',
+    borderBottomColor: 'rgba(0,0,0,0.4)',
+    borderRightColor: 'rgba(0,0,0,0.4)',
+    padding: 18,
+    gap: 10,
+  },
+  confirmPreview: {
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  confirmTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: PIXEL_FONT,
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 4,
   },
 });
 

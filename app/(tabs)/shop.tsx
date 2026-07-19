@@ -3,7 +3,7 @@ import PixelBackdrop from '@/components/PixelBackdrop';
 import { DECOR_SPRITES } from '@/components/PixelCity';
 import { Sprite, WORKER_DOWN } from '@/components/PixelConstruction';
 import { PixelSkyStrip } from '@/components/PixelWorld';
-import { GOLD, PIXEL_FONT, PixelButton, PixelHeading } from '@/components/pixel-ui';
+import { GOLD, PIXEL_FONT, PixelButton, PixelConfirm, PixelHeading } from '@/components/pixel-ui';
 import { useCoins } from '@/context/CoinContext';
 import { usePowerUps } from '@/context/PowerUpContext';
 import { SchoolTheme, useSchoolTheme } from '@/context/SchoolThemeContext';
@@ -239,25 +239,18 @@ export default function ShopScreen() {
       </ScrollView>
 
       {/* In-world purchase confirm (system dialogs are a no-op on web) */}
-      {confirmItem && (
-        <View style={styles.confirmBackdrop}>
-          <View style={styles.confirmRim}>
-            <View style={styles.confirmFace}>
-              <View style={styles.confirmPreview}>{renderPreview(confirmItem)}</View>
-              <Text style={styles.confirmTitle}>Get {confirmItem.name}?</Text>
-              <Text style={styles.confirmSub}>
-                {confirmItem.cost} coins · you have {coins}
-              </Text>
-              <PixelButton size="lg" onPress={confirmBuy} accessibilityLabel={`Confirm buying ${confirmItem.name}`}>
-                Buy
-              </PixelButton>
-              <PixelButton variant="ghost" onPress={() => setConfirmItem(null)}>
-                Cancel
-              </PixelButton>
-            </View>
-          </View>
-        </View>
-      )}
+      <PixelConfirm
+        visible={confirmItem !== null}
+        title={confirmItem ? `Get ${confirmItem.name}?` : ''}
+        message={confirmItem ? `${confirmItem.cost} coins · you have ${coins}` : undefined}
+        confirmLabel="Buy"
+        onConfirm={confirmBuy}
+        onCancel={() => setConfirmItem(null)}
+      >
+        {confirmItem ? (
+          <View style={styles.confirmPreviewBox}>{renderPreview(confirmItem)}</View>
+        ) : null}
+      </PixelConfirm>
     </ArcadeTabScreen>
   );
 }
@@ -437,33 +430,7 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
-  confirmBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.72)',
-    paddingHorizontal: 32,
-  },
-  confirmRim: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 2,
-    borderRadius: 4,
-    width: '100%',
-    maxWidth: 320,
-  },
-  confirmFace: {
-    backgroundColor: theme.surface,
-    borderRadius: 2,
-    borderWidth: 2,
-    borderTopColor: 'rgba(255,255,255,0.16)',
-    borderLeftColor: 'rgba(255,255,255,0.16)',
-    borderBottomColor: 'rgba(0,0,0,0.4)',
-    borderRightColor: 'rgba(0,0,0,0.4)',
-    padding: 18,
-    alignItems: 'center',
-    gap: 10,
-  },
-  confirmPreview: {
+  confirmPreviewBox: {
     width: 62,
     height: 62,
     alignItems: 'center',
@@ -475,19 +442,5 @@ const createStyles = (theme: SchoolTheme) => StyleSheet.create({
     borderLeftColor: 'rgba(0,0,0,0.32)',
     borderBottomColor: 'rgba(255,255,255,0.14)',
     borderRightColor: 'rgba(255,255,255,0.14)',
-    marginBottom: 2,
-  },
-  confirmTitle: {
-    color: theme.text,
-    fontSize: 16,
-    fontWeight: '800',
-    fontFamily: PIXEL_FONT,
-    textAlign: 'center',
-  },
-  confirmSub: {
-    color: theme.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 6,
   },
 });
